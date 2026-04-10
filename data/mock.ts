@@ -1,0 +1,376 @@
+export type CampaignStatus = 'active' | 'paused' | 'pending' | 'completed';
+export type FunnelStage =
+  | 'sin_contactar'
+  | 'email1_enviado'
+  | 'email2_enviado'
+  | 'email3_enviado'
+  | 'contactado_instagram'
+  | 'contactado_whatsapp'
+  | 'contactado_telefono'
+  | 'respondio_interesado'
+  | 'reunion_agendada'
+  | 'dentro_plataforma'
+  | 'no_interesado';
+
+export type Priority = 'alta' | 'media' | 'baja';
+export type Channel = 'email' | 'whatsapp' | 'instagram' | 'telefono';
+export type Segment =
+  | 'Teatro-Danza'
+  | 'Salas Conciertos'
+  | 'Festivales'
+  | 'Dance from Spain'
+  | 'Socios ARTE'
+  | 'Distribuidoras';
+
+export interface EmailStep {
+  step: number;
+  delayDays: number;
+  subject: string;
+  body: string;
+  sent: number;
+  openRate: number;
+  replyRate: number;
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  segment: Segment;
+  sendingEmail: string;
+  status: CampaignStatus;
+  totalContacts: number;
+  emailsSent: number;
+  openRate: number;
+  replyRate: number;
+  warmupPercent: number;
+  steps: EmailStep[];
+}
+
+export interface Lead {
+  id: string;
+  company: string;
+  contact: string;
+  email: string;
+  phone: string;
+  city: string;
+  segment: Segment;
+  channel: Channel;
+  stage: FunnelStage;
+  lastContact: string;
+  nextAction: string;
+  notes: string;
+  inPlatform: boolean;
+  priority: Priority;
+  campaignId: string;
+}
+
+export interface DomainWarmup {
+  domain: string;
+  email: string;
+  warmupPercent: number;
+  warmupEmailsToday: number;
+  campaignEmailsToday: number;
+  dailyTarget: number;
+  status: 'warming' | 'ready' | 'paused';
+  startDate: string;
+  reputationScore: number;
+}
+
+// ─── CAMPAIGNS ───────────────────────────────────────────────────────────────
+
+const TEATROS_BODY_1 = `Hola {{firstName}},
+
+Supongo que lleváis años enviando dossieres a teatros y auditorios que no responden, perdiendo licitaciones porque llegasteis tarde a saberlo, y consiguiendo contratos solo a través de quien os conoce.
+
+El problema no sois vosotros.
+
+Es que nunca ha existido un sitio donde los programadores de teatros, auditorios y centros culturales de este país puedan encontrar compañías como la vuestra para su programación.
+
+El sector funciona por contactos. Siempre ha sido así. Hasta hoy.
+
+Hemos creado ARTIVERSE, una plataforma que conecta a todos los profesionales del sector de las artes escénicas en un solo lugar.
+
+En Artiverse encontrarás:
+• Perfil profesional visible para programadores de todo el país
+• Licitaciones públicas centralizadas en un solo sitio
+• Buscador de artistas por disciplina y estilo
+• Tablón de oportunidades y convocatorias del sector
+• Insights del mercado escénico
+• Contacto directo dentro de la plataforma
+
+El objetivo es que los programadores de teatros, auditorios y centros culturales de toda España encuentren compañías como {{companyName}} cuando están creando su programación. No al revés.
+
+Estamos en primera fase de crecimiento, y compañías MPC Management, Meteórica, Darlalata y Calaverita Records ya tienen su perfil.
+
+Cuantas más compañías estén dentro, más razones tendrán los programadores para venir a buscar aquí.
+
+Crear el perfil de {{companyName}} es gratuito y lleva cinco minutos.
+
+¡Nos vemos dentro! → artiverse.es`;
+
+const TEATROS_BODY_2 = `¡Hola!
+
+Te contacté hace algunos días, contándote sobre Artiverse.
+
+Por si no pudiste leerlo, Artiverse es la primera plataforma que reúne a todos los profesionales del sector escénico español en un solo lugar: compañías, agencias, programadores, salas y festivales.
+
+Ya tenemos más de 130 perfiles activos. Y cada semana entran más programadores buscando compañías para su temporada.
+
+Crear el perfil de tu compañía es gratuito. → artiverse.es`;
+
+const TEATROS_BODY_3 = `Hola {{firstName}},
+
+Este es mi último intento de contacto.
+
+Las mejores agencias, salas y teatros de españa ya están cerrando contratos desde Artiverse.
+
+Crear vuestro perfil es gratuito y lleva cinco minutos. Si en algún momento queréis estar dentro, aquí está el enlace: artiverse.es
+
+Suerte con la temporada.`;
+
+export const campaigns: Campaign[] = [
+  {
+    id: 'teatros',
+    name: 'Teatros',
+    segment: 'Teatro-Danza',
+    sendingEmail: 'victor@artiversemail.es',
+    status: 'active',
+    totalContacts: 159,
+    emailsSent: 75,
+    openRate: 18.7,
+    replyRate: 2.7,
+    warmupPercent: 87,
+    steps: [
+      {
+        step: 1, delayDays: 0,
+        subject: 'Ya está bien de gestionar el arte por WhatsApp.',
+        body: TEATROS_BODY_1,
+        sent: 75, openRate: 18.7, replyRate: 2.7,
+      },
+      {
+        step: 2, delayDays: 4,
+        subject: 'Únete a la plataforma del mejor talento de España.',
+        body: TEATROS_BODY_2,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+      {
+        step: 3, delayDays: 3,
+        subject: 'Última oportunidad para formar parte de Artiverse',
+        body: TEATROS_BODY_3,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+    ],
+  },
+  {
+    id: 'salas',
+    name: 'Salas 1',
+    segment: 'Salas Conciertos',
+    sendingEmail: 'victor@artiversemail.es',
+    status: 'pending',
+    totalContacts: 57,
+    emailsSent: 0,
+    openRate: 0,
+    replyRate: 0,
+    warmupPercent: 87,
+    steps: [
+      {
+        step: 1, delayDays: 0,
+        subject: 'El arte merece una forma más accesible de ser contratado',
+        body: `Hola {{firstName}},
+
+Supongo que lleváis años enviando dossieres por mail y whatsapp, buscándoos la vida con vuestros medios y lo típico de conseguir contratos por contactos.
+
+Pero el arte merece una forma más accesible de ser contratado.
+
+Hemos creado Artiverse, la primera app que conecta a todo el mundo artístico a nivel profesional.
+
+Crear el perfil de {{companyName}} es gratuito y lleva cinco minutos.
+
+¡Nos vemos dentro! → artiverse.es`,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+    ],
+  },
+  {
+    id: 'teatro-danza-2',
+    name: 'Teatro Danza 2',
+    segment: 'Teatro-Danza',
+    sendingEmail: 'victor@artiverse.online',
+    status: 'pending',
+    totalContacts: 96,
+    emailsSent: 0,
+    openRate: 0,
+    replyRate: 0,
+    warmupPercent: 71,
+    steps: [
+      {
+        step: 1, delayDays: 0,
+        subject: 'Lleváis años mandando dossieres. Hay una forma mejor.',
+        body: `Hola {{firstName}},
+
+Supongo que lleváis tiempo enviando dossieres a teatros y festivales que no responden, buscándoos la vida por contactos, y llegando tarde a licitaciones que ni sabíais que existían.
+
+El problema no sois vosotros.
+
+Es que nunca ha existido un sitio donde los programadores de teatro-danza de este país puedan encontrar compañías como la vuestra para su programación.
+
+Hemos creado ARTIVERSE, una plataforma que conecta a todos los profesionales de las artes escénicas en un solo lugar.
+
+Crear el perfil de {{companyName}} es gratuito y lleva cinco minutos.
+
+¡Nos vemos dentro! → artiverse.es`,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+    ],
+  },
+  {
+    id: 'dance-from-spain',
+    name: 'Calentamiento - Dance from spain',
+    segment: 'Dance from Spain',
+    sendingEmail: 'victor@artiversemail.es',
+    status: 'active',
+    totalContacts: 50,
+    emailsSent: 6,
+    openRate: 0,
+    replyRate: 0,
+    warmupPercent: 87,
+    steps: [
+      {
+        step: 1, delayDays: 1,
+        subject: 'Lleváis años mandando dossieres. Hay una forma mejor.',
+        body: `Hola {{firstName}},\n\nSupongo que lleváis años enviando dossieres a teatros y festivales que no responden, perdiendo contratos porque el programador no os conocía, y consiguiendo bolos solo a través de quien os conoce de antes.\n\nEl problema no sois vosotros.\n\nEs que nunca ha existido un sitio donde los programadores de danza de este país puedan encontrar compañías como la vuestra cuando están montando su temporada.\n\nHemos creado ARTIVERSE, la primera plataforma que conecta a todos los profesionales de la danza y las artes escénicas en un solo lugar.\n\nCrear el perfil de {{companyName}} es gratuito y lleva cinco minutos.\n\n¡Nos vemos dentro! → artiverse.es`,
+        sent: 6, openRate: 0, replyRate: 0,
+      },
+      {
+        step: 2, delayDays: 4,
+        subject: 'Únete a la plataforma de danza de España.',
+        body: `¡Hola!\n\nTe contacté hace algunos días, contándote sobre Artiverse.\n\nArtiverse es la primera plataforma que reúne a todos los profesionales de la danza y las artes escénicas de España en un solo lugar: compañías, coreógrafos, programadores, teatros y festivales.\n\nYa tenemos más de 130 perfiles activos. Y cada semana entran más programadores buscando compañías de danza para su temporada.\n\nCrear el perfil de tu compañía es gratuito. → artiverse.es`,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+      {
+        step: 3, delayDays: 3,
+        subject: 'Última oportunidad para formar parte de Artiverse',
+        body: `Hola {{firstName}},\n\nEste es mi último intento de contacto.\n\nLas mejores compañías de danza de España ya están en Artiverse, y los programadores de teatro y festivales vienen a buscar aquí.\n\nCrear vuestro perfil es gratuito y lleva cinco minutos. Si en algún momento queréis estar dentro: artiverse.es\n\nSuerte con la temporada.`,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+    ],
+  },
+  {
+    id: 'socios-arte',
+    name: 'Socios ARTE 1',
+    segment: 'Socios ARTE',
+    sendingEmail: 'victor@artiverse.online',
+    status: 'paused',
+    totalContacts: 80,
+    emailsSent: 12,
+    openRate: 25.0,
+    replyRate: 2.5,
+    warmupPercent: 71,
+    steps: [
+      {
+        step: 1, delayDays: 0,
+        subject: 'Ya está bien de gestionar el arte por WhatsApp.',
+        body: TEATROS_BODY_1,
+        sent: 12, openRate: 25.0, replyRate: 2.5,
+      },
+    ],
+  },
+  {
+    id: 'teatros-2',
+    name: 'Teatros 2',
+    segment: 'Teatro-Danza',
+    sendingEmail: 'victor@artiverse.online',
+    status: 'pending',
+    totalContacts: 160,
+    emailsSent: 0,
+    openRate: 0,
+    replyRate: 0,
+    warmupPercent: 71,
+    steps: [
+      {
+        step: 1, delayDays: 0,
+        subject: 'Ya está bien de gestionar el arte por WhatsApp.',
+        body: TEATROS_BODY_1,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+    ],
+  },
+];
+
+// ─── LEADS ────────────────────────────────────────────────────────────────────
+
+export const leads: Lead[] = [
+  { id: '1', company: 'MPC Management', contact: 'María Pérez', email: 'maria@mpcmanagement.es', phone: '612 345 678', city: 'Madrid', segment: 'Teatro-Danza', channel: 'email', stage: 'dentro_plataforma', lastContact: '2026-04-02', nextAction: '-', notes: 'Primera en entrar. Muy activa.', inPlatform: true, priority: 'alta', campaignId: 'teatros' },
+  { id: '2', company: 'Meteórica', contact: 'Carlos Ruiz', email: 'carlos@meteorica.es', phone: '623 456 789', city: 'Barcelona', segment: 'Teatro-Danza', channel: 'email', stage: 'dentro_plataforma', lastContact: '2026-04-03', nextAction: '-', notes: 'Perfil completo. Compartió en RRSS.', inPlatform: true, priority: 'alta', campaignId: 'teatros' },
+  { id: '3', company: 'Darlalata', contact: 'Ana García', email: 'ana@darlalata.com', phone: '634 567 890', city: 'Madrid', segment: 'Teatro-Danza', channel: 'email', stage: 'dentro_plataforma', lastContact: '2026-04-01', nextAction: '-', notes: '', inPlatform: true, priority: 'media', campaignId: 'teatros' },
+  { id: '4', company: 'Calaverita Records', contact: 'Pedro Sánchez', email: 'pedro@calaverita.es', phone: '645 678 901', city: 'Sevilla', segment: 'Teatro-Danza', channel: 'email', stage: 'dentro_plataforma', lastContact: '2026-03-30', nextAction: '-', notes: '', inPlatform: true, priority: 'media', campaignId: 'teatros' },
+  { id: '5', company: 'The Music Republic', contact: 'Jorge Torres', email: 'j.torres@themusicrepublic.es', phone: '656 789 012', city: 'Madrid', segment: 'Dance from Spain', channel: 'email', stage: 'respondio_interesado', lastContact: '2026-04-07', nextAction: 'Enviar link de registro', notes: 'Respondió positivo. Muy interesado.', inPlatform: false, priority: 'alta', campaignId: 'dance-from-spain' },
+  { id: '6', company: 'GTS Talent', contact: 'María Alba', email: 'maria.alba@gtstalent.com', phone: '667 890 123', city: 'Madrid', segment: 'Salas Conciertos', channel: 'email', stage: 'respondio_interesado', lastContact: '2026-04-06', nextAction: 'Follow-up call', notes: 'Pidió más información sobre precios.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: '7', company: 'Share Music', contact: 'Hugo García', email: 'hugo@sharemusic.es', phone: '678 901 234', city: 'Barcelona', segment: 'Dance from Spain', channel: 'email', stage: 'email2_enviado', lastContact: '2026-04-05', nextAction: 'Esperar respuesta Step 2', notes: '', inPlatform: false, priority: 'media', campaignId: 'dance-from-spain' },
+  { id: '8', company: 'Rotativa Performing Arts', contact: 'Fani Benages', email: 'info@rotativaperformingarts.com', phone: '689 012 345', city: 'Barcelona', segment: 'Teatro-Danza', channel: 'email', stage: 'email1_enviado', lastContact: '2026-04-08', nextAction: 'Esperar respuesta', notes: '', inPlatform: false, priority: 'media', campaignId: 'teatro-danza-2' },
+  { id: '9', company: 'Cía. Moveo', contact: 'Stéphane Lévy', email: 'info@ciamoveo.cat', phone: '933 002 508', city: 'Barcelona', segment: 'Teatro-Danza', channel: 'email', stage: 'email1_enviado', lastContact: '2026-04-08', nextAction: 'Esperar respuesta', notes: '', inPlatform: false, priority: 'media', campaignId: 'teatro-danza-2' },
+  { id: '10', company: 'A Mansalva', contact: 'Pablo Carrera', email: 'info@amansalva.es', phone: '912 345 678', city: 'Madrid', segment: 'Salas Conciertos', channel: 'email', stage: 'email1_enviado', lastContact: '2026-04-08', nextAction: 'Esperar respuesta', notes: '', inPlatform: false, priority: 'baja', campaignId: 'salas' },
+  { id: '11', company: 'CERSA Music', contact: 'Alberto Cervera', email: 'cersamusic@cersamusic.com', phone: '963 456 789', city: 'Valencia', segment: 'Salas Conciertos', channel: 'email', stage: 'email1_enviado', lastContact: '2026-04-08', nextAction: 'Esperar respuesta', notes: '', inPlatform: false, priority: 'baja', campaignId: 'salas' },
+  { id: '12', company: 'Carver Producciones', contact: 'José Carrión', email: 'jcarrion@carverespectaculos.com', phone: '923 567 890', city: 'Salamanca', segment: 'Teatro-Danza', channel: 'whatsapp', stage: 'contactado_whatsapp', lastContact: '2026-04-09', nextAction: 'Esperar respuesta WA', notes: 'Contactado por WhatsApp tras no abrir email.', inPlatform: false, priority: 'media', campaignId: 'teatros' },
+  { id: '13', company: 'Concert Tour Gestiones', contact: 'Rafael Casilla', email: 'grupoconcerttour@grupoconcerttour.com', phone: '934 678 901', city: 'Barcelona', segment: 'Salas Conciertos', channel: 'instagram', stage: 'contactado_instagram', lastContact: '2026-04-09', nextAction: 'Responder DM Instagram', notes: 'Comentó un post de Artiverse.', inPlatform: false, priority: 'media', campaignId: 'salas' },
+  { id: '14', company: 'PRODUARTCE', contact: 'Carlos Cerdán', email: 'produartce@produartce.com', phone: '945 789 012', city: 'Zaragoza', segment: 'Salas Conciertos', channel: 'email', stage: 'reunion_agendada', lastContact: '2026-04-08', nextAction: 'Reunión lunes 14 abril 10:00h', notes: 'Demo programada. Muy interesado en licitaciones.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: '15', company: 'Iberia Producciones', contact: 'Antonio Caro', email: 'contratacion@iberiaproducciones.es', phone: '956 890 123', city: 'Málaga', segment: 'Teatro-Danza', channel: 'email', stage: 'email3_enviado', lastContact: '2026-04-06', nextAction: 'Último seguimiento', notes: '', inPlatform: false, priority: 'baja', campaignId: 'teatros' },
+  { id: '16', company: 'Magazine Showbusiness', contact: 'Félix Cartagena', email: 'felixcartagena@telefonica.net', phone: '967 901 234', city: 'Madrid', segment: 'Salas Conciertos', channel: 'email', stage: 'no_interesado', lastContact: '2026-04-04', nextAction: '-', notes: 'Respondió que no les interesa.', inPlatform: false, priority: 'baja', campaignId: 'salas' },
+  { id: '17', company: 'Cía. Niñas Malditas', contact: 'Clara Fernández', email: 'malditas.circo@gmail.com', phone: '', city: 'Madrid', segment: 'Teatro-Danza', channel: 'email', stage: 'email1_enviado', lastContact: '2026-04-08', nextAction: 'Esperar respuesta', notes: '', inPlatform: false, priority: 'media', campaignId: 'teatro-danza-2' },
+  { id: '18', company: 'Last Tour International', contact: 'Yahvé García', email: 'yahve@lasttour.net', phone: '978 012 345', city: 'Madrid', segment: 'Dance from Spain', channel: 'email', stage: 'email2_enviado', lastContact: '2026-04-05', nextAction: 'Follow-up email', notes: 'Abrió Step 1 dos veces.', inPlatform: false, priority: 'alta', campaignId: 'dance-from-spain' },
+  { id: '19', company: 'Aquintada Auga', contact: 'Andrea Buergo', email: 'andrea.buergo@aquintadaauga.com', phone: '989 123 456', city: 'Vigo', segment: 'Dance from Spain', channel: 'email', stage: 'sin_contactar', lastContact: '-', nextAction: 'Enviar email 1', notes: '', inPlatform: false, priority: 'baja', campaignId: 'dance-from-spain' },
+  { id: '20', company: 'Intercruises', contact: 'Rosa López', email: 'r.lopez@intercruises.com', phone: '990 234 567', city: 'Barcelona', segment: 'Dance from Spain', channel: 'telefono', stage: 'contactado_telefono', lastContact: '2026-04-09', nextAction: 'Enviar propuesta formal', notes: 'Llamada de 12 min. Quieren una demo.', inPlatform: false, priority: 'alta', campaignId: 'dance-from-spain' },
+];
+
+// ─── WARMUP ───────────────────────────────────────────────────────────────────
+
+export const domainWarmup: DomainWarmup[] = [
+  {
+    domain: 'artiversemail.es',
+    email: 'victor@artiversemail.es',
+    warmupPercent: 87,
+    warmupEmailsToday: 28,
+    campaignEmailsToday: 30,
+    dailyTarget: 150,
+    status: 'ready',
+    startDate: '2026-03-10',
+    reputationScore: 91,
+  },
+  {
+    domain: 'artiverse.online',
+    email: 'victor@artiverse.online',
+    warmupPercent: 71,
+    warmupEmailsToday: 35,
+    campaignEmailsToday: 12,
+    dailyTarget: 150,
+    status: 'warming',
+    startDate: '2026-03-24',
+    reputationScore: 78,
+  },
+];
+
+// ─── SUMMARY ──────────────────────────────────────────────────────────────────
+
+const _activeCamps = campaigns.filter(c => c.emailsSent > 0);
+export const summary = {
+  totalEmailsSent: campaigns.reduce((s, c) => s + c.emailsSent, 0),
+  avgOpenRate: _activeCamps.length > 0 ? Number((_activeCamps.reduce((s, c) => s + c.openRate, 0) / _activeCamps.length).toFixed(1)) : 0,
+  avgReplyRate: _activeCamps.length > 0 ? Number((_activeCamps.reduce((s, c) => s + c.replyRate, 0) / _activeCamps.length).toFixed(1)) : 0,
+  totalContacts: campaigns.reduce((s, c) => s + c.totalContacts, 0),
+  usersInPlatform: 130,
+  emailsPending: campaigns.reduce((s, c) => s + (c.totalContacts - c.emailsSent), 0),
+};
+
+export const FUNNEL_STAGES: { id: FunnelStage; label: string; color: string }[] = [
+  { id: 'sin_contactar', label: 'Sin contactar', color: '#374151' },
+  { id: 'email1_enviado', label: 'Email 1 enviado', color: '#1D4ED8' },
+  { id: 'email2_enviado', label: 'Email 2 enviado', color: '#2563EB' },
+  { id: 'email3_enviado', label: 'Email 3 enviado', color: '#3B82F6' },
+  { id: 'contactado_instagram', label: 'Instagram DM', color: '#7C3AED' },
+  { id: 'contactado_whatsapp', label: 'WhatsApp', color: '#059669' },
+  { id: 'contactado_telefono', label: 'Teléfono', color: '#D97706' },
+  { id: 'respondio_interesado', label: 'Interesado ✦', color: '#CCFF00' },
+  { id: 'reunion_agendada', label: 'Reunión agendada', color: '#F59E0B' },
+  { id: 'dentro_plataforma', label: 'En plataforma ✓', color: '#10B981' },
+  { id: 'no_interesado', label: 'Descartado', color: '#6B7280' },
+];
