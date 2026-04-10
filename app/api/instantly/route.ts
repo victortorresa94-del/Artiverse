@@ -61,9 +61,11 @@ function computeStats(leads: any[]) {
 
 export async function GET() {
   try {
-    // 1. Get all campaigns
+    // 1. Get all campaigns — filter out AI SDR (Aether Labs) campaigns, this dashboard is Artiverse only
     const campData = await instantly('/api/v2/campaigns?limit=50')
-    const campaigns = campData.items || []
+    const campaigns = (campData.items || []).filter((c: any) =>
+      !c.name.includes('[AI SDR]') && !c.name.toLowerCase().includes('ai sdr')
+    )
 
     // 2. Get all lead lists
     const listData = await instantly('/api/v2/lead-lists?limit=50')
@@ -114,22 +116,10 @@ export async function GET() {
     }))
 
     // 5. Handle the NO_LIST leads (old campaigns: Teatros, Calentamiento)
-    const noListLeads = allLeads.filter(l => !l.list_id)
-    const noListStats = computeStats(noListLeads)
-
-    // Distribute NO_LIST leads to campaigns without a list (proportional)
-    const campaignsWithoutList = result.filter(c => !c.listId && c.status !== 0)
-    if (campaignsWithoutList.length > 0 && noListLeads.length > 0) {
-      // Assign all NO_LIST to active campaigns
-      campaignsWithoutList.forEach(c => {
-        c.total = noListLeads.length
-        c.sent = noListStats.sent
-        c.opened = noListStats.opened
-        c.replied = noListStats.replied
-        c.openRate = noListStats.openRate
-        c.replyRate = noListStats.replyRate
-      })
-    }
+    // NOTE: We do NOT distribute NO_LIST aggregate to per-campaign stats because:
+    // - The NO_LIST pool includes leads from other workspaces/campaigns we can't distinguish
+    // - stats.json (CSV imports) is the source of truth for these campaigns (see step 5b below)
+    // Campaigns without a list keep their computed stats (0 if no leads found) — CSV import overrides below
 
     // 5b. Merge saved stats (from CSV imports) — overrides computed stats
     const savedStats = readSavedStats()

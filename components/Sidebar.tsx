@@ -1,8 +1,9 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 import {
-  LayoutDashboard, Megaphone, GitBranch, Users, Flame, ChevronRight
+  LayoutDashboard, Megaphone, GitBranch, Users, Flame
 } from 'lucide-react'
 
 const nav = [
@@ -13,18 +14,23 @@ const nav = [
   { href: '/warmup', label: 'Warm-up', icon: Flame },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ mobile = false }: { mobile?: boolean }) {
   const path = usePathname()
 
   return (
-    <aside className="w-56 shrink-0 border-r border-white/5 flex flex-col bg-[#0A0A0A]">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <span className="text-[#CCFF00] font-bold text-lg tracking-tight">ARTIVERSE</span>
+    <aside className={`flex flex-col bg-white ${mobile ? 'w-full' : 'w-56 shrink-0 border-r border-gray-200'}`}>
+      {/* Logo — only shown in desktop sidebar (mobile has it in header) */}
+      {!mobile && (
+      <div className="px-5 py-5 border-b border-gray-100">
+        <div className="flex items-center gap-2.5">
+          <Image src="/artiverse-logo.jpg" alt="Artiverse" width={32} height={32} className="rounded-md" />
+          <div>
+            <span className="text-gray-900 font-bold text-base tracking-tight">Artiverse</span>
+            <p className="text-[10px] text-gray-400 tracking-widest uppercase leading-none mt-0.5">Control Center</p>
+          </div>
         </div>
-        <p className="text-[10px] text-white/30 mt-0.5 tracking-widest uppercase">Control Center</p>
       </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -34,24 +40,27 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                 active
-                  ? 'bg-[#2563EB]/20 text-white border border-[#2563EB]/30'
-                  : 'text-white/40 hover:text-white hover:bg-white/5'
+                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              <Icon size={16} className={active ? 'text-[#2563EB]' : 'text-current'} />
+              <Icon size={16} className={active ? 'text-blue-600' : 'text-current'} />
               <span className="flex-1">{label}</span>
-              {active && <ChevronRight size={12} className="text-[#2563EB]" />}
+              {active && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
             </Link>
           )
         })}
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-white/5">
-        <p className="text-[10px] text-white/20">victor@aetherlabs.es</p>
-        <p className="text-[10px] text-white/20">v1.0 — Apr 2026</p>
+      <div className="px-5 py-4 border-t border-gray-100">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <p className="text-[11px] text-gray-500 font-medium">Sistema activo</p>
+        </div>
+        <p className="text-[10px] text-gray-400">victor@aetherlabs.es</p>
       </div>
     </aside>
   )
