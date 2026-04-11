@@ -166,9 +166,7 @@ Frontend (polling 5min + botón refresh)
 
 1. **Deploy a Vercel** — El `vercel.json` existe pero no se ha ejecutado `vercel --prod`. Variable de entorno: `INSTANTLY_API_KEY=NzYzNzhlMDQtYjU3My00ZGUwLTk3ZTItZDI4M2E3MTI5NDQ0Om9tWnlSYWVmclpHTQ==`
 
-2. **Activar campaña Salas 1** — Los 57 leads ya están en el lead list. Hay que:
-   - Crear/revisar la secuencia de emails para el segmento "Salas Conciertos" en Instantly
-   - Activar la campaña desde la UI de Instantly
+2. ~~**Activar campaña Salas 1**~~ ✅ HECHO (2026-04-11) — Secuencias creadas, leads movidos, campaña ACTIVA.
 
 3. **HubSpot sync** — Subir los ~57 contactos de Salas al portal HubSpot 148220932. Script Python en CONTEXTO.md o usar el endpoint `/api/sync-to-hubspot` del dashboard.
 
@@ -218,6 +216,9 @@ npx vercel --prod
 
 | Fecha | Acción |
 |-------|--------|
+| 2026-04-11 | **Campaña Salas 1 ACTIVA** — secuencias 3 pasos (2 variantes step 1), email victor@artiversemail.es ✅ |
+| 2026-04-11 | **`scripts/create_campaign.mjs`** creado — herramienta universal CSV→campaña completa+activada |
+| 2026-04-11 | 57 leads movidos a campaña Salas 1 via `POST /leads/move` ✅ |
 | 2026-04-11 | **57 leads de Salas 1 subidos a Instantly** via script `upload_salas1.mjs` ✅ |
 | 2026-04-11 | Proyecto copiado a `Desktop/Dev/Artiverse-control` |
 | 2026-04-11 | **Bug "333 mails" corregido** — filtrar [AI SDR] + eliminar distribución NO_LIST |

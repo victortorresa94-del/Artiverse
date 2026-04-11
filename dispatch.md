@@ -69,7 +69,7 @@ npx next dev -p 3002
 |---------|-------|--------|
 | Teatros - Artiverse | ~159 | Activa, 75 enviados, 18.7% open |
 | Calentamiento - Dance from Spain | ~50 | Activa, 6 enviados |
-| Salas 1 | 57 ✅ | Pendiente activar |
+| Salas 1 | 57 ✅ | **ACTIVA** — 3 pasos, 2 variantes, desde artiversemail.es |
 | Teatro Danza 2 | 96 | Pendiente activar |
 | Socios ARTE 1 | ~80 | Pausada |
 
@@ -88,12 +88,9 @@ npx next dev -p 3002
 
 ### 🔴 URGENTE
 
-**1. Activar campaña Salas 1 en Instantly**
-- Los 57 leads ya están subidos al lead list `d66e3e25-6aeb-45aa-9538-7d982a9037ce`
-- Falta: revisar/crear la secuencia de emails para Salas Conciertos en Instantly
-- El email que tenemos en el mock para Salas (en `data/mock.ts`) es genérico — hay que mejorarlo
-- Ver los emails de Teatros como referencia (están en `data/mock.ts` campo `steps`)
-- Activar desde la UI de Instantly cuando esté lista
+**1. ✅ Campaña Salas 1 — HECHA Y ACTIVA**
+- 57 leads subidos, secuencia 3 pasos con 2 variantes, enviando desde victor@artiversemail.es
+- Activada vía API el 2026-04-11
 
 **2. Deploy a Vercel**
 - El `vercel.json` existe en el proyecto
@@ -115,11 +112,14 @@ npx next dev -p 3002
 - Misma secuencia que Teatros pero con variaciones — revisar si están listas
 - Activar desde Instantly cuando corresponda
 
-**5. Mejorar secuencia emails Salas**
-- El email de Salas Conciertos en mock.ts es genérico
-- Necesita adaptarse al segmento: promotores, salas de conciertos, agencias de espectáculos
-- Referencia: ver la secuencia de Teatros en `data/mock.ts` (campo `steps` en campaign 'teatros')
-- Tono: directo, humano, sin hype. CTA: registro gratuito en artiverse.es
+**5. ✅ Secuencia emails Salas — HECHA** (aplicada en la campaña activa)
+
+**6. Script universal de campañas**
+- `scripts/create_campaign.mjs` creado — toma CSV + nombre + segmento + email de envío → crea campaña completa y la activa
+- Uso: `node scripts/create_campaign.mjs --csv "ruta.csv" --name "Festivales 1" --segment "Festivales" --email "victor@artiversemail.es"`
+- Segmentos con copy propio: Salas Conciertos, Teatros, Festivales, Distribuidoras, General
+- `--dry-run` para previsualizar sin llamar a la API
+- `--no-activate` para crear sin activar
 
 ### 🟢 CUANDO HAYA TIEMPO
 
