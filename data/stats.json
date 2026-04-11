@@ -16,5 +16,14 @@
     "replyRate": 0,
     "campaignName": "Calentamiento - Dance from Spain",
     "updatedAt": "2026-04-09T00:00:00.000Z"
+  },
+  "Salas Conciertos 1": {
+    "sent": 0,
+    "opened": 0,
+    "replied": 0,
+    "openRate": 0,
+    "replyRate": 0,
+    "campaignName": "Salas Conciertos 1",
+    "updatedAt": "2026-04-11T00:00:00.000Z"
   }
 }

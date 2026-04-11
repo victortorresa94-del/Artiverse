@@ -167,11 +167,11 @@ export const campaigns: Campaign[] = [
   },
   {
     id: 'salas',
-    name: 'Salas 1',
+    name: 'Salas Conciertos 1',
     segment: 'Salas Conciertos',
     sendingEmail: 'victor@artiversemail.es',
-    status: 'pending',
-    totalContacts: 57,
+    status: 'active',
+    totalContacts: 374,
     emailsSent: 0,
     openRate: 0,
     replyRate: 0,
@@ -179,18 +179,40 @@ export const campaigns: Campaign[] = [
     steps: [
       {
         step: 1, delayDays: 0,
-        subject: 'El arte merece una forma más accesible de ser contratado',
+        subject: '¿Cuántos dossieres de artistas revisáis al mes en {{companyName}}?',
         body: `Hola {{firstName}},
 
-Supongo que lleváis años enviando dossieres por mail y whatsapp, buscándoos la vida con vuestros medios y lo típico de conseguir contratos por contactos.
+Los programadores de salas reciben decenas de propuestas de artistas cada semana. La mayoría no encajan: formato equivocado, rider inasumible, o simplemente no es el estilo de la sala.
 
-Pero el arte merece una forma más accesible de ser contratado.
+Artiverse es la plataforma donde vosotros buscáis en vez de recibir. Un catálogo de compañías y artistas verificados, filtrable por género, formato, aforo mínimo y disponibilidad.
 
-Hemos creado Artiverse, la primera app que conecta a todo el mundo artístico a nivel profesional.
+Ya están dentro MPC Management, Meteórica, Darlalata, Calaverita Records y más de 130 organizaciones del sector.
 
-Crear el perfil de {{companyName}} es gratuito y lleva cinco minutos.
+El registro para salas es gratuito: artiverse.es`,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+      {
+        step: 2, delayDays: 4,
+        subject: '',
+        body: `Hola {{firstName}},
 
-¡Nos vemos dentro! → artiverse.es`,
+Te escribía la semana pasada sobre Artiverse. ¿Tuviste un momento de echarle un vistazo?
+
+Si os interesa tener acceso al catálogo para la próxima temporada de {{companyName}}, en artiverse.es el registro es gratuito y en cinco minutos estáis dentro.
+
+Víctor`,
+        sent: 0, openRate: 0, replyRate: 0,
+      },
+      {
+        step: 3, delayDays: 8,
+        subject: '',
+        body: `Hola {{firstName}},
+
+Último mensaje, lo prometo.
+
+Artiverse ya tiene más de 130 organizaciones del sector escénico español. Si en algún momento buscáis artistas para {{companyName}} o queréis estar en el radar de las compañías que programan en vuestra zona, en artiverse.es.
+
+Víctor`,
         sent: 0, openRate: 0, replyRate: 0,
       },
     ],
@@ -324,6 +346,23 @@ export const leads: Lead[] = [
   { id: '18', company: 'Last Tour International', contact: 'Yahvé García', email: 'yahve@lasttour.net', phone: '978 012 345', instagram: '@lasttourinternational', city: 'Madrid', segment: 'Dance from Spain', channel: 'email', stage: 'email2_enviado', emailStatus: 'opened', lastContact: '2026-04-05', nextAction: 'Follow-up email', notes: 'Abrió Step 1 dos veces.', inPlatform: false, priority: 'alta', campaignId: 'dance-from-spain' },
   { id: '19', company: 'Aquintada Auga', contact: 'Andrea Buergo', email: 'andrea.buergo@aquintadaauga.com', phone: '989 123 456', instagram: '', city: 'Vigo', segment: 'Dance from Spain', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '', inPlatform: false, priority: 'baja', campaignId: 'dance-from-spain' },
   { id: '20', company: 'Intercruises', contact: 'Rosa López', email: 'r.lopez@intercruises.com', phone: '990 234 567', instagram: '@intercruises_official', city: 'Barcelona', segment: 'Dance from Spain', channel: 'telefono', stage: 'contactado_telefono', emailStatus: 'opened', lastContact: '2026-04-09', nextAction: 'Enviar propuesta formal', notes: 'Llamada de 12 min. Quieren una demo.', inPlatform: false, priority: 'alta', campaignId: 'dance-from-spain' },
+
+  // ── Salas Conciertos 1 — leads reales (374 en campaña activa) ──────────────
+  { id: 'sc-01', company: 'Sala Apolo', contact: '', email: 'info@sala-apolo.com', phone: '934-414001', instagram: '@salaapolo', city: 'Barcelona', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: 'Sala icónica BCN. 2905 cap. También La [2] Apolo (800). TOP prioridad.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-02', company: 'Razzmatazz', contact: '', email: 'info@salarazzmatazz.com', phone: '933-208200', instagram: '@salarazzmatazz', city: 'Barcelona', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: 'Cinco salas. 2130 cap principal. Referencia nacional.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-03', company: 'Sala La Riviera', contact: '', email: 'info@larivieramadrid.com', phone: '', instagram: '@larivieramadrid', city: 'Madrid', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '1800 cap. Una de las salas de referencia en Madrid.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-04', company: 'Santana 27 / Fever', contact: '', email: 'info@santana27.com', phone: '', instagram: '@santana27bilbao', city: 'Bilbao', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '1500 cap. Principal sala de conciertos Bilbao.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-05', company: 'WiZink Center', contact: '', email: 'info@wizinkcenter.es', phone: '', instagram: '@wizinkcenter', city: 'Madrid', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '17.000 cap. Macrorecinto. Programación masiva.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-06', company: 'Zentral', contact: '', email: 'info@zentral.es', phone: '', instagram: '@zentral_pamplona', city: 'Pamplona', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '1100 cap. Principal sala Navarra.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-07', company: 'Teatro Nuevo Apolo', contact: '', email: 'programacion@somproduce.com', phone: '', instagram: '', city: 'Madrid', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '1150 cap. Programacion@somproduce. Teatro-conciertos Madrid.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-08', company: 'Sala Bikini', contact: '', email: 'info@bikini.es', phone: '', instagram: '@salabikini', city: 'Barcelona', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: 'Barcelona. Programación pop-rock-jazz consolidada.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-09', company: 'Luz de Gas', contact: 'Fernando Vila Navarro', email: 'comunicacio@luzdegas.com', phone: '932-097711', instagram: '@luzdegas', city: 'Barcelona', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '900 cap. Clásico BCN, contacto directo Fernando Vila.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-10', company: 'Jimmy Jazz Gasteiz', contact: '', email: 'hola@jimmyjazz.com', phone: '', instagram: '@jimmyjazzgasteiz', city: 'Vitoria', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '800 cap. Referencia Euskadi. Jazz + indie.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-11', company: 'Capitol Santiago', contact: '', email: 'info@capitolsantiago.com', phone: '', instagram: '@capitolsantiago', city: 'Santiago de Compostela', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '800 cap. Principal sala Galicia.', inPlatform: false, priority: 'alta', campaignId: 'salas' },
+  { id: 'sc-12', company: 'Garaje Beat Club', contact: '', email: 'info@garaje.es', phone: '', instagram: '@garaje_beat', city: 'Murcia', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '600 cap. Principal sala Murcia.', inPlatform: false, priority: 'media', campaignId: 'salas' },
+  { id: 'sc-13', company: 'Playa Club', contact: 'Carlos Landeira', email: 'programacion@playaclub.club', phone: '981-250063', instagram: '', city: 'A Coruña', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '650 cap. Contacto directo programación.', inPlatform: false, priority: 'media', campaignId: 'salas' },
+  { id: 'sc-14', company: 'La Sala Live!', contact: '', email: 'info@lasalalive.es', phone: '', instagram: '@lasalalive', city: 'Madrid', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '500 cap. Madrid. Pop-rock-indie.', inPlatform: false, priority: 'media', campaignId: 'salas' },
+  { id: 'sc-15', company: 'Galileo Galilei', contact: '', email: 'info@salagalileoalilei.com', phone: '', instagram: '@salagalileoalilei', city: 'Madrid', segment: 'Salas Conciertos', channel: 'email', stage: 'sin_contactar', emailStatus: 'not_sent', lastContact: '-', nextAction: 'Enviar email 1', notes: '500 cap. Madrid. Folk, indie, cantautor.', inPlatform: false, priority: 'media', campaignId: 'salas' },
 ];
 
 // ─── WARMUP ───────────────────────────────────────────────────────────────────
