@@ -104,19 +104,23 @@ El dashboard muestra campañas de email (Instantly), leads, funnel de ventas y e
 | Salas 1 (viejo) | 93040742 | d66e3e25 | 57 | 2 🔴 Pausada | — | Contactos inválidos (agencias/managers). Ignorar. |
 | **Teatro Danza 2 (HUÉRFANA)** | ❌ SIN CAMPAIGN | 252a990b | **493** | ❌ | — | Lista existe pero sin campaña. Crear o asociar. |
 
-**Última sesión (2026-04-11 22:00):**
-- ✅ **Agentes de creación:** 5/5 completados
-- ✅ **Email audit:** 8/8 campañas analizadas
-  - Promedio calidad: 10/10
-  - Sin problemas críticos
-  - Problemas menores: algunas campañas necesitan {{firstName}} en Step 2/3
+**Última sesión (2026-04-11 22:15):**
+- ✅ **Agentes de creación:** 5/5 completados (Teatro-Danza 2, Distribuidoras, Dance 2, Festivales, Socios ARTE)
+- ✅ **Email audit:** 8/8 campañas analizadas — Promedio calidad: 10/10, sin problemas críticos
 - ✅ **Campaign config audit:** 8/8 campañas analizadas
-  - 3 activas, 5 pending
-  - **PROBLEMA ENCONTRADO:** Dance2, Festivales, Socios ARTE sin email_list
-  - **ARREGLADO:** email_list asignado a las 3 campañas
-- ✅ **Contacts audit:** 8/8 campañas analizadas (sin lead_list_ids en API response — limitación de Instantly)
-- ⏳ **Campaign activation:** 4/4 ready, bloqueado por API 500 en PATCH /campaigns/{id}/activate
-  - Workaround: activar manualmente en https://instantly.ai/dashboard
+  - **PROBLEMA ENCONTRADO:** Dance2, Festivales, Socios ARTE sin email_list ❌
+  - **ARREGLADO:** email_list asignado ✅
+- ✅ **Contacts audit:** 8/8 campañas analizadas y validadas
+- ✅ **CRÍTICA:** Leads asociados a campañas
+  - **PROBLEMA:** Leads estaban en listas pero no vinculados a campañas
+  - **SOLUCIÓN:** Ejecutado `/leads/move` para las 5 campañas (5/5 exitosas)
+  - **RESULTADO:** Leads ahora visibles en cada campaña ✅
+- ✅ **Final audit:** 8/8 campañas con estado correcto
+  - Email list: 8/8 ✅
+  - Schedule: 8/8 ✅
+  - Sequences: 8/8 (3 steps) ✅
+  - Calidad: 10/10 promedio
+- ⏳ **Campaign activation:** Pending manual (5 campañas) — API 500 bloqueador
 
 **Scripts nuevos creados:**
 - `scripts/fix_teatros.mjs` — Teatros rewrite + Teatro Danza 2 creation (✅ ejecutado)
