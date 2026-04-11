@@ -1,6 +1,8 @@
 # DISPATCH BRIEF — Artiverse Control
-> Para Claude Dispatch (móvil). Lee esto PRIMERO antes de hacer nada.
-> Fecha: 2026-04-11
+> Para Claude cualquier dispositivo. ACTUALIZADO: 2026-04-11 22:45 UTC.
+> Proyecto: Next.js CRM/outreach dashboard. Instantly.ai API v2, HubSpot CRM.
+> Repo: `https://github.com/victortorresa94-del/Artiverse.git`
+> Path local: `C:/Users/Usuario/Desktop/Dev/Artiverse-control`
 
 ---
 
@@ -84,64 +86,47 @@ npx next dev -p 3002
 
 ---
 
-## 🔄 LO QUE FALTA HACER (por orden de prioridad)
+## 🔄 PRÓXIMOS PASOS (por orden)
 
-### 🔴 URGENTE
+### 🔴 HOY / MAÑANA
 
-**1. ✅ Campaña Salas 1 — HECHA Y ACTIVA**
-- 57 leads subidos, secuencia 3 pasos con 2 variantes, enviando desde victor@artiversemail.es
-- Activada vía API el 2026-04-11
+**1. ✅ Salas Conciertos 1 — LISTA (2026-04-11)**
+   - 374 leads activa, copy para programadores (COMPRADORES), 3+2+2 variantes
+   - Vieja "Salas 1" (57 leads con agencias) → pausada
+   - `scripts/salas_conciertos_full.mjs` — reproducible para futuras campañas
 
-**2. Deploy a Vercel**
-- El `vercel.json` existe en el proyecto
-- Solo falta ejecutar `npx vercel --prod` desde `Desktop/Dev/Artiverse-control`
-- Variable de entorno: `INSTANTLY_API_KEY=NzYzNzhlMDQtYjU3My00ZGUwLTk3ZTItZDI4M2E3MTI5NDQ0Om9tWnlSYWVmclpHTQ==`
-- Una vez deployado, el dashboard será accesible desde cualquier sitio
+**2. Deploy a Vercel** (5 min)
+   ```bash
+   cd "C:/Users/Usuario/Desktop/Dev/Artiverse-control"
+   npx vercel --prod
+   # ENV: INSTANTLY_API_KEY=NzYzNzhlMDQtYjU3My00ZGUwLTk3ZTItZDI4M2E3MTI5NDQ0Om9tWnlSYWVmclpHTQ==
+   ```
 
-### 🟡 IMPORTANTE
+**3. HubSpot sync** (2-3 horas)
+   - 374 leads Salas Conciertos 1 + históricos (Teatros, Dance) → HubSpot 148220932
+   - Endpoint: `POST /crm/v3/objects/contacts/batch/upsert`
+   - Properties custom: `artiverse_segment`, `instantly_status`, `instantly_campaign`
 
-**3. HubSpot — Subir contactos de Salas**
-- Los 57 leads de Salas están en Instantly pero NO en HubSpot
-- Portal HubSpot: **148220932** (Aether Labs)
-- Usar batch upsert: `POST https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert`
-- idProperty: `email`, batch size: 100, delay 0.5s entre batches
-- Propiedades custom a crear si no existen: `artiverse_segment`, `instantly_status`, `instantly_campaign`
+### 🟡 ESTA SEMANA
 
-**4. Campaña Teatros 2 y Teatro Danza 2**
-- Tienen 96 y 160 leads respectivamente (lead lists ya creadas)
-- Misma secuencia que Teatros pero con variaciones — revisar si están listas
-- Activar desde Instantly cuando corresponda
+**4. Nuevas campañas** (USA `scripts/create_campaign.mjs`)
+   ```bash
+   # Festivales
+   node scripts/create_campaign.mjs --csv "CSV_festivales" --name "Festivales 1" --segment "Festivales"
+   
+   # Distribuidoras (524 leads en Google Drive)
+   node scripts/create_campaign.mjs --csv "CSV_distribuidoras" --name "Distribuidoras 1" --segment "Distribuidoras"
+   ```
 
-**5. ✅ Secuencia emails Salas — HECHA** (aplicada en la campaña activa)
-
-**6. Script universal de campañas**
-- `scripts/create_campaign.mjs` creado — toma CSV + nombre + segmento + email de envío → crea campaña completa y la activa
-- Uso: `node scripts/create_campaign.mjs --csv "ruta.csv" --name "Festivales 1" --segment "Festivales" --email "victor@artiversemail.es"`
-- Segmentos con copy propio: Salas Conciertos, Teatros, Festivales, Distribuidoras, General
-- `--dry-run` para previsualizar sin llamar a la API
-- `--no-activate` para crear sin activar
+**5. Teatro Danza 2** — 96 leads ya en Instantly, lead list creada. Solo falta:
+   - Revisar/crear secuencias
+   - Activar campaña
 
 ### 🟢 CUANDO HAYA TIEMPO
 
-**6. Campañas pendientes de crear**
-- Distribuidoras: ~524 leads ya scrapeados de redescena.net (CSV en Google Drive carpeta Artiverse)
-- Festivales: base de datos pendiente de completar
-- Socios ARTE: reactivar la campaña pausada
-
-**7. teatro.es/guiarte scraping pendiente**
-- 10 especialidades: Animaciones, Circo, Narración oral, Performance/Multimedia, Teatro de objetos, Teatro gestual, Teatro musical, Teatro textual, Teatro-circo, Variedades
-- Requiere **Claude for Chrome** — la web usa AJAX POST, los scrapers normales no funcionan
-- Hacerlo desde desktop cuando Víctor esté en el ordenador
-
-**8. Landing Artiverse → Vercel**
-- Actualmente en Framer (15€/mes)
-- Migrar a Vercel (gratis)
-- No hay urgencia pero ahorra dinero mensual
-
-**9. Web Bonito Sound**
-- Rediseño completo + migración de WordPress
-- Incluida en el contrato de €1.550 con Dani
-- Arrancar cuando se haya estabilizado el outreach de Artiverse
+- **Scraping teatro.es/guiarte** (10 especialidades, requiere Claude for Chrome)
+- **Landing Artiverse** (Framer → Vercel, ahorra 15€/mes)
+- **Web Bonito Sound** (rediseño + WordPress migration, €1.550 con Dani)
 
 ---
 

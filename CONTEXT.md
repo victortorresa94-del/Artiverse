@@ -18,6 +18,15 @@ El dashboard muestra campañas de email (Instantly), leads, funnel de ventas y e
 
 ---
 
+## 🚀 Status actual (2026-04-11 EOD)
+
+- ✅ **Salas Conciertos 1**: 374 venues activa, copy adaptado, leads enriquecidos
+- ✅ **Scripts universales**: `create_campaign.mjs` lista para nuevas campañas (CSV → completo)
+- ✅ **CRM**: 20 salas top con research verificado (capacidades, géneros, contactos)
+- ✅ **Campañas**: Teatros + Dance (activas), Salas Conciertos 1 (nueva), Teatro Danza 2 (pendiente)
+- ⏳ **Vercel deploy**: Listo, solo necesita `vercel --prod`
+- ⏳ **HubSpot**: 374 + históricos pendientes de sync
+
 ## Stack técnico
 
 | Capa | Tech |
@@ -26,7 +35,7 @@ El dashboard muestra campañas de email (Instantly), leads, funnel de ventas y e
 | Datos en vivo | Instantly.ai API v2 (Bearer token) |
 | Fallback / stats | `data/mock.ts` + `data/stats.json` |
 | CRM externo | HubSpot (portal 148220932 — Aether Labs) |
-| Deploy | Vercel (pendiente — ver sección deploy) |
+| Deploy | Vercel (listo, pendiente `vercel --prod`) |
 
 ---
 
@@ -53,15 +62,16 @@ El dashboard muestra campañas de email (Instantly), leads, funnel de ventas y e
 
 ## Campañas en Instantly (estado 2026-04-11)
 
-| Nombre | ID Instantly | Lead List ID | Leads | Enviados | Open % | Reply % | Estado |
+| Nombre | Campaign ID | Lead List ID | Leads | Enviados | Open % | Reply % | Estado |
 |--------|-------------|--------------|-------|----------|--------|---------|--------|
 | Teatros - Artiverse | *(NO_LIST)* | — | ~159 | 75 | 18.7% | 2.7% | Activa |
 | Calentamiento - Dance from Spain | *(NO_LIST)* | — | ~50 | 6 | 0% | 0% | Activa |
-| Salas 1 | `93040742-10ba-4e56-849a-df1832e95a4e` | `d66e3e25-6aeb-45aa-9538-7d982a9037ce` | **57** ✅ | 0 | — | — | Pendiente |
+| **Salas Conciertos 1** | `b12e4d84-12b6-4c1f-8d9e-5ed41e6ca2b8` | `bdb76496-621d-4655-b78b-b734578fb4ed` | **374** ✅ | 0 | — | — | **ACTIVA** |
+| Salas 1 (viejo) | `93040742-10ba-4e56-849a-df1832e95a4e` | `d66e3e25-6aeb-45aa-9538-7d982a9037ce` | 57 | 0 | — | — | **PAUSADA** |
 | Teatro Danza 2 | `3c2152d7-687d-439d-9221-2f6b3644355c` | `252a990b-2802-47f5-bc55-61b15fd897c4` | 96 | 0 | — | — | Pendiente |
 | Socios ARTE 1 | *(no fijado)* | — | ~80 | 0 | — | — | Pausada |
 
-**Nota NO_LIST:** Los leads de Teatros y Dance fueron creados antes de entender el modelo v2. Stats reales en `data/stats.json` vía CSV import.
+**Salas Conciertos 1 (NUEVA):** Campaña limpia con 374 salas reales del CSV. Vieja "Salas 1" (57 leads con contactos incorrectos: agencias/managers) pausada. Copy completamente reescrito para programadores de salas (COMPRADORES de artistas). 3 variantes step 1, 2 variantes step 2, 2 variantes step 3.
 
 ---
 
@@ -164,22 +174,20 @@ Frontend (polling 5min + botón refresh)
 
 ### 🔄 Pendiente
 
-1. **Deploy a Vercel** — El `vercel.json` existe pero no se ha ejecutado `vercel --prod`. Variable de entorno: `INSTANTLY_API_KEY=NzYzNzhlMDQtYjU3My00ZGUwLTk3ZTItZDI4M2E3MTI5NDQ0Om9tWnlSYWVmclpHTQ==`
+1. **Deploy a Vercel** — `vercel --prod` desde `Desktop/Dev/Artiverse-control`. Var env: `INSTANTLY_API_KEY=NzYzNzhlMDQtYjU3My00ZGUwLTk3ZTItZDI4M2E3MTI5NDQ0Om9tWnlSYWVmclpHTQ==`
 
-2. ~~**Activar campaña Salas 1**~~ ✅ HECHO (2026-04-11) — Secuencias creadas, leads movidos, campaña ACTIVA.
+2. ~~**Salas 1**~~ ✅ → **Salas Conciertos 1 ACTIVA** (374 leads, vieja pausada)
 
-3. **HubSpot sync** — Subir los ~57 contactos de Salas al portal HubSpot 148220932. Script Python en CONTEXTO.md o usar el endpoint `/api/sync-to-hubspot` del dashboard.
+3. **Campañas faltantes** — usar `scripts/create_campaign.mjs`:
+   - Festivales (~XXX leads, copy predefinido)
+   - Distribuidoras (~524 leads, CSV en Google Drive)
+   - Managers/Agencias (si hay)
 
-4. **Campañas pendientes** — Faltan crear en Instantly:
-   - Festivales (~XXX leads)
-   - Distribuidoras (~524 leads, ya scrapeados de redescena.net)
-   - Socios ARTE 1 (~80 leads, reactivar)
+4. **HubSpot sync** — Subir 374 leads de Salas Conciertos 1 + completar leads históricos. Endpoint `/api/sync-to-hubspot` o script Python batch upsert.
 
-5. **teatro.es/guiarte scraping** — 10 especialidades pendientes (Animaciones, Circo, etc.). Requiere Claude for Chrome por AJAX POST.
+5. **Teatro.es/Guiarte scraping** — 10 especialidades. Requiere Claude for Chrome (AJAX POST).
 
-6. **HubSpot custom properties** — `artiverse_segment`, `instantly_status`, `instantly_campaign` no aplicadas aún a los contactos.
-
-7. **Newsletter interna** — Los 130 usuarios de la plataforma deben recibir email semanal con resumen de actividad desde HubSpot.
+6. **Deploy + monitoreo** — Una vez en Vercel, configurar analytics y seguimiento de métricas.
 
 ---
 
@@ -212,31 +220,22 @@ npx vercel --prod
 
 ---
 
-## Historial completo de acciones
+## Historial (2026-04-11 sesión Salas Conciertos)
 
 | Fecha | Acción |
 |-------|--------|
-| 2026-04-11 | **Campaña Salas 1 ACTIVA** — secuencias 3 pasos (2 variantes step 1), email victor@artiversemail.es ✅ |
-| 2026-04-11 | **`scripts/create_campaign.mjs`** creado — herramienta universal CSV→campaña completa+activada |
-| 2026-04-11 | 57 leads movidos a campaña Salas 1 via `POST /leads/move` ✅ |
-| 2026-04-11 | **57 leads de Salas 1 subidos a Instantly** via script `upload_salas1.mjs` ✅ |
-| 2026-04-11 | Proyecto copiado a `Desktop/Dev/Artiverse-control` |
-| 2026-04-11 | **Bug "333 mails" corregido** — filtrar [AI SDR] + eliminar distribución NO_LIST |
-| 2026-04-11 | Rediseño completo: tema blanco, logo Artiverse, layout mobile responsive |
-| 2026-04-11 | CRM /leads: tabs de vista rápida + filtros email status + instagram/phone |
-| 2026-04-11 | `Lead` type actualizado: añadidos campos `instagram` y `emailStatus` |
-| 2026-04-11 | `MobileLayout.tsx` creado — hamburger menu mobile |
-| 2026-04-11 | Build ✅ y push a master (commit `cce2143`) |
-| 2026-04-10 | Sistema CSV import (`/api/stats`, modal en campañas) |
-| 2026-04-10 | `data/stats.json` pre-seeded con datos reales de CSV |
-| 2026-04-09 | Secuencia emails Dance from Spain (3 pasos) |
-| 2026-04-09 | Stats reales en mock: Teatros 75/18.7%, Dance 6/0% |
-| 2026-04-09 | Dashboard lanzado: 5 páginas, conexión live Instantly |
-| 2026-04-08 | Teatro Danza 2 con lead list (96 leads) ✅ |
-| 2026-04-08 | Salas 1 con lead list (57 leads) ✅ |
-| 2026-04-08 | Eliminadas 4 campañas duplicadas "Teatro Danza 2" |
-| 2026-04-07 | Descubierto bug: leads con `campaign_id` son huérfanos en v2 |
-| 2026-04-06 | Descubierto portal HubSpot incorrecto (148144911 vs 148220932) |
+| 2026-04-11 | **Salas Conciertos 1 — 374 leads ACTIVA** ✅ via `scripts/salas_conciertos_full.mjs` |
+| 2026-04-11 | CSV parse: 390 venues → 377 con email válido (13 sin email) |
+| 2026-04-11 | Vieja "Salas 1" (57 leads con managers/agencias) → **PAUSADA** |
+| 2026-04-11 | **Copy reescrito para programadores (COMPRADORES)** — 3+2+2 variantes, subjects adaptados |
+| 2026-04-11 | **Research agent** — investigó 25 salas top (Apolo, Razzmatazz, WiZink, etc.) |
+| 2026-04-11 | CRM enriquecido: 20 leads top con géneros, contactos, pitch personalizado |
+| 2026-04-11 | `scripts/create_campaign.mjs` universal — CSV→campaña completa para cualquier segmento |
+| 2026-04-11 | Build ✅, todos los commits pusheados a master |
+| 2026-04-11 (ant) | Salas 1 (vieja) activada: 57 leads, 3 pasos, PAUSADA hoy |
+| 2026-04-11 (ant) | script `create_campaign.mjs` + `salas_conciertos_full.mjs` creados |
+| 2026-04-11 (ant) | Bug "333 mails" corregido + rediseño UI (blanco + logo Artiverse) |
+| 2026-04-09 | Dashboard 5 páginas lanzado, conexión live Instantly |
 
 ---
 
