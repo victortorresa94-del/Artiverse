@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { campaigns as mockCampaigns, summary as mockSummary, leads, FUNNEL_STAGES } from '@/data/mock'
-import { Mail, TrendingUp, MessageSquare, Users, Zap, Clock, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { Mail, TrendingUp, MessageSquare, Users, Zap, Clock, RefreshCw, CheckCircle2, AlertCircle, MessageCircle, XCircle, PlayCircle, ChevronRight } from 'lucide-react'
+
+const TOTAL_CONTACTS = 2597 // Total real del Excel unificado (todas las hojas)
 
 function StatCard({ label, value, sub, accent, icon: Icon }: {
   label: string; value: string | number; sub?: string; accent?: string; icon: React.ElementType
@@ -33,6 +35,8 @@ export default function DashboardPage() {
   const [liveData, setLiveData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<string>('')
+  const [tasks, setTasks] = useState<any[]>([])
+  const [tasksLoading, setTasksLoading] = useState(true)
 
   const fetchData = async () => {
     setLoading(true)
@@ -47,9 +51,22 @@ export default function DashboardPage() {
     finally { setLoading(false) }
   }
 
+  const fetchTasks = async () => {
+    setTasksLoading(true)
+    try {
+      const res = await fetch('/api/tasks')
+      if (res.ok) {
+        const data = await res.json()
+        setTasks(data.tasks || [])
+      }
+    } catch { /* ignore */ }
+    finally { setTasksLoading(false) }
+  }
+
   useEffect(() => {
     fetchData()
-    const interval = setInterval(fetchData, 5 * 60 * 1000)
+    fetchTasks()
+    const interval = setInterval(() => { fetchData(); fetchTasks() }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -93,7 +110,7 @@ export default function DashboardPage() {
         <StatCard label="Emails enviados" value={(summary.totalEmailsSent || 0).toLocaleString()} sub="todas las campañas" icon={Mail} />
         <StatCard label="Open rate" value={`${summary.avgOpenRate || 0}%`} sub="promedio" accent="#D97706" icon={TrendingUp} />
         <StatCard label="Reply rate" value={`${summary.avgReplyRate || 0}%`} sub="promedio" accent="#059669" icon={MessageSquare} />
-        <StatCard label="Total contactos" value={(summary.totalContacts || 0).toLocaleString()} sub="en pipeline" icon={Users} />
+        <StatCard label="Total contactos" value={TOTAL_CONTACTS.toLocaleString()} sub="en base de datos" icon={Users} />
         <StatCard label="En Artiverse" value={130} sub="usuarios activos" accent="#2563EB" icon={Zap} />
         <StatCard label="Pendientes" value={(summary.emailsPending || 0).toLocaleString()} sub="por enviar" icon={Clock} />
       </div>
@@ -165,6 +182,83 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Tareas Pendientes */}
+      <div className="mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-900">Tareas pendientes</h2>
+              {tasks.length > 0 && (
+                <span className="text-xs font-bold text-white bg-red-500 rounded-full px-2 py-0.5">{tasks.length}</span>
+              )}
+            </div>
+            <button
+              onClick={fetchTasks}
+              disabled={tasksLoading}
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600"
+            >
+              <RefreshCw size={11} className={tasksLoading ? 'animate-spin' : ''} />
+              {tasksLoading ? 'Actualizando…' : 'Actualizar'}
+            </button>
+          </div>
+
+          {tasksLoading && tasks.length === 0 ? (
+            <div className="px-5 py-8 text-center text-sm text-gray-400 animate-pulse">Cargando tareas desde Instantly…</div>
+          ) : tasks.length === 0 ? (
+            <div className="px-5 py-8 text-center">
+              <CheckCircle2 size={24} className="mx-auto text-emerald-400 mb-2" />
+              <p className="text-sm text-gray-500 font-medium">Sin tareas pendientes</p>
+              <p className="text-xs text-gray-400 mt-0.5">Todo en orden</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {tasks.map(task => {
+                const icons: Record<string, any> = {
+                  reply: MessageCircle,
+                  bounce: XCircle,
+                  campaign: PlayCircle,
+                }
+                const colors: Record<string, string> = {
+                  reply: 'text-blue-600 bg-blue-50',
+                  bounce: 'text-red-500 bg-red-50',
+                  campaign: 'text-amber-600 bg-amber-50',
+                }
+                const priorities: Record<string, string> = {
+                  alta: 'text-red-500 bg-red-50 border-red-100',
+                  media: 'text-amber-600 bg-amber-50 border-amber-100',
+                  baja: 'text-gray-500 bg-gray-100 border-gray-200',
+                }
+                const Icon = icons[task.type] || AlertCircle
+                return (
+                  <div key={task.id} className="px-4 sm:px-5 py-3.5 flex items-start gap-3 hover:bg-gray-50/60 transition-colors">
+                    <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${colors[task.type] || 'text-gray-500 bg-gray-100'}`}>
+                      <Icon size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{task.title}</p>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium shrink-0 ${priorities[task.priority]}`}>
+                          {task.priority}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{task.description}</p>
+                      {task.email && (
+                        <p className="text-[10px] text-gray-400 font-mono mt-1">{task.email}</p>
+                      )}
+                    </div>
+                    <div className="shrink-0">
+                      <span className="text-xs text-blue-600 font-medium flex items-center gap-0.5 hover:text-blue-800 cursor-pointer">
+                        {task.action} <ChevronRight size={12} />
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 

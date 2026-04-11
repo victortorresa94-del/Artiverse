@@ -122,7 +122,7 @@ export default function CampaignsPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/instantly')
+      const res = await fetch('/api/instantly?lite=1')
       if (res.ok) {
         const data = await res.json()
         const merged = data.campaigns.map((live: any) => {
@@ -139,8 +139,9 @@ export default function CampaignsPage() {
         setCampaigns(merged)
         if (!selected && merged.length > 0) setSelected(merged[0].id)
       }
-    } catch {
-      const fallback = mockCampaigns.map(c => ({ ...c, status: c.status === 'active' ? 1 : 0 }))
+    } catch (err) {
+      console.warn('Instantly API error, using mock:', err)
+      const fallback = mockCampaigns.map(c => ({ ...c, status: c.status === 'active' ? 1 : c.status === 'paused' ? 2 : 0, total: c.totalContacts, sent: c.emailsSent }))
       setCampaigns(fallback)
       if (!selected && fallback.length > 0) setSelected(fallback[0].id)
     } finally { setLoading(false) }

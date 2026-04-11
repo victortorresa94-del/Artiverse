@@ -59,17 +59,58 @@ function computeStats(leads: any[]) {
   return { total, sent, opened, replied, bounced, openRate, replyRate }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const lite = searchParams.get('lite') === '1' // skip lead fetching for fast campaign-only view
+
   try {
     // 1. Get all campaigns — filter out AI SDR (Aether Labs) campaigns, this dashboard is Artiverse only
     const campData = await instantly('/api/v2/campaigns?limit=50')
-    const campaigns = (campData.items || []).filter((c: any) =>
+    const campaigns = (campData?.items || []).filter((c: any) =>
       !c.name.includes('[AI SDR]') && !c.name.toLowerCase().includes('ai sdr')
     )
 
     // 2. Get all lead lists
     const listData = await instantly('/api/v2/lead-lists?limit=50')
-    const lists: any[] = listData.items || []
+    const lists: any[] = listData?.items || []
+
+    if (lite) {
+      // Fast path: return campaigns with sequences only, stats from saved JSON
+      const savedStats = readSavedStats()
+      const result = campaigns.map((c: any) => {
+        const matchedList = lists.find((l: any) =>
+          l.name === c.name || l.name.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(l.name.toLowerCase())
+        )
+        const saved = savedStats[c.id] || savedStats[c.name] || {}
+        const steps = (c.sequences?.[0]?.steps || []).map((s: any, i: number) => ({
+          step: i + 1, delayDays: s.delay || 0,
+          subject: s.variants?.[0]?.subject || '', body: s.variants?.[0]?.body || '',
+        }))
+        return {
+          id: c.id, name: c.name, status: c.status,
+          emailList: c.email_list || [],
+          listId: matchedList?.id || null,
+          total: matchedList?.lead_count || saved.total || 0,
+          sent: saved.sent || 0, opened: saved.opened || 0, replied: saved.replied || 0,
+          openRate: saved.openRate || 0, replyRate: saved.replyRate || 0,
+          _statsSource: Object.keys(saved).length > 0 ? 'csv' : 'live',
+          steps,
+        }
+      })
+      const activeCamps = result.filter((c: any) => c.sent > 0)
+      return NextResponse.json({
+        campaigns: result,
+        summary: {
+          totalEmailsSent: result.reduce((s: number, c: any) => s + c.sent, 0),
+          totalContacts: result.reduce((s: number, c: any) => s + c.total, 0),
+          avgOpenRate: activeCamps.length > 0 ? +(activeCamps.reduce((s: number, c: any) => s + c.openRate, 0) / activeCamps.length).toFixed(1) : 0,
+          avgReplyRate: activeCamps.length > 0 ? +(activeCamps.reduce((s: number, c: any) => s + c.replyRate, 0) / activeCamps.length).toFixed(1) : 0,
+          emailsPending: 0,
+        },
+        updatedAt: new Date().toISOString(),
+        _lite: true,
+      })
+    }
 
     // 3. Get ALL leads (for NO_LIST ones = Teatros + Calentamiento)
     const allLeads = await getAllLeads()
