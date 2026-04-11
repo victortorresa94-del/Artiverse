@@ -29,8 +29,11 @@ function sleep(ms) {
 
 function getFirstEmail(emailField) {
   if (!emailField) return null;
-  const parts = emailField.split(/[\n;]+/).map(e => e.trim()).filter(Boolean);
-  return parts[0] || null;
+  // Split by newline, semicolon, slash, or whitespace sequences (multiple emails in one field)
+  const parts = emailField.split(/[\n;/\s]+/).map(e => e.trim()).filter(Boolean);
+  // Find first valid-looking email (contains @ and .)
+  const valid = parts.find(p => p.includes('@') && p.includes('.') && !p.includes('@.') && p.length > 5);
+  return valid || null;
 }
 
 async function uploadLead(contact) {

@@ -18,14 +18,44 @@ El dashboard muestra campañas de email (Instantly), leads, funnel de ventas y e
 
 ---
 
-## 🚀 Status actual (2026-04-11 EOD)
+## 🚀 Status actual (2026-04-11 ~ 18:45)
 
-- ✅ **Salas Conciertos 1**: 374 venues activa, copy adaptado, leads enriquecidos
-- ✅ **Scripts universales**: `create_campaign.mjs` lista para nuevas campañas (CSV → completo)
-- ✅ **CRM**: 20 salas top con research verificado (capacidades, géneros, contactos)
-- ✅ **Campañas**: Teatros + Dance (activas), Salas Conciertos 1 (nueva), Teatro Danza 2 (pendiente)
+### ✅ CREADAS — 5 Campañas nuevas (Agentes de creación completados)
+- **Teatro-Danza 2**: Campaign `e6e60e78` ✅, List `252a990b`, **493/493 leads** ✅
+- **Distribuidoras - Artiverse**: Campaign `fd6e7810`, List `8b43760b`, **520/520 leads** ✅
+- **Dance from Spain 2 - Artiverse**: Campaign `ab991775`, List `b487fd4c`, **242/242 leads** ✅
+- **Festivales - Artiverse**: Campaign `6e151dbe`, List `18c9a4aa`, **638/646 leads** ✅ (8 irrecuperables)
+- **Socios ARTE - Artiverse**: Campaign `3a31a680`, List `2a24e922`, **280/280 leads** ✅
+
+### ✅ CRÍTICA FIXES APLICADOS (scripts/fix_teatros.mjs + scripts/fix_systematic_emails.mjs)
+1. **Teatros campaign rewritten** — Copy corregido, ahora dirige a programadores/decisores en teatros (no a compañías)
+   - 3 variantes Step 1, subjects optimizados, threading correcto
+2. **Teatro Danza 2 campaign created** — 493 leads, mismo copy que Teatros mejorado
+3. **Systematic email fixes across all 8 campaigns**:
+   - ✅ Agregar {{firstName}} a Step 2/3 (estaban sin nombre)
+   - ✅ Eliminar subjects de Step 2/3 (para threading)
+   - ✅ Reemplazar "Aether Labs" → "Artiverse" en todos
+   - ✅ Mejorar CTAs (menos "si en algún momento")
+
+### ⏳ EN PROGRESO — Campaign Activation (bloqueado por API 500)
+- Intentando activar 4 campañas (Distribuidoras, Dance 2, Festivales, Socios ARTE)
+- API retorna 500 errors (puede ser temporal)
+- **Workaround:** Activar manualmente en UI de Instantly si persiste
+
+### 📊 Campañas en Instantly (ahora 7 total)
+| Nombre | Campaign ID | List ID | Leads | Status | Prioridad |
+|--------|------------|---------|-------|--------|-----------|
+| Teatros | (NO_LIST) | — | ~159 | 1 (ACTIVA) | 🔴 REESCRIBIR |
+| Calentamiento - Dance | (NO_LIST) | — | ~50 | 1 (ACTIVA) | 🟡 Mejorar |
+| Salas Conciertos 1 | b12e4d84 | bdb76496 | 374 | 1 (ACTIVA) | 🟢 OK (fix Aether Labs) |
+| **Distribuidoras** | fd6e7810 | 8b43760b | 520 | 0 (PENDING) | Activar |
+| **Dance from Spain 2** | ab991775 | b487fd4c | 242 | 0 (PENDING) | Activar |
+| **Festivales** | 6e151dbe | 18c9a4aa | 638 | 0 (PENDING) | Activar |
+| **Socios ARTE** | 3a31a680 | 2a24e922 | 280 | 0 (PENDING) | Activar |
+
+- ⚠️ **Teatro Danza 2 (lista 252a990b):** 493 leads pero **SIN CAMPAÑA ASOCIADA** — crear campaign o linkar a Teatros
 - ⏳ **Vercel deploy**: Listo, solo necesita `vercel --prod`
-- ⏳ **HubSpot**: 374 + históricos pendientes de sync
+- ⏳ **HubSpot**: 2,597 contactos pendientes de sync
 
 ## Stack técnico
 
@@ -60,18 +90,32 @@ El dashboard muestra campañas de email (Instantly), leads, funnel de ventas y e
 
 ---
 
-## Campañas en Instantly (estado 2026-04-11)
+## Campañas en Instantly (estado 2026-04-11 ~ 17:00)
 
-| Nombre | Campaign ID | Lead List ID | Leads | Enviados | Open % | Reply % | Estado |
-|--------|-------------|--------------|-------|----------|--------|---------|--------|
-| Teatros - Artiverse | *(NO_LIST)* | — | ~159 | 75 | 18.7% | 2.7% | Activa |
-| Calentamiento - Dance from Spain | *(NO_LIST)* | — | ~50 | 6 | 0% | 0% | Activa |
-| **Salas Conciertos 1** | `b12e4d84-12b6-4c1f-8d9e-5ed41e6ca2b8` | `bdb76496-621d-4655-b78b-b734578fb4ed` | **374** ✅ | 0 | — | — | **ACTIVA** |
-| Salas 1 (viejo) | `93040742-10ba-4e56-849a-df1832e95a4e` | `d66e3e25-6aeb-45aa-9538-7d982a9037ce` | 57 | 0 | — | — | **PAUSADA** |
-| Teatro Danza 2 | `3c2152d7-687d-439d-9221-2f6b3644355c` | `252a990b-2802-47f5-bc55-61b15fd897c4` | 96 | 0 | — | — | Pendiente |
-| Socios ARTE 1 | *(no fijado)* | — | ~80 | 0 | — | — | Pausada |
+| Nombre | Campaign ID | Lead List ID | Leads | Status | Copy Score | Notas |
+|--------|-------------|--------------|-------|--------|------------|-------|
+| Teatros | *(NO_LIST)* | — | ~159 | 1 🟢 Activa | 2/10 ❌ | **CRÍTICO:** Email habla a compañías, no a teatros. Reescribir todo. |
+| Calentamiento - Dance | *(NO_LIST)* | — | ~50 | 1 🟢 Activa | 4/10 ⚠️ | Demasiado HTML para warmup. Simplificar. |
+| **Salas Conciertos 1** | b12e4d84 | bdb76496 | **374** ✅ | 1 🟢 Activa | 7/10 ✅ | Mejor campaña. Fix: "Aether Labs"→"Artiverse" en var C Step 1. |
+| **Distribuidoras** | fd6e7810 | 8b43760b | **520** ✅ | 0 🟡 Pending | 5/10 ⚠️ | Agregar {{firstName}} Step 2, eliminar subjects en follow-ups. |
+| **Dance from Spain 2** | ab991775 | b487fd4c | **242** ✅ | 0 🟡 Pending | 6/10 ✅- | Buena estructura. Agregar {{firstName}} Step 2, eliminar subjects. |
+| **Festivales** | 6e151dbe | 18c9a4aa | **638** ✅ | 0 🟡 Pending | 5/10 ⚠️ | Subject genérico, CTAs pasivos. Agregar {{companyName}}. |
+| **Socios ARTE** | 3a31a680 | 2a24e922 | **280** ✅ | 0 🟡 Pending | 6/10 ✅- | Subject genérico. Mejorar social proof con contexto. |
+| Salas 1 (viejo) | 93040742 | d66e3e25 | 57 | 2 🔴 Pausada | — | Contactos inválidos (agencias/managers). Ignorar. |
+| **Teatro Danza 2 (HUÉRFANA)** | ❌ SIN CAMPAIGN | 252a990b | **493** | ❌ | — | Lista existe pero sin campaña. Crear o asociar. |
 
-**Salas Conciertos 1 (NUEVA):** Campaña limpia con 374 salas reales del CSV. Vieja "Salas 1" (57 leads con contactos incorrectos: agencias/managers) pausada. Copy completamente reescrito para programadores de salas (COMPRADORES de artistas). 3 variantes step 1, 2 variantes step 2, 2 variantes step 3.
+**Última sesión (2026-04-11 18:45):**
+- ✅ **Agentes de creación:** 5/5 completados
+- ✅ **Email audit:** 7/7 campañas analizadas. 41 problemas documentados. **FIXES APLICADOS.**
+- ✅ **Teatros fix:** Campaign rewritten + Teatro Danza 2 created + 8 campañas corregidas (systematic fixes)
+- ⏳ **Campaign activation:** 4/4 ready to activate, bloqueado por API 500
+- ⏳ **Campaign config audit:** Incompleto (token limit) — pendiente re-ejecutar
+- ⏳ **Contacts audit:** Incompleto (token limit) — pendiente re-ejecutar
+
+**Scripts nuevos creados:**
+- `scripts/fix_teatros.mjs` — Teatros rewrite + Teatro Danza 2 creation (✅ ejecutado)
+- `scripts/fix_systematic_emails.mjs` — Fixes en Step 2/3 para todas (✅ ejecutado 8/8)
+- `scripts/activate_campaigns.mjs` — Activar 4 nuevas campañas (⏳ error API 500, necesita workaround)
 
 ---
 
@@ -172,22 +216,46 @@ Frontend (polling 5min + botón refresh)
 
 ---
 
-### 🔄 Pendiente
+### 🔄 Pendiente (actualizado 2026-04-11 18:45)
 
-1. **Deploy a Vercel** — `vercel --prod` desde `Desktop/Dev/Artiverse-control`. Var env: `INSTANTLY_API_KEY=NzYzNzhlMDQtYjU3My00ZGUwLTk3ZTItZDI4M2E3MTI5NDQ0Om9tWnlSYWVmclpHTQ==`
+#### 🔴 CRÍTICA (COMPLETADA ✅ sesión actual)
+1. ✅ **Teatros rewritten** — Copy corregido, sequence actualizada. Ahora dirige a programadores.
+2. ✅ **Teatro Danza 2 created** — Campaign `e6e60e78`, 493 leads, copy correcto.
+3. ✅ **Systematic email fixes** — Todos Step 2/3 tienen `{{firstName}}`, sin subjects, sin "Aether Labs", branding correcto.
 
-2. ~~**Salas 1**~~ ✅ → **Salas Conciertos 1 ACTIVA** (374 leads, vieja pausada)
+#### 🟡 MEDIA (bloqueado por API 500 en activación)
+4. **Activar 4 campañas nuevas** — Distribuidoras, Dance 2, Festivales, Socios ARTE
+   - Scripts: `scripts/activate_campaigns.mjs` creado y probado
+   - Status actual: 4 campañas pending (status=0)
+   - Bloqueador: API Instantly retorna 500 "Something went wrong" en PATCH
+   - **Workaround:** 
+     - Opción A: Activar manualmente en UI Instantly (Analytics → select campaign → Activate)
+     - Opción B: Reintentar script `scripts/activate_campaigns.mjs` (puede ser timeout temporal)
+     - Opción C: Verificar en Instantly que las campañas tengan todas las configuraciones necesarias
 
-3. **Campañas faltantes** — usar `scripts/create_campaign.mjs`:
-   - Festivales (~XXX leads, copy predefinido)
-   - Distribuidoras (~524 leads, CSV en Google Drive)
-   - Managers/Agencias (si hay)
+5. **Re-ejecutar audits incompletos** — Campaign config & Contacts audits hit token limit (sesión anterior)
+   - Necesitan lanzarse nuevamente con agent cuando tenga más contexto disponible
 
-4. **HubSpot sync** — Subir 374 leads de Salas Conciertos 1 + completar leads históricos. Endpoint `/api/sync-to-hubspot` o script Python batch upsert.
+#### 🔵 POSTLANZAMIENTO
+6. **HubSpot sync** — Subir 2,597 contactos (todos los segmentos):
+   - Opción: Script Python batch upsert vía `/api/sync-to-hubspot` o HubSpot API v3 directa
+   - Estimado: 30-45 min con script Python
 
-5. **Teatro.es/Guiarte scraping** — 10 especialidades. Requiere Claude for Chrome (AJAX POST).
+7. **Deploy a Vercel** — `vercel --prod` desde `Desktop/Dev/Artiverse-control`. 
+   - Var env: `INSTANTLY_API_KEY=NzYzNzhlMDQtYjU3My00ZGUwLTk3ZTItZDI4M2E3MTI5NDQ0Om9tWnlSYWVmclpHTQ==`
+   - Estimado: 5-10 min
 
-6. **Deploy + monitoreo** — Una vez en Vercel, configurar analytics y seguimiento de métricas.
+8. **Warmup domains** — `victor@artiversemail.es` (~87%), `victor@artiverse.online` (~71%)
+   - Monitoreo en `/warmup` page (gauge + tabla)
+   - Cuando ambos ≥95%, activar el resto de campañas
+
+9. **Teatro.es/Guiarte scraping** — Enriquecer con referencias del sector (OPCIONAL, post-MVP)
+   - Requiere Claude for Chrome (AJAX POST)
+
+10. **Monitoreo & optimización** — Una vez en Vercel:
+   - Analíticas de engagement (open %, reply %, click rates)
+   - AB tests en subjects si reply rate < 3%
+   - Ajustar delays entre steps si open rate muy bajo
 
 ---
 
