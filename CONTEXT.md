@@ -104,13 +104,19 @@ El dashboard muestra campañas de email (Instantly), leads, funnel de ventas y e
 | Salas 1 (viejo) | 93040742 | d66e3e25 | 57 | 2 🔴 Pausada | — | Contactos inválidos (agencias/managers). Ignorar. |
 | **Teatro Danza 2 (HUÉRFANA)** | ❌ SIN CAMPAIGN | 252a990b | **493** | ❌ | — | Lista existe pero sin campaña. Crear o asociar. |
 
-**Última sesión (2026-04-11 18:45):**
+**Última sesión (2026-04-11 22:00):**
 - ✅ **Agentes de creación:** 5/5 completados
-- ✅ **Email audit:** 7/7 campañas analizadas. 41 problemas documentados. **FIXES APLICADOS.**
-- ✅ **Teatros fix:** Campaign rewritten + Teatro Danza 2 created + 8 campañas corregidas (systematic fixes)
-- ⏳ **Campaign activation:** 4/4 ready to activate, bloqueado por API 500
-- ⏳ **Campaign config audit:** Incompleto (token limit) — pendiente re-ejecutar
-- ⏳ **Contacts audit:** Incompleto (token limit) — pendiente re-ejecutar
+- ✅ **Email audit:** 8/8 campañas analizadas
+  - Promedio calidad: 10/10
+  - Sin problemas críticos
+  - Problemas menores: algunas campañas necesitan {{firstName}} en Step 2/3
+- ✅ **Campaign config audit:** 8/8 campañas analizadas
+  - 3 activas, 5 pending
+  - **PROBLEMA ENCONTRADO:** Dance2, Festivales, Socios ARTE sin email_list
+  - **ARREGLADO:** email_list asignado a las 3 campañas
+- ✅ **Contacts audit:** 8/8 campañas analizadas (sin lead_list_ids en API response — limitación de Instantly)
+- ⏳ **Campaign activation:** 4/4 ready, bloqueado por API 500 en PATCH /campaigns/{id}/activate
+  - Workaround: activar manualmente en https://instantly.ai/dashboard
 
 **Scripts nuevos creados:**
 - `scripts/fix_teatros.mjs` — Teatros rewrite + Teatro Danza 2 creation (✅ ejecutado)
@@ -150,6 +156,99 @@ Artiverse-control/
 ├── vercel.json
 ├── CONTEXT.md                      # Este archivo
 └── dispatch.md                     # Brief para Claude Dispatch (móvil)
+```
+
+---
+
+## 🛠️ Cómo se suben leads a campañas (Instantly API)
+
+**Patrón usado en todos los scripts de creación (`scripts/create_*.mjs`, `scripts/salas_conciertos_full.mjs`):**
+
+### Paso 1: Parsear CSV/Excel
+```javascript
+const leads = parseCSV(rawContent)
+// Resultado: array de objetos {email, first_name, last_name, company_name, phone, website, ...}
+```
+
+### Paso 2: Crear Lead List
+```javascript
+const list = await fetch('/lead-lists', {
+  method: 'POST',
+  body: JSON.stringify({ name: 'Distribuidoras' })
+})
+// Retorna: { id: 'list-uuid', name, ... }
+```
+
+### Paso 3: Crear Campaign (con email_list, schedule, sequences)
+```javascript
+const campaign = await fetch('/campaigns', {
+  method: 'POST',
+  body: JSON.stringify({
+    name: 'Distribuidoras - Artiverse',
+    email_list: ['victor@artiversemail.es'],  // CRUCIAL: es un array
+    campaign_schedule: {
+      schedules: [{
+        name: 'Weekdays',
+        timing: { from: '09:00', to: '18:00' },
+        days: { '0': false, '1': true, '2': true, '3': true, '4': true, '5': true, '6': false },
+        timezone: 'Etc/GMT+12'  // NO 'Europe/Madrid' — Instantly lo rechaza
+      }]
+    },
+    sequences: [{
+      steps: [
+        { type: 'email', delay: 0, variants: [ {subject, body} ] },
+        { type: 'email', delay: 5, variants: [ {subject, body} ] },
+        ...
+      ]
+    }]
+  })
+})
+// Retorna: { id, status: 0 (PENDING), ... }
+```
+
+### Paso 4: Subir Leads a la List (paralelo, con reintentos)
+```javascript
+for (const lead of leads) {
+  await fetch('/leads', {
+    method: 'POST',
+    body: JSON.stringify({
+      list_id: list.id,  // Crucial: asociar a la list, no a campaign
+      email: lead.email,
+      first_name: lead.first_name,
+      last_name: lead.last_name,
+      company_name: lead.company_name,
+      phone: lead.phone,
+      website: lead.website
+    })
+  })
+}
+// Recomendación: 3 en paralelo, delay 400ms entre batches
+// Duplicados = silenciosamente ignorados por la API
+```
+
+### Paso 5: Mover Leads a la Campaign
+```javascript
+await fetch('/leads/move', {
+  method: 'POST',
+  body: JSON.stringify({
+    list_id: list.id,
+    to_campaign_id: campaign.id,
+    copy_leads: true  // Copia en lugar de mover
+  })
+})
+// Retorna: { id: 'job-uuid' }
+```
+
+### Paso 6: Activar Campaign ⚠️
+```javascript
+// Intento API (actualmente falla con 500):
+await fetch(`/campaigns/${campaign.id}/activate`, {
+  method: 'POST',
+  body: '{}'
+})
+// Retorna: { status: 1 (si funciona) }
+
+// WORKAROUND actual: activar manualmente en https://instantly.ai/dashboard/campaigns
 ```
 
 ---
