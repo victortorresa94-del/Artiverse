@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import {
-  LayoutDashboard, Megaphone, GitBranch, Users, Flame, Mail
+  LayoutDashboard, Megaphone, GitBranch, Users, Flame, Mail, UserCheck
 } from 'lucide-react'
 
 const nav = [
@@ -11,6 +11,7 @@ const nav = [
   { href: '/campaigns', label: 'Campañas', icon: Megaphone },
   { href: '/mails', label: 'Mails', icon: Mail },
   { href: '/funnel', label: 'Funnel', icon: GitBranch },
+  { href: '/usuarios', label: 'Usuarios', icon: UserCheck },
   { href: '/leads', label: 'Leads / CRM', icon: Users },
   { href: '/warmup', label: 'Warm-up', icon: Flame },
 ]

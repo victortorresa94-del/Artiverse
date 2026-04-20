@@ -12,6 +12,14 @@ export type FunnelStage =
   | 'dentro_plataforma'
   | 'no_interesado';
 
+export type InboundStage =
+  | 'registrado'
+  | 'perfil_incompleto'
+  | 'perfil_completo'
+  | 'bienvenida_enviada'
+  | 'activo'
+  | 'inactivo';
+
 export type Priority = 'alta' | 'media' | 'baja';
 export type Channel = 'email' | 'whatsapp' | 'instagram' | 'telefono';
 export type Segment =
@@ -21,6 +29,31 @@ export type Segment =
   | 'Dance from Spain'
   | 'Socios ARTE'
   | 'Distribuidoras';
+
+export type UserSource = 'outreach' | 'organic' | 'referral' | 'unknown';
+export type Subscription = 'free' | 'pro' | 'business' | 'custom';
+export type UserRole = 'registered' | 'admin' | 'unassigned';
+
+export interface PlatformUser {
+  id: string;
+  email: string;
+  name: string;
+  company: string;
+  source: UserSource;
+  sourceCampaign?: string;
+  sourceSegment?: Segment;
+  registeredAt: string;
+  emailVerified: boolean;
+  inboundStage: InboundStage;
+  hasAgency: boolean;
+  agencyName?: string;
+  subscription: Subscription;
+  profileComplete: boolean;
+  isPromotor: boolean;
+  role: UserRole;
+  notes: string;
+  nextAction: string;
+}
 
 export interface EmailStep {
   step: number;
@@ -436,3 +469,167 @@ export const FUNNEL_STAGES: { id: FunnelStage; label: string; color: string }[] 
   { id: 'dentro_plataforma', label: 'En plataforma ✓', color: '#10B981' },
   { id: 'no_interesado', label: 'Descartado', color: '#6B7280' },
 ];
+
+export const INBOUND_STAGES: { id: InboundStage; label: string; color: string }[] = [
+  { id: 'registrado', label: 'Registrado', color: '#6366F1' },
+  { id: 'perfil_incompleto', label: 'Perfil incompleto', color: '#F59E0B' },
+  { id: 'perfil_completo', label: 'Perfil completo', color: '#10B981' },
+  { id: 'bienvenida_enviada', label: 'Bienvenida enviada', color: '#3B82F6' },
+  { id: 'activo', label: 'Activo', color: '#059669' },
+  { id: 'inactivo', label: 'Inactivo', color: '#6B7280' },
+];
+
+// ─── PLATFORM USERS ──────────────────────────────────────────────────────────
+// 115 usuarios reales del panel de administración de Artiverse
+// Ordenados por fecha de registro (más reciente primero)
+
+type U = PlatformUser
+const _u = (id: string, email: string, name: string, company: string, agency: string, sub: Subscription, verified: boolean, profile: boolean, promotor: boolean, role: UserRole, source: UserSource, notes = '', next = ''): U => ({
+  id, email, name, company, source,
+  registeredAt: '',
+  emailVerified: verified,
+  hasAgency: !!agency,
+  agencyName: agency || undefined,
+  subscription: sub,
+  profileComplete: profile,
+  isPromotor: promotor,
+  role,
+  inboundStage: (profile && !!agency) ? 'activo' : profile ? 'perfil_completo' : !!agency ? 'perfil_incompleto' : 'registrado',
+  notes, nextAction: next || (verified ? (profile ? '-' : 'Completar perfil') : 'Verificar email'),
+})
+
+export const platformUsers: PlatformUser[] = [
+  // ── Abril 2026 — recientes de outreach ─────────────────────────────────────
+  _u('pu-001','dydlowrider@yahoo.es','dydlowrider','','','free',false,false,false,'unassigned','outreach','No ha verificado el correo','Recordar verificación email'),
+  _u('pu-002','almazartedanza@gmail.com','Juan y Marita','','','free',true,false,false,'unassigned','outreach'),
+  _u('pu-003','info@ertza.com','ERTZA','ERTZA KONPAINIA','ERTZA KONPAINIA','free',true,true,true,'registered','outreach','Agencia de danza, preguntaron por correo'),
+  _u('pu-004','gestioncultural@psicoballetmaiteleon.org','gestioncultural','','','free',true,false,false,'unassigned','outreach'),
+  _u('pu-005','camilaaldanagb@gmail.com','Camila','','','free',true,true,true,'registered','outreach'),
+  _u('pu-006','info@bluelightpro.es','Bluelightproject','','','free',true,true,true,'registered','outreach'),
+  _u('pu-007','elenaagudozamora@gmail.com','Elena','ZAM Music','ZAM Music','free',true,true,true,'registered','outreach','Agencia con espectáculo'),
+  _u('pu-008','pacopiramide@gmail.com','Paco Piramide','','','free',true,false,false,'unassigned','outreach'),
+  _u('pu-009','dolores@doscondos.es','dolores','','','free',true,false,false,'unassigned','outreach','Tienen agencia pero no la han puesto','Recordar completar perfil de agencia'),
+  _u('pu-010','tekila@bolanueve.com','tekila','','','free',false,false,false,'unassigned','outreach','Tienen agencia pero no la han puesto, no verificado'),
+  _u('pu-011','victor@ymmusicagency.com','YMmusic','YM music','YM music','free',true,true,true,'registered','outreach'),
+  _u('pu-012','martin.varela@thinkingup.live','martinvarela','','','free',true,true,true,'registered','outreach','Tienen agencia pero no la han puesto'),
+  _u('pu-013','marina.roveta@gmail.com','ProduccionesSubmarinas','Producciones Submarinas','Producciones Submarinas','free',true,true,false,'registered','unknown'),
+  _u('pu-014','blancadomfre@gmail.com','blancadomfre','','','free',true,false,false,'unassigned','unknown'),
+  _u('pu-015','rociolopezpastor@gmail.com','Rociolopeez','','','free',true,true,true,'registered','unknown'),
+  _u('pu-016','inaki@virtualmusic.es','Iñaki Monsalve','Virtual Music','Virtual Music','free',true,true,false,'registered','unknown'),
+  _u('pu-017','hola@backstageon.com','BackStageON','','','pro',true,true,false,'registered','unknown'),
+  _u('pu-018','cristssn@gmail.com','cristssn','','','free',true,false,false,'unassigned','unknown'),
+  _u('pu-019','daniboada@gmail.com','Dani','Producciones Daniela','Producciones Daniela','free',true,true,true,'registered','unknown'),
+  _u('pu-020','victor@aetherlabs.es','victor','Bonito Sound','Bonito Sound','free',true,true,false,'admin','unknown'),
+  _u('pu-021','victortorresa94@gmail.com','Victor','94 MUSIC','94 MUSIC','free',true,true,true,'registered','unknown'),
+  _u('pu-022','nil@bonitosound.com','nil','Bonito Sound','Bonito Sound','free',true,true,false,'registered','unknown'),
+  _u('pu-023','pruebavictor@artiverse.es','pruebavictor','','','pro',true,false,false,'registered','unknown','Cuenta de prueba'),
+  _u('pu-024','lalokamanagement@gmail.com','Lola','La Loka Management','La Loka Management','pro',true,true,true,'registered','unknown'),
+  _u('pu-025','cristina@artiverse.es','cristina','','','free',true,false,false,'admin','unknown'),
+  _u('pu-026','raul@artiverse.es','raul','','','free',true,true,false,'admin','unknown'),
+  _u('pu-027','dani@artiverse.es','Admin','','','pro',true,true,true,'admin','unknown'),
+  _u('pu-028','contratacion@meteorica.net','Antonio Palazón','Meteórica','Meteórica','pro',true,true,true,'registered','outreach','',''),
+  _u('pu-029','davidrubiacontacto@gmail.com','David Rubia','David Rubia','David Rubia','pro',true,true,false,'registered','unknown'),
+  _u('pu-030','info@nexusmusica.com','Nexus musica','Nexus musica','Nexus musica','pro',true,true,false,'registered','unknown'),
+  _u('pu-031','diegolomamanagement@gmail.com','Diego Loma','Diego Loma','Diego Loma','pro',true,true,true,'registered','unknown'),
+  _u('pu-032','kira@artica.agency','Kira','Artica Agency','Artica Agency','pro',true,true,true,'registered','unknown'),
+  _u('pu-033','web@revitalmusic.es','Revital Music','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-034','jordi@playplan.es','Jordi Lauren','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-035','andres@playplan.es','Andrés Lamosa','PlayPlan','PlayPlan','pro',true,false,false,'registered','unknown'),
+  _u('pu-036','zappa@rockandfashion.es','Cesar Zappa','Zappa Rock&Fashion','Zappa Rock&Fashion','pro',true,false,false,'registered','unknown'),
+  _u('pu-037','newfizzprogramacion@gmail.com','New Fizz','','','pro',true,true,true,'registered','unknown'),
+  _u('pu-038','anna@mpcmanagement.es','Anna Portomeñe','MPC Management','MPC Management','pro',true,true,true,'registered','outreach'),
+  _u('pu-039','gabi.thinkingupevents@gmail.com','Gabi Gómez','Thinking Up Events','Thinking Up Events','pro',true,true,true,'registered','unknown'),
+  _u('pu-040','ivan@neverlandconcerts.com','Ivan Frauca Gost','','','pro',true,true,true,'registered','unknown'),
+  _u('pu-041','bernatidea@gmail.com','Bernat Tomàs Noguera','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-042','direccion@hermanosbrothers.es','Jaime Perozo','Jaime Perozo','Jaime Perozo','pro',true,true,false,'registered','unknown'),
+  _u('pu-043','cristina@bonitosound.com','cris','Bonito Sound','Bonito Sound','pro',true,false,false,'registered','unknown'),
+  _u('pu-044','raulgalerasancho@gmail.com','raulgs97','Bonito Sound','Bonito Sound','pro',true,true,true,'registered','unknown'),
+  _u('pu-045','dani@bonitosound.com','Dani','Bonito Sound','Bonito Sound','pro',true,true,true,'registered','unknown'),
+  _u('pu-046','admin@artiverse.es','Víctor','Bonito Sound','Bonito Sound','pro',true,true,false,'admin','unknown'),
+  _u('pu-047','info@bcnanimacio.es','Jaume Estruch','Barcelona Animació','Barcelona Animació','pro',true,true,true,'registered','unknown'),
+  _u('pu-048','maggi.martinez01@gmail.com','Maggi Martínez','maggimartinezmusic','maggimartinezmusic','pro',true,false,false,'registered','unknown'),
+  _u('pu-049','isma@espectaculoslabruja.com','VERMUT MAMUT','VERMUT MAMUT','VERMUT MAMUT','pro',true,true,false,'registered','unknown'),
+  _u('pu-050','bona_espectaculos@hotmail.com','Sandra Bona','Sandra Bona','Sandra Bona','pro',true,true,true,'registered','unknown'),
+  _u('pu-051','rociomasso26@gmail.com','rociomasso','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-052','marpiqcab@gmail.com','Marta Piqueras','Marta Piqueras','Marta Piqueras','pro',true,true,true,'registered','unknown'),
+  _u('pu-053','alfonso@sideralmusic.com','alfonsosideral','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-054','saimon@psreffects.es','Saimon Mas Miñana','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-055','efferock@hotmail.com','Fabián Navarrete','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-056','contratacion@larock.com.es','Andres Lomander','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-057','pol@deepdelaymanagement.com','Pol Juárez','Deep Delay','Deep Delay','pro',true,true,true,'registered','unknown'),
+  _u('pu-058','activemusicpromo@gmail.com','jci90','jci90','jci90','pro',true,true,false,'registered','unknown'),
+  _u('pu-059','info@vermouthdelacasa.com','Vermouth de la Casa','Vermouth de la casa','Vermouth de la casa','pro',true,true,true,'registered','unknown'),
+  _u('pu-060','davidoficialspn@gmail.com','David Guez','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-061','anafmelerolunasanchez@gmail.com','PiesDeGallina','PiesDeGallina','PiesDeGallina','pro',true,true,false,'registered','unknown'),
+  _u('pu-062','reglerogala@gmail.com','Gala','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-063','samupdh@gmail.com','Samuel Retamal','bigsamm','bigsamm','pro',true,false,false,'registered','unknown'),
+  _u('pu-064','german@staffelproducciones.es','José María Robles','Staffel Producciones','Staffel Producciones','pro',true,true,true,'registered','unknown'),
+  _u('pu-065','manolito.sanchez@doscondos.es','Manolito Sánchez','Manolito','Manolito','pro',true,true,true,'registered','unknown'),
+  _u('pu-066','hola@big-groove.com','Carmina Brandariz','Big Groove','Big Groove','pro',true,true,true,'registered','unknown'),
+  _u('pu-067','guoxmon@gmail.com','Josefe','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-068','grupounfrontier@gmail.com','Unfrontier','Unfrontier','Unfrontier','pro',true,true,false,'registered','unknown'),
+  _u('pu-069','pylastern@gmail.com','Pyastern Lumern','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-070','alba@calaveritarecords.com','Alba Fernández','Calaverita Records','Calaverita Records','pro',true,true,false,'registered','outreach'),
+  _u('pu-071','fran@boherecords.com','Fran Leo','BOHE Records','BOHE Records','pro',true,true,true,'registered','unknown'),
+  _u('pu-072','ferran.villanuevamartin@gmail.com','Ferran Villanueva','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-073','davidbimusic@gmail.com','David Pereda','BiMusic','BiMusic','pro',true,true,true,'registered','unknown'),
+  _u('pu-074','label@mantyx.com','Mantyx','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-075','kevinapaza@emotionalevents.es','Kevin Apaza','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-076','direccion@totalisimo.com','Manuel Villegas','Totalisimo','Totalisimo','pro',true,true,true,'registered','unknown'),
+  _u('pu-077','jgimeno@lacatifaroja.com','LaCatifaRoja','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-078','jgimeno@lacatatifaroja.com','La Catifa Roja','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-079','jorgeprada@mundotributo.es','Jorge Prada','Mundo Tributo','Mundo Tributo','pro',true,false,false,'registered','unknown'),
+  _u('pu-080','inescollarte@entrebotones.com','Inés Collarte','Entrebotones','Entrebotones','pro',true,true,false,'registered','unknown'),
+  _u('pu-081','joaquin@peripecia.es','Joaquin Diaz Navarro','Peripecia','Peripecia','pro',true,true,true,'registered','unknown'),
+  _u('pu-082','arteybalasera@gmail.com','Oscar Vicente Lazaro','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-083','joseluismarintutau.surtribe@gmail.com','Oscar Hernández','Surtribe Music Agency','Surtribe Music Agency','pro',true,true,true,'registered','unknown'),
+  _u('pu-084','joseluismarintutua.surtribe@gmail.com','joseluissurtribe','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-085','r.dabizhaa@gmail.com','Rostyslav ROS','Rostyslav','Rostyslav','pro',true,false,false,'registered','unknown'),
+  _u('pu-086','joseluismarintutau@gmail.com','joseluismarintutau','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-087','hola@eltragaluzdiscos.com','David Aguado','ElTragaluz','ElTragaluz','pro',true,true,false,'registered','unknown'),
+  _u('pu-088','ad.santogrial@gmail.com','SANTO GRIAL PRO','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-089','info@osunaproducciones.com','OSUNA PRODUCCIONES','OSUNA PRODUCCIONES','OSUNA PRODUCCIONES','pro',true,true,false,'registered','unknown'),
+  _u('pu-090','nuriamorodance@gmail.com','Nuria Moro','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-091','patricia@musicaglobal.com','patricia collado','Música Global','Música Global','pro',true,false,false,'registered','unknown'),
+  _u('pu-092','info@dubbikids.com','Dubbi Kids','Dubbi Kids','Dubbi Kids','pro',true,true,false,'registered','unknown'),
+  _u('pu-093','somoslatinensa@gmail.com','SOMOS LA TINENÇA','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-094','contratacion@worldmusicfactory.com','Toni Garcia','WORLD MUSIC FACTORY','WORLD MUSIC FACTORY','pro',true,true,false,'registered','unknown'),
+  _u('pu-095','gestio@elsostingut.cat','El Sostingut','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-096','logistica@subterfuge-events.com','Subterfuge Events','Subterfuge Events','Subterfuge Events','pro',true,false,false,'registered','unknown'),
+  _u('pu-097','cristtinasolersn@gmail.com','Cristina Soler','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-098','sella.booking@gmail.com','Sella','Sella','Sella','pro',true,true,false,'registered','unknown'),
+  _u('pu-099','resonanciaok@gmail.com','Resonancia.es','Resonancia','Resonancia','pro',true,true,false,'registered','unknown'),
+  _u('pu-100','manu.arenas@hotmail.com','marenas99','marenas99','marenas99','pro',true,true,false,'registered','unknown'),
+  _u('pu-101','sonabonito@bonitosound.com','Quim','Bonito Sound','Bonito Sound','pro',true,true,true,'registered','unknown'),
+  _u('pu-102','pedro.marcos@hit21producciones.com','Pedro Marcos','Pedro Marcos','Pedro Marcos','pro',true,true,false,'registered','unknown'),
+  _u('pu-103','punkgrossos@gmail.com','Punkgrossos','Associació Cultural Punkgrossos','Associació Cultural Punkgrossos','pro',true,true,false,'registered','unknown'),
+  _u('pu-104','manu@bonitosound.com','Manu','Bonito Sound','Bonito Sound','pro',true,true,true,'registered','unknown'),
+  _u('pu-105','immagrimalt@gmail.com','Imma Grimalt','immagrimalt','immagrimalt','pro',true,false,false,'registered','unknown'),
+  _u('pu-106','julia@bonitosound.com','Júlia','Bonito Sound','Bonito Sound','pro',true,true,true,'registered','unknown'),
+  _u('pu-107','live@ventilador-music.com','ventiladormusic','','','pro',true,true,true,'registered','unknown'),
+  _u('pu-108','promocion@darlalata.net','Javier Tomás Tio','Darlalata','Darlalata','pro',true,true,true,'registered','outreach'),
+  _u('pu-109','raul@m2musicgroup.com','Raul Madronal','M2 Music Group','M2 Music Group','pro',true,true,true,'registered','unknown'),
+  _u('pu-110','hydegeorge700@gmail.com','George','','','pro',true,false,false,'registered','unknown'),
+  _u('pu-111','manuel@pirrongelli.com','Manuel Pirrongelli','Pirrongelli Management','Pirrongelli Management','pro',true,true,true,'registered','unknown'),
+  _u('pu-112','fausto@slidemedia.net','Fausto','Slidemedia','Slidemedia','pro',true,true,false,'registered','unknown'),
+  _u('pu-113','jorge.torres@themusicrepublic.es','Jorge Torres Martin','The Music Republic','The Music Republic','pro',true,true,true,'registered','unknown'),
+  _u('pu-114','esencialabel@gmail.com','Piero Vega','Esencia Label','Esencia Label','pro',true,false,false,'registered','unknown'),
+  _u('pu-115','matilde.cavalli92@gmail.com','Matilde Cavalli','MatildeCavalli','MatildeCavalli','pro',true,false,false,'registered','unknown'),
+];
+
+export const platformStats = {
+  totalUsers: 116,
+  totalArtists: 200,
+  totalAgencies: 63,
+  activeAgencies: 53,
+  promotors: 37,
+  proUsers: platformUsers.filter(u => u.subscription === 'pro').length,
+  profileCompleteCount: platformUsers.filter(u => u.profileComplete).length,
+  unverifiedCount: platformUsers.filter(u => !u.emailVerified).length,
+  withAgencyCount: platformUsers.filter(u => u.hasAgency).length,
+  monthlyRevenue: 120,
+  paidSubscribers: 192,
+  stripeSubscribers: 5,
+  manualSubscribers: 144,
+  cancellationRate: 0.52,
+};
