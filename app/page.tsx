@@ -1,9 +1,23 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { campaigns as mockCampaigns, summary as mockSummary, leads, FUNNEL_STAGES } from '@/data/mock'
-import { Mail, TrendingUp, MessageSquare, Users, Zap, Clock, RefreshCw, CheckCircle2, AlertCircle, MessageCircle, XCircle, PlayCircle, ChevronRight } from 'lucide-react'
+import { Mail, TrendingUp, MessageSquare, Users, Zap, Clock, RefreshCw, CheckCircle2, AlertCircle, MessageCircle, XCircle, PlayCircle, ChevronRight, Building2, CreditCard, UserCheck, TrendingDown, Award, UserPlus, ArrowUpRight } from 'lucide-react'
 
 const TOTAL_CONTACTS = 2597 // Total real del Excel unificado (todas las hojas)
+
+const platformStats = {
+  totalUsers: 116,
+  totalArtists: 200,
+  totalAgencies: 63,
+  promoters: 37,
+  monthlyRevenue: 120,
+  paidSubscribers: 192,
+  churnRate: 0.52,
+  emailVerification: 98,
+  completeProfiles: 59,
+  usersInAgencies: 59,
+}
 
 function StatCard({ label, value, sub, accent, icon: Icon }: {
   label: string; value: string | number; sub?: string; accent?: string; icon: React.ElementType
@@ -37,6 +51,13 @@ export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<string>('')
   const [tasks, setTasks] = useState<any[]>([])
   const [tasksLoading, setTasksLoading] = useState(true)
+  const [registrados, setRegistrados] = useState<{
+    registeredCount: number
+    registeredLeads: any[]
+    totalReplies: number
+    updatedAt?: string
+  } | null>(null)
+  const [registradosLoading, setRegistradosLoading] = useState(true)
 
   const fetchData = async () => {
     setLoading(true)
@@ -63,10 +84,23 @@ export default function DashboardPage() {
     finally { setTasksLoading(false) }
   }
 
+  const fetchRegistrados = async () => {
+    setRegistradosLoading(true)
+    try {
+      const res = await fetch('/api/registrados')
+      if (res.ok) {
+        const data = await res.json()
+        setRegistrados(data)
+      }
+    } catch { /* ignore */ }
+    finally { setRegistradosLoading(false) }
+  }
+
   useEffect(() => {
     fetchData()
     fetchTasks()
-    const interval = setInterval(() => { fetchData(); fetchTasks() }, 5 * 60 * 1000)
+    fetchRegistrados()
+    const interval = setInterval(() => { fetchData(); fetchTasks(); fetchRegistrados() }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -113,6 +147,62 @@ export default function DashboardPage() {
         <StatCard label="Total contactos" value={TOTAL_CONTACTS.toLocaleString()} sub="en base de datos" icon={Users} />
         <StatCard label="En Artiverse" value={130} sub="usuarios activos" accent="#2563EB" icon={Zap} />
         <StatCard label="Pendientes" value={(summary.emailsPending || 0).toLocaleString()} sub="por enviar" icon={Clock} />
+      </div>
+
+      {/* ── Usuarios Registrados desde campañas ────────────────────────────── */}
+      <div className="mb-6">
+        <Link href="/leads" className="block group">
+          <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            {/* Decorative blob */}
+            <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-emerald-100/60 blur-2xl pointer-events-none" />
+            <div className="relative px-5 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
+              {/* Icon */}
+              <div className="flex-shrink-0 p-3 bg-emerald-500 rounded-xl shadow-sm">
+                <UserPlus size={22} className="text-white" />
+              </div>
+              {/* Main content */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">Usuarios registrados desde campaña</p>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  {registradosLoading ? (
+                    <span className="text-3xl font-bold text-emerald-800 animate-pulse">…</span>
+                  ) : (
+                    <span className="text-3xl sm:text-4xl font-bold text-emerald-800">
+                      {registrados?.registeredCount ?? 0}
+                    </span>
+                  )}
+                  {!registradosLoading && registrados && registrados.totalReplies > 0 && (
+                    <span className="text-sm text-emerald-600">
+                      de <span className="font-semibold">{registrados.totalReplies}</span> respuestas totales
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-emerald-600/80 mt-1">
+                  Leads que respondieron confirmando su registro en Artiverse
+                </p>
+              </div>
+              {/* Latest registered leads */}
+              {!registradosLoading && registrados && registrados.registeredLeads.length > 0 && (
+                <div className="hidden lg:flex flex-col gap-1 min-w-0 max-w-xs">
+                  {registrados.registeredLeads.slice(0, 3).map((l, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-emerald-700">
+                      <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
+                      <span className="font-medium truncate">{l.company || l.email}</span>
+                    </div>
+                  ))}
+                  {registrados.registeredLeads.length > 3 && (
+                    <span className="text-xs text-emerald-500 pl-4">+{registrados.registeredLeads.length - 3} más</span>
+                  )}
+                </div>
+              )}
+              {/* CTA */}
+              <div className="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-emerald-700 group-hover:text-emerald-900 transition-colors">
+                Ver leads
+                <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </div>
+            </div>
+          </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 mb-6">
@@ -259,6 +349,49 @@ export default function DashboardPage() {
               })}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Plataforma Artiverse */}
+      <div className="mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <Award size={16} className="text-indigo-500" />
+            <h2 className="text-sm font-semibold text-gray-900">Plataforma Artiverse</h2>
+          </div>
+          <div className="p-4 sm:p-5 space-y-4">
+            {/* Row 1 — core counts */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Total Usuarios" value={platformStats.totalUsers} icon={Users} accent="#2563EB" />
+              <StatCard label="Total Artistas" value={platformStats.totalArtists} icon={UserCheck} accent="#7C3AED" />
+              <StatCard label="Total Agencias" value={platformStats.totalAgencies} icon={Building2} accent="#0891B2" />
+              <StatCard label="Promotores" value={platformStats.promoters} icon={Zap} accent="#D97706" />
+            </div>
+            {/* Row 2 — revenue & subscriptions */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <StatCard label="Ingresos Mensuales" value={`${platformStats.monthlyRevenue}€`} icon={CreditCard} accent="#059669" />
+              <StatCard label="Suscriptores Pagos" value={platformStats.paidSubscribers} icon={TrendingUp} accent="#2563EB" />
+              <StatCard label="Tasa Cancelación" value={`${platformStats.churnRate}%`} icon={TrendingDown} accent="#DC2626" />
+            </div>
+            {/* Row 3 — health metrics with progress bars */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { label: 'Verificación Email', value: platformStats.emailVerification, color: '#059669' },
+                { label: 'Perfiles Completos', value: platformStats.completeProfiles, color: '#2563EB' },
+                { label: 'Usuarios en Agencias', value: platformStats.usersInAgencies, color: '#7C3AED' },
+              ].map(m => (
+                <div key={m.label} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-gray-500 font-medium">{m.label}</span>
+                    <span className="text-sm font-bold" style={{ color: m.color }}>{m.value}%</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${m.value}%`, backgroundColor: m.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
