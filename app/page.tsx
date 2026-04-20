@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { campaigns as mockCampaigns, summary as mockSummary, leads, FUNNEL_STAGES } from '@/data/mock'
-import { Mail, TrendingUp, MessageSquare, Users, Zap, Clock, RefreshCw, CheckCircle2, AlertCircle, MessageCircle, XCircle, PlayCircle, ChevronRight, Building2, CreditCard, UserCheck, TrendingDown, Award, UserPlus, ArrowUpRight } from 'lucide-react'
+import { Mail, TrendingUp, MessageSquare, Users, Zap, Clock, RefreshCw, CheckCircle2, AlertCircle, MessageCircle, XCircle, PlayCircle, ChevronRight, Building2, CreditCard, UserCheck, TrendingDown, Award, UserPlus, ArrowUpRight, MailOpen, MailCheck } from 'lucide-react'
 
 const TOTAL_CONTACTS = 2597 // Total real del Excel unificado (todas las hojas)
 
@@ -53,11 +53,21 @@ export default function DashboardPage() {
   const [tasksLoading, setTasksLoading] = useState(true)
   const [registrados, setRegistrados] = useState<{
     registeredCount: number
-    registeredLeads: any[]
-    totalReplies: number
+    fromCampaign: number
+    fromOrganic: number
+    confirmedInInstantly: number | null
+    registeredUsers: any[]
     updatedAt?: string
   } | null>(null)
   const [registradosLoading, setRegistradosLoading] = useState(true)
+  const [opens, setOpens] = useState<{
+    totalOpened: number
+    totalReplied: number
+    openRate: number
+    replyRate: number
+    leads: any[]
+  } | null>(null)
+  const [opensLoading, setOpensLoading] = useState(true)
 
   const fetchData = async () => {
     setLoading(true)
@@ -88,19 +98,26 @@ export default function DashboardPage() {
     setRegistradosLoading(true)
     try {
       const res = await fetch('/api/registrados')
-      if (res.ok) {
-        const data = await res.json()
-        setRegistrados(data)
-      }
+      if (res.ok) setRegistrados(await res.json())
     } catch { /* ignore */ }
     finally { setRegistradosLoading(false) }
+  }
+
+  const fetchOpens = async () => {
+    setOpensLoading(true)
+    try {
+      const res = await fetch('/api/opens')
+      if (res.ok) setOpens(await res.json())
+    } catch { /* ignore */ }
+    finally { setOpensLoading(false) }
   }
 
   useEffect(() => {
     fetchData()
     fetchTasks()
     fetchRegistrados()
-    const interval = setInterval(() => { fetchData(); fetchTasks(); fetchRegistrados() }, 5 * 60 * 1000)
+    fetchOpens()
+    const interval = setInterval(() => { fetchData(); fetchTasks(); fetchRegistrados(); fetchOpens() }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -142,67 +159,210 @@ export default function DashboardPage() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard label="Emails enviados" value={(summary.totalEmailsSent || 0).toLocaleString()} sub="todas las campañas" icon={Mail} />
-        <StatCard label="Open rate" value={`${summary.avgOpenRate || 0}%`} sub="promedio" accent="#D97706" icon={TrendingUp} />
-        <StatCard label="Reply rate" value={`${summary.avgReplyRate || 0}%`} sub="promedio" accent="#059669" icon={MessageSquare} />
+        <StatCard
+          label="Open rate"
+          value={opensLoading ? '…' : opens ? `${opens.totalOpened}` : `${summary.avgOpenRate || 0}%`}
+          sub={opensLoading ? 'cargando…' : opens ? `${opens.totalOpened} contactos han abierto` : 'promedio'}
+          accent="#D97706"
+          icon={MailOpen}
+        />
+        <StatCard
+          label="Replies"
+          value={opensLoading ? '…' : opens ? opens.totalReplied : `${summary.avgReplyRate || 0}%`}
+          sub={opensLoading ? 'cargando…' : opens ? 'han respondido' : 'promedio'}
+          accent="#059669"
+          icon={MessageSquare}
+        />
         <StatCard label="Total contactos" value={TOTAL_CONTACTS.toLocaleString()} sub="en base de datos" icon={Users} />
-        <StatCard label="En Artiverse" value={130} sub="usuarios activos" accent="#2563EB" icon={Zap} />
+        <StatCard
+          label="En Artiverse"
+          value={registradosLoading ? '…' : (registrados?.registeredCount ?? 115)}
+          sub={registradosLoading ? 'cargando…' : `${registrados?.fromCampaign ?? 0} de tus campañas`}
+          accent="#2563EB"
+          icon={UserCheck}
+        />
         <StatCard label="Pendientes" value={(summary.emailsPending || 0).toLocaleString()} sub="por enviar" icon={Clock} />
       </div>
 
-      {/* ── Usuarios Registrados desde campañas ────────────────────────────── */}
-      <div className="mb-6">
-        <Link href="/leads" className="block group">
-          <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            {/* Decorative blob */}
-            <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-emerald-100/60 blur-2xl pointer-events-none" />
-            <div className="relative px-5 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
-              {/* Icon */}
+      {/* ── KPI: Usuarios registrados desde campañas ─────────────────────────── */}
+      <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        {/* Card izquierda — usuarios en plataforma */}
+        <Link href="/usuarios" className="block group">
+          <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-sm hover:shadow-md transition-shadow h-full">
+            <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-emerald-100/50 blur-2xl pointer-events-none" />
+            <div className="relative px-5 py-5 flex items-start gap-4">
               <div className="flex-shrink-0 p-3 bg-emerald-500 rounded-xl shadow-sm">
-                <UserPlus size={22} className="text-white" />
+                <UserPlus size={20} className="text-white" />
               </div>
-              {/* Main content */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">Usuarios registrados desde campaña</p>
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  {registradosLoading ? (
-                    <span className="text-3xl font-bold text-emerald-800 animate-pulse">…</span>
-                  ) : (
-                    <span className="text-3xl sm:text-4xl font-bold text-emerald-800">
-                      {registrados?.registeredCount ?? 0}
-                    </span>
-                  )}
-                  {!registradosLoading && registrados && registrados.totalReplies > 0 && (
-                    <span className="text-sm text-emerald-600">
-                      de <span className="font-semibold">{registrados.totalReplies}</span> respuestas totales
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-emerald-600/80 mt-1">
-                  Leads que respondieron confirmando su registro en Artiverse
+                <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">
+                  Usuarios en Artiverse
                 </p>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  {registradosLoading
+                    ? <span className="text-4xl font-bold text-emerald-900 animate-pulse">…</span>
+                    : <span className="text-4xl font-bold text-emerald-900">{registrados?.registeredCount ?? 115}</span>
+                  }
+                  <span className="text-sm text-emerald-600">usuarios registrados</span>
+                </div>
+                {/* Breakdown */}
+                {!registradosLoading && registrados && (
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    <span className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      {registrados.fromCampaign} de tus campañas email
+                    </span>
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <span className="w-2 h-2 rounded-full bg-gray-400" />
+                      {registrados.fromOrganic} orgánicos
+                    </span>
+                  </div>
+                )}
+                {/* Cross-reference with Instantly */}
+                {!registradosLoading && registrados?.confirmedInInstantly != null && (
+                  <p className="mt-1.5 text-xs text-emerald-600/80">
+                    <span className="font-semibold">{registrados.confirmedInInstantly}</span> confirmados en tus listas de Instantly
+                  </p>
+                )}
               </div>
-              {/* Latest registered leads */}
-              {!registradosLoading && registrados && registrados.registeredLeads.length > 0 && (
-                <div className="hidden lg:flex flex-col gap-1 min-w-0 max-w-xs">
-                  {registrados.registeredLeads.slice(0, 3).map((l, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-emerald-700">
-                      <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                      <span className="font-medium truncate">{l.company || l.email}</span>
-                    </div>
-                  ))}
-                  {registrados.registeredLeads.length > 3 && (
-                    <span className="text-xs text-emerald-500 pl-4">+{registrados.registeredLeads.length - 3} más</span>
+              <div className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold text-emerald-700 group-hover:text-emerald-900 transition-colors">
+                Ver todos <ArrowUpRight size={13} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </div>
+            </div>
+            {/* Top users from outreach */}
+            {!registradosLoading && registrados && registrados.registeredUsers.length > 0 && (
+              <div className="px-5 pb-4 flex flex-wrap gap-1.5">
+                {registrados.registeredUsers.slice(0, 6).map((u: any, i: number) => (
+                  <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full font-medium truncate max-w-[140px] ${
+                    u.source === 'outreach' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {u.company || u.email.split('@')[0]}
+                  </span>
+                ))}
+                {registrados.registeredUsers.length > 6 && (
+                  <span className="text-[10px] text-emerald-500 px-2 py-0.5">+{registrados.registeredUsers.length - 6} más</span>
+                )}
+              </div>
+            )}
+          </div>
+        </Link>
+
+        {/* Card derecha — de 2597 contactos, X ya están dentro */}
+        <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap size={15} className="text-indigo-500" />
+            <h3 className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Conversión de outreach → plataforma</h3>
+          </div>
+          <div className="space-y-3">
+            {/* Ratio: Instantly leads → Artiverse users */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">De {TOTAL_CONTACTS.toLocaleString()} contactos en Instantly</span>
+                <span className="text-xs font-bold text-indigo-700">
+                  {registradosLoading ? '…' : `${registrados?.fromCampaign ?? 0} registrados`}
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-indigo-500 transition-all"
+                  style={{ width: `${Math.min(100, ((registrados?.fromCampaign ?? 0) / TOTAL_CONTACTS) * 100 * 50)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {registradosLoading ? '' : `Tasa de conversión: ${(((registrados?.fromCampaign ?? 0) / TOTAL_CONTACTS) * 100).toFixed(2)}%`}
+              </p>
+            </div>
+            {/* Breakdown */}
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {[
+                { label: 'De campañas', value: registrados?.fromCampaign ?? 0, color: 'text-emerald-700', bg: 'bg-emerald-50' },
+                { label: 'Orgánicos', value: registrados?.fromOrganic ?? 0, color: 'text-blue-700', bg: 'bg-blue-50' },
+                { label: 'Total', value: registrados?.registeredCount ?? 115, color: 'text-indigo-700', bg: 'bg-indigo-50' },
+              ].map(m => (
+                <div key={m.label} className={`${m.bg} rounded-lg p-2.5 text-center`}>
+                  <p className={`text-xl font-bold ${m.color}`}>{registradosLoading ? '…' : m.value}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{m.label}</p>
+                </div>
+              ))}
+            </div>
+            <Link href="/usuarios?filter=outreach" className="flex items-center gap-1 text-xs text-indigo-600 font-medium hover:text-indigo-800 mt-1">
+              Ver usuarios de outreach <ChevronRight size={12} />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Quién ha abierto tus emails ─────────────────────────────────────── */}
+      <div className="mb-6">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MailOpen size={16} className="text-amber-500" />
+              <h2 className="text-sm font-semibold text-gray-900">Quién ha abierto tus emails</h2>
+              {!opensLoading && opens && (
+                <div className="flex items-center gap-2 ml-1">
+                  <span className="text-xs font-bold text-white bg-amber-500 rounded-full px-2 py-0.5">{opens.totalOpened} abiertos</span>
+                  {opens.totalReplied > 0 && (
+                    <span className="text-xs font-bold text-white bg-emerald-500 rounded-full px-2 py-0.5">{opens.totalReplied} respondidos</span>
                   )}
                 </div>
               )}
-              {/* CTA */}
-              <div className="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-emerald-700 group-hover:text-emerald-900 transition-colors">
-                Ver leads
-                <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </div>
             </div>
+            <button
+              onClick={fetchOpens}
+              disabled={opensLoading}
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600"
+            >
+              <RefreshCw size={11} className={opensLoading ? 'animate-spin' : ''} />
+              {opensLoading ? 'Cargando…' : 'Actualizar'}
+            </button>
           </div>
-        </Link>
+
+          {opensLoading ? (
+            <div className="px-5 py-8 text-center text-sm text-gray-400 animate-pulse">Consultando Instantly…</div>
+          ) : !opens || opens.leads.length === 0 ? (
+            <div className="px-5 py-8 text-center">
+              <MailOpen size={24} className="mx-auto text-gray-300 mb-2" />
+              <p className="text-sm text-gray-500 font-medium">Sin datos de aperturas todavía</p>
+              <p className="text-xs text-gray-400 mt-0.5">Los datos aparecen cuando Instantly registra aperturas</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/60">
+                    {['Estado', 'Empresa', 'Email', 'Campaña', 'Última actividad'].map(h => (
+                      <th key={h} className="text-left px-4 py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {opens.leads.map((lead: any, i: number) => (
+                    <tr key={i} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="px-4 py-2.5">
+                        {lead.status === 'replied'
+                          ? <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full w-fit">
+                              <MailCheck size={11} /> Respondió
+                            </span>
+                          : <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full w-fit">
+                              <MailOpen size={11} /> Abrió
+                            </span>
+                        }
+                      </td>
+                      <td className="px-4 py-2.5 font-medium text-gray-900 text-xs">{lead.company || lead.firstName || '—'}</td>
+                      <td className="px-4 py-2.5 text-gray-500 font-mono text-[11px]">{lead.email}</td>
+                      <td className="px-4 py-2.5 text-xs text-gray-500">{lead.campaign || '—'}</td>
+                      <td className="px-4 py-2.5 text-xs text-gray-400">
+                        {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 mb-6">
