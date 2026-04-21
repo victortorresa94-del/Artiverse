@@ -51,6 +51,10 @@ export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<string>('')
   const [tasks, setTasks] = useState<any[]>([])
   const [tasksLoading, setTasksLoading] = useState(true)
+  const [artiverseStats, setArtiverseStats] = useState<{
+    total: number; today: number; thisWeek: number
+    verified: number; profileComplete: number; withAgency: number
+  } | null>(null)
   const [registrados, setRegistrados] = useState<{
     registeredCount: number
     fromCampaign: number
@@ -103,6 +107,16 @@ export default function DashboardPage() {
     finally { setRegistradosLoading(false) }
   }
 
+  const fetchArtiverseStats = async () => {
+    try {
+      const res = await fetch('/api/artiverse-users')
+      if (res.ok) {
+        const d = await res.json()
+        if (d.stats) setArtiverseStats(d.stats)
+      }
+    } catch { /* ignore */ }
+  }
+
   const fetchOpens = async () => {
     setOpensLoading(true)
     try {
@@ -117,7 +131,10 @@ export default function DashboardPage() {
     fetchTasks()
     fetchRegistrados()
     fetchOpens()
-    const interval = setInterval(() => { fetchData(); fetchTasks(); fetchRegistrados(); fetchOpens() }, 5 * 60 * 1000)
+    fetchArtiverseStats()
+    const interval = setInterval(() => {
+      fetchData(); fetchTasks(); fetchRegistrados(); fetchOpens(); fetchArtiverseStats()
+    }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -176,8 +193,10 @@ export default function DashboardPage() {
         <StatCard label="Total contactos" value={TOTAL_CONTACTS.toLocaleString()} sub="en base de datos" icon={Users} />
         <StatCard
           label="En Artiverse"
-          value={registradosLoading ? '…' : (registrados?.registeredCount ?? 115)}
-          sub={registradosLoading ? 'cargando…' : `${registrados?.fromCampaign ?? 0} de tus campañas`}
+          value={artiverseStats ? artiverseStats.total : (registrados?.registeredCount ?? '…')}
+          sub={artiverseStats
+            ? `${artiverseStats.today > 0 ? `+${artiverseStats.today} hoy · ` : ''}${artiverseStats.thisWeek} esta semana`
+            : 'usuarios registrados'}
           accent="#2563EB"
           icon={UserCheck}
         />
@@ -198,14 +217,19 @@ export default function DashboardPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">
                   Usuarios en Artiverse
+                  {artiverseStats && <span className="ml-2 text-[10px] font-normal text-emerald-500">● live</span>}
                 </p>
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  {registradosLoading
-                    ? <span className="text-4xl font-bold text-emerald-900 animate-pulse">…</span>
-                    : <span className="text-4xl font-bold text-emerald-900">{registrados?.registeredCount ?? 115}</span>
-                  }
+                  <span className="text-4xl font-bold text-emerald-900">
+                    {artiverseStats?.total ?? registrados?.registeredCount ?? '…'}
+                  </span>
                   <span className="text-sm text-emerald-600">usuarios registrados</span>
                 </div>
+                {artiverseStats && artiverseStats.today > 0 && (
+                  <p className="text-xs font-semibold text-emerald-600 mt-0.5">
+                    +{artiverseStats.today} alta{artiverseStats.today > 1 ? 's' : ''} hoy · {artiverseStats.thisWeek} esta semana
+                  </p>
+                )}
                 {/* Breakdown */}
                 {!registradosLoading && registrados && (
                   <div className="mt-2 flex flex-wrap gap-3">
