@@ -118,6 +118,7 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true)
   const [showImport, setShowImport] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<'resumen' | 'analytics'>('resumen')
 
   const fetchData = async () => {
     setLoading(true)
@@ -154,25 +155,110 @@ export default function CampaignsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px]">
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Campañas</h1>
-          <p className="text-sm text-gray-500 mt-1">Secuencias, estadísticas y configuración</p>
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Campañas</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>Secuencias, estadísticas y configuración</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {campaign && (
-            <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 text-xs font-medium">
+          {campaign && activeTab === 'resumen' && (
+            <button onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium"
+              style={{ background: 'var(--blue-dim)', color: 'var(--blue)', border: '1px solid rgba(37,99,235,0.2)' }}
+            >
               <Upload size={12} /> Importar CSV
             </button>
           )}
-          <button onClick={fetchData} disabled={loading} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs shadow-sm">
+          <button onClick={fetchData} disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium"
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)', border: '1px solid var(--border)' }}
+          >
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
             {loading ? 'Cargando…' : 'Actualizar'}
           </button>
         </div>
       </div>
 
-      {loading && campaigns.length === 0 ? (
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-5" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
+        {([
+          { id: 'resumen',   label: 'Resumen' },
+          { id: 'analytics', label: 'Analytics' },
+        ] as const).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className="px-4 py-2.5 text-xs font-medium transition-all"
+            style={{
+              color:        activeTab === tab.id ? 'var(--text-1)' : 'var(--text-3)',
+              borderBottom: activeTab === tab.id ? '2px solid var(--blue)' : '2px solid transparent',
+              marginBottom: '-1px',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Analytics tab */}
+      {activeTab === 'analytics' && (
+        <div className="surface-card overflow-hidden">
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
+              Resumen de rendimiento — todas las campañas
+            </h2>
+          </div>
+          {loading ? (
+            <div className="px-5 py-8 text-center text-xs animate-pulse" style={{ color: 'var(--text-3)' }}>Cargando…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                    {['Campaña', 'Segmento', 'Enviados / Total', 'Open rate', 'Reply rate', 'Estado'].map(h => (
+                      <th key={h} className="text-left px-4 py-2.5 text-[10px] uppercase tracking-wider font-semibold whitespace-nowrap"
+                        style={{ color: 'var(--text-3)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map(c => {
+                    const st = statusStyle[String(c.status)] || statusStyle['0']
+                    return (
+                      <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-1)' }}>{c.name}</td>
+                        <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-2)' }}>{c.segment || '—'}</td>
+                        <td className="px-4 py-3 text-xs font-mono" style={{ color: 'var(--text-2)' }}>
+                          {c.sent ?? 0} / {c.total ?? 0}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs font-semibold font-mono" style={{ color: (c.openRate ?? 0) > 0 ? '#F59E0B' : 'var(--text-3)' }}>
+                            {(c.openRate ?? 0) > 0 ? `${c.openRate}%` : '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs font-semibold font-mono" style={{ color: (c.replyRate ?? 0) > 0 ? 'var(--success)' : 'var(--text-3)' }}>
+                            {(c.replyRate ?? 0) > 0 ? `${c.replyRate}%` : '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.bg} ${st.text}`}>{st.label}</span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Resumen tab */}
+      {activeTab === 'resumen' && loading && campaigns.length === 0 ? (
         <div className="flex items-center gap-3 text-gray-400 text-sm">
           <RefreshCw size={14} className="animate-spin" /> Cargando datos de Instantly…
         </div>

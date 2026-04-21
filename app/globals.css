@@ -2,34 +2,138 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── DESIGN TOKENS ─────────────────────────────────────────────────────────── */
 @layer base {
-  :root {
-    --background: #F9FAFB;
-    --foreground: #111827;
-    --brand-blue: #2563EB;
-    --brand-lime: #CCFF00;
+
+  /* ── DARK THEME (default) ── */
+  :root,
+  [data-theme="dark"] {
+    --bg-base:      #07070F;
+    --bg-surface:   #0D0D1A;
+    --bg-elevated:  #13132A;
+    --bg-hover:     #1A1A35;
+    --bg-active:    #1E2848;
+
+    --blue:         #2563EB;
+    --blue-dim:     rgba(37, 99, 235, 0.15);
+    --blue-glow:    rgba(37, 99, 235, 0.35);
+    --lime:         #CCFF00;
+    --lime-dim:     rgba(204, 255, 0, 0.10);
+    --lime-glow:    rgba(204, 255, 0, 0.25);
+
+    --text-1:       #F0F0FF;
+    --text-2:       #8B8BA8;
+    --text-3:       #44445A;
+
+    --border:       rgba(255, 255, 255, 0.06);
+    --border-strong:rgba(255, 255, 255, 0.12);
+
+    --glass:        rgba(13, 13, 26, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.07);
+
+    --success:      #22C55E;
+    --warning:      #F59E0B;
+    --error:        #EF4444;
+    --info:         #60A5FA;
+
+    --brand-blue:   #2563EB;
+    --brand-lime:   #CCFF00;
+  }
+
+  /* ── LIGHT THEME ── */
+  [data-theme="light"] {
+    --bg-base:      #F3F4F8;
+    --bg-surface:   #FFFFFF;
+    --bg-elevated:  #F0F1F5;
+    --bg-hover:     #E8EAEF;
+    --bg-active:    #EEF2FF;
+
+    --blue:         #2563EB;
+    --blue-dim:     rgba(37, 99, 235, 0.08);
+    --blue-glow:    rgba(37, 99, 235, 0.2);
+    --lime:         #7BAF00;
+    --lime-dim:     rgba(123, 175, 0, 0.10);
+    --lime-glow:    rgba(123, 175, 0, 0.2);
+
+    --text-1:       #0F0F1A;
+    --text-2:       #5A5A7A;
+    --text-3:       #9999AA;
+
+    --border:       rgba(0, 0, 0, 0.08);
+    --border-strong:rgba(0, 0, 0, 0.14);
+
+    --glass:        rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.06);
+
+    --success:      #16A34A;
+    --warning:      #D97706;
+    --error:        #DC2626;
+    --info:         #2563EB;
+
+    --brand-blue:   #2563EB;
+    --brand-lime:   #CCFF00;
   }
 }
 
+/* ── BASE ───────────────────────────────────────────────────────────────────── */
+
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-1);
+  font-family: var(--font-poppins, 'Poppins'), -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 * { box-sizing: border-box; }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #F3F4F6; }
-::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+/* ── SCROLLBARS ─────────────────────────────────────────────────────────────── */
 
-/* ── Ruta page — dark scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+
+/* Dark scrollbar for ruta page */
 .ruta-scroll::-webkit-scrollbar-track { background: #0F0F1A; }
 .ruta-scroll::-webkit-scrollbar-thumb { background: #2563EB44; border-radius: 3px; }
 .ruta-scroll::-webkit-scrollbar-thumb:hover { background: #2563EB88; }
 
-/* ── Road shimmer (light traveling on line) ── */
+/* ── UTILITY CLASSES ────────────────────────────────────────────────────────── */
+
+.surface-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.elevated-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.glass-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glow-blue {
+  box-shadow: 0 0 24px var(--blue-glow);
+}
+
+.glow-lime {
+  box-shadow: 0 0 24px var(--lime-glow);
+}
+
+.text-muted { color: var(--text-2); }
+.text-faint  { color: var(--text-3); }
+
+/* ── ANIMATIONS ─────────────────────────────────────────────────────────────── */
+
+/* Road shimmer (light traveling on line) — used in /ruta */
 @keyframes road-shimmer {
   0%   { transform: translateX(-100%); opacity: 0; }
   20%  { opacity: 1; }
@@ -46,7 +150,7 @@ body {
   border-radius: 9999px;
 }
 
-/* ── Node pop-in ── */
+/* Node pop-in */
 @keyframes node-pop {
   0%   { transform: scale(0) translateY(8px); opacity: 0; }
   70%  { transform: scale(1.08) translateY(0); opacity: 1; }
@@ -57,7 +161,7 @@ body {
   opacity: 0;
 }
 
-/* ── Meta node pulse ── */
+/* Meta node pulse */
 @keyframes meta-pulse {
   0%, 100% { box-shadow: 0 0 20px 4px #CCFF0055, 0 0 60px 10px #CCFF0022; }
   50%       { box-shadow: 0 0 35px 8px #CCFF0077, 0 0 80px 20px #CCFF0033; }
@@ -66,7 +170,7 @@ body {
   animation: meta-pulse 2.5s ease-in-out infinite;
 }
 
-/* ── SVG path draw ── */
+/* SVG path draw */
 @keyframes path-draw {
   from { stroke-dashoffset: var(--path-length, 2000); }
   to   { stroke-dashoffset: 0; }
@@ -75,9 +179,47 @@ body {
   animation: path-draw 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* ── HubSpot button ── */
+/* HubSpot button glow */
 @keyframes hs-glow {
   0%, 100% { box-shadow: 0 0 0 0 #FF7A5933; }
   50%       { box-shadow: 0 0 0 6px #FF7A5900; }
 }
 .hs-btn:hover { animation: hs-glow 1s ease-out; }
+
+/* Skeleton pulse */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.7; }
+}
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+}
+
+/* Fade in up */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up {
+  animation: fade-in-up 0.3s ease-out forwards;
+}
+
+/* Slide in right (slide-over panel) */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.slide-in-right {
+  animation: slide-in-right 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Status dot pulse */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+.status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
