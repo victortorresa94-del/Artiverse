@@ -553,7 +553,7 @@ function ContactosContent() {
 
   return (
     <div
-      className="flex flex-col h-screen overflow-hidden"
+      className="flex flex-col md:h-screen md:overflow-hidden"
       style={{ background: 'var(--bg-base)' }}
     >
       {/* ── Header ───────────────────────────────────────────────────────────── */}
@@ -584,9 +584,9 @@ function ContactosContent() {
           </button>
         </div>
 
-        {/* KPI cards */}
+        {/* KPI cards — hidden on mobile to save vertical space */}
         {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+          <div className="hidden sm:grid sm:grid-cols-4 gap-2.5 mb-4">
             {[
               { label: 'Total outbound',    value: stats.totalOutbound,  color: 'var(--text-1)' },
               { label: 'En plataforma',     value: stats.totalInPlatform, color: '#22C55E' },
@@ -725,10 +725,10 @@ function ContactosContent() {
       </div>
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex md:flex-1 md:min-h-0">
         <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${selected ? 'lg:pr-[460px]' : ''}`}>
 
-          <div className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }}>
+          <div className="md:flex-1 md:overflow-auto" style={{ background: 'var(--bg-base)' }}>
             {error ? (
               <EmptyState
                 icon={AlertCircle}

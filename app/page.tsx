@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import {
   RefreshCw, Database, Send, UserCheck, Building2, Code,
@@ -254,9 +254,31 @@ export default function DashboardPage() {
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
-  const campaigns     = liveData?.campaigns    ?? []
+  const rawCampaigns  = liveData?.campaigns    ?? []
   const summary       = liveData?.summary      ?? {}
   const rutaNodes     = ruta?.nodes
+
+  // Enrich campaigns with real open/reply rates from ruta pipeline data
+  const campaigns = useMemo(() => {
+    if (!rawCampaigns.length) return rawCampaigns
+    const rutaCamps: any[] = ruta?.campaigns ?? []
+    return rawCampaigns.map((c: any) => {
+      const rc = rutaCamps.find((r: any) =>
+        r.name === c.name ||
+        c.name.toLowerCase().includes(r.name.toLowerCase()) ||
+        r.name.toLowerCase().includes(c.name.toLowerCase())
+      )
+      if (rc && rc.sent > 0) {
+        return {
+          ...c,
+          sent:      rc.sent,
+          openRate:  +((rc.opened  / rc.sent) * 100).toFixed(1),
+          replyRate: +((rc.replied / rc.sent) * 100).toFixed(1),
+        }
+      }
+      return c
+    })
+  }, [rawCampaigns, ruta])
 
   const proAgencia     = rutaNodes?.pro_agencia?.count      ?? 0
   const proProgramador = rutaNodes?.pro_programador?.count  ?? 0
@@ -371,7 +393,7 @@ export default function DashboardPage() {
                 <PillBadge label={`+${artStats.today} hoy`} variant="green" size="xs" />
               ) : null}
             </div>
-            <Link href="/contactos" className="text-[10px] font-medium" style={{ color: 'var(--text-3)' }}>
+            <Link href="/registros" className="text-[10px] font-medium" style={{ color: 'var(--text-3)' }}>
               Ver todos →
             </Link>
           </div>
@@ -547,8 +569,14 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Collapsible: Estado campañas ──────────────────────────────────── */}
+      {(() => {
+        const totalSent   = campaigns.reduce((s: number, c: any) => s + (c.sent ?? 0), 0)
+        const rutaCamps: any[] = ruta?.campaigns ?? []
+        const totalOpened = rutaCamps.reduce((s: number, c: any) => s + (c.opened ?? 0), 0)
+        const totalOpenPct = totalSent > 0 ? `${((totalOpened / totalSent) * 100).toFixed(1)}% open total` : null
+        return (
       <Collapsible
-        title="Estado de campañas"
+        title={totalOpenPct ? `Estado de campañas · ${totalOpenPct}` : 'Estado de campañas'}
         badge={campaigns.length || undefined}
         badgeVariant="blue"
         icon={Mail}
@@ -622,6 +650,8 @@ export default function DashboardPage() {
           </div>
         )}
       </Collapsible>
+        )
+      })()}
 
       {/* ── Collapsible: Tareas pendientes ────────────────────────────────── */}
       <Collapsible
