@@ -23,3 +23,61 @@ body {
 ::-webkit-scrollbar-track { background: #F3F4F6; }
 ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+/* ── Ruta page — dark scrollbar ── */
+.ruta-scroll::-webkit-scrollbar-track { background: #0F0F1A; }
+.ruta-scroll::-webkit-scrollbar-thumb { background: #2563EB44; border-radius: 3px; }
+.ruta-scroll::-webkit-scrollbar-thumb:hover { background: #2563EB88; }
+
+/* ── Road shimmer (light traveling on line) ── */
+@keyframes road-shimmer {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateX(500%); opacity: 0; }
+}
+.road-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: -1px 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  animation: road-shimmer 2.8s ease-in-out infinite;
+  border-radius: 9999px;
+}
+
+/* ── Node pop-in ── */
+@keyframes node-pop {
+  0%   { transform: scale(0) translateY(8px); opacity: 0; }
+  70%  { transform: scale(1.08) translateY(0); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.node-pop {
+  animation: node-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}
+
+/* ── Meta node pulse ── */
+@keyframes meta-pulse {
+  0%, 100% { box-shadow: 0 0 20px 4px #CCFF0055, 0 0 60px 10px #CCFF0022; }
+  50%       { box-shadow: 0 0 35px 8px #CCFF0077, 0 0 80px 20px #CCFF0033; }
+}
+.meta-pulse {
+  animation: meta-pulse 2.5s ease-in-out infinite;
+}
+
+/* ── SVG path draw ── */
+@keyframes path-draw {
+  from { stroke-dashoffset: var(--path-length, 2000); }
+  to   { stroke-dashoffset: 0; }
+}
+.path-draw {
+  animation: path-draw 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ── HubSpot button ── */
+@keyframes hs-glow {
+  0%, 100% { box-shadow: 0 0 0 0 #FF7A5933; }
+  50%       { box-shadow: 0 0 0 6px #FF7A5900; }
+}
+.hs-btn:hover { animation: hs-glow 1s ease-out; }
