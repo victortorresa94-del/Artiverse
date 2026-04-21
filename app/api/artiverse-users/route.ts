@@ -10,7 +10,12 @@
  *   { data: [...], nextCursor: string|null, hasMore: boolean, count: number }
  *
  * Cada usuario:
- *   { name, email, emailVerified, profile, promoter, subscription: { planType }, agencies: [...], createdAt, updatedAt }
+ *   { name, email, emailVerified, profile, promoter, subscription: { planType },
+ *     agencies: [{ displayName, artists: [...] }], createdAt, updatedAt }
+ *
+ * Rate limit: 30 req/min — this route fetches at most ceil(total/100) pages per call.
+ * With ~124 users that's 2 requests. We cache-bust with revalidate:0 per call,
+ * but the dashboard only polls every 5 min so we stay well within limits.
  */
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -31,7 +36,7 @@ async function artiverse(path: string) {
   return res.json()
 }
 
-async function fetchPage(cursor?: string, limit = 50) {
+async function fetchPage(cursor?: string, limit = 100) {
   const params = new URLSearchParams({ limit: String(limit) })
   if (cursor) params.set('cursor', cursor)
   return artiverse(`/admin/marketing/users?${params}`)
@@ -63,11 +68,16 @@ async function fetchAllUsers(maxUsers = 500) {
 
 interface ArtiverseSubscription {
   planType?: string       // 'free' | 'pro' | 'business'
-  entityType?: string
+  entityType?: string     // 'promoter' | 'agency' | 'artist'
   billingCycle?: string | null
   status?: string
   currentPeriodEnd?: string | null
   createdAt?: string
+}
+
+interface ArtiverseArtist {
+  artistName?: string
+  email?: string
 }
 
 interface ArtiverseAgency {
@@ -75,6 +85,8 @@ interface ArtiverseAgency {
   legalName?: string
   city?: string
   country?: string
+  subscription?: ArtiverseSubscription
+  artists?: ArtiverseArtist[]
 }
 
 interface ArtiverseUser {
@@ -113,15 +125,17 @@ function getPlanType(subscription: ArtiverseSubscription | string | undefined): 
 }
 
 function normalizeUser(u: ArtiverseUser) {
-  const registeredAt = u.createdAt ?? u.createdAt ?? ''
+  const registeredAt = u.createdAt ?? ''
   const agencies = u.agencies ?? []
   const hasAgency = agencies.length > 0
   const agency = agencies[0]
   const agencyName = agency?.displayName ?? agency?.legalName ?? ''
   const company = agencyName || (u.company ?? u.companyName ?? '')
 
-  // profileComplete: true if the user has a promoter profile filled in
-  const profileComplete = u.profile != null || u.promoter != null ||
+  // profileComplete: true if the user has a promoter or profile filled in
+  const profileComplete =
+    u.profile != null ||
+    u.promoter != null ||
     (u.profileComplete ?? u.profile_complete ?? false)
 
   const planType = getPlanType(u.subscription as ArtiverseSubscription | string)
@@ -158,6 +172,27 @@ function isThisWeek(dateStr: string): boolean {
   return diff <= 7
 }
 
+// Count unique agencies and artists across all users
+function computeEntityCounts(rawUsers: ArtiverseUser[]) {
+  // Track unique agencies by displayName/legalName to avoid duplicates
+  const agencyNames = new Set<string>()
+  let artistCount = 0
+
+  for (const u of rawUsers) {
+    const agencies = u.agencies ?? []
+    for (const a of agencies) {
+      const key = a.displayName ?? a.legalName ?? ''
+      if (key) agencyNames.add(key)
+      artistCount += (a.artists ?? []).length
+    }
+  }
+
+  return {
+    agencyCount: agencyNames.size,
+    artistCount,
+  }
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
@@ -187,6 +222,9 @@ export async function GET(req: NextRequest) {
     const rawUsers = await fetchAllUsers(500)
     const users = rawUsers.map(normalizeUser)
 
+    // Entity counts (agencies, artists) from raw data before normalization
+    const { agencyCount, artistCount } = computeEntityCounts(rawUsers)
+
     // Compute daily registration stats (last 14 days)
     const dailyMap: Record<string, number> = {}
     users.forEach(u => {
@@ -203,6 +241,9 @@ export async function GET(req: NextRequest) {
     const todayUsers = users.filter(u => isToday(u.registeredAt))
     const weekUsers  = users.filter(u => isThisWeek(u.registeredAt))
 
+    const freeUsers = users.filter(u => u.subscription === 'free')
+    const proUsers  = users.filter(u => u.subscription !== 'free')
+
     return NextResponse.json({
       users,
       stats: {
@@ -212,8 +253,11 @@ export async function GET(req: NextRequest) {
         verified: users.filter(u => u.emailVerified).length,
         profileComplete: users.filter(u => u.profileComplete).length,
         withAgency: users.filter(u => u.hasAgency).length,
-        free: users.filter(u => u.subscription === 'free').length,
-        pro:  users.filter(u => u.subscription !== 'free').length,
+        free: freeUsers.length,
+        pro: proUsers.length,
+        // Platform entity counts
+        agencyCount,
+        artistCount,
       },
       daily,
       todayUsers,
