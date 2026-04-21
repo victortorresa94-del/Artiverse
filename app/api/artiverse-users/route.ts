@@ -6,8 +6,11 @@
  *   GET https://api.artiverse.es/admin/marketing/users?limit=N&cursor=X
  *   GET https://api.artiverse.es/admin/marketing/users/by-email/:email
  *
- * Paginación cursor-based: la respuesta devuelve un campo `cursor` que
- * se usa como query param ?cursor=X en la siguiente petición.
+ * Estructura real de la respuesta:
+ *   { data: [...], nextCursor: string|null, hasMore: boolean, count: number }
+ *
+ * Cada usuario:
+ *   { name, email, emailVerified, profile, promoter, subscription: { planType }, agencies: [...], createdAt, updatedAt }
  */
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -41,16 +44,16 @@ async function fetchAllUsers(maxUsers = 500) {
   do {
     const data = await fetchPage(cursor, 100)
 
-    // Normalize: the API might return users in different keys
+    // API returns users under "data" key
     const items: ArtiverseUser[] =
-      data.users ?? data.items ?? data.data ?? data.results ?? []
+      data.data ?? data.users ?? data.items ?? data.results ?? []
 
     users.push(...items)
 
-    // The API returns the next cursor in the body
-    cursor = data.cursor ?? data.nextCursor ?? data.next_cursor ?? undefined
+    // API uses nextCursor for pagination
+    cursor = data.nextCursor ?? data.cursor ?? data.next_cursor ?? undefined
 
-    if (!cursor || items.length === 0 || users.length >= maxUsers) break
+    if (!cursor || !data.hasMore || items.length === 0 || users.length >= maxUsers) break
   } while (true)
 
   return users
@@ -58,25 +61,43 @@ async function fetchAllUsers(maxUsers = 500) {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface ArtiverseSubscription {
+  planType?: string       // 'free' | 'pro' | 'business'
+  entityType?: string
+  billingCycle?: string | null
+  status?: string
+  currentPeriodEnd?: string | null
+  createdAt?: string
+}
+
+interface ArtiverseAgency {
+  displayName?: string
+  legalName?: string
+  city?: string
+  country?: string
+}
+
 interface ArtiverseUser {
+  name?: string
+  email?: string
+  emailVerified?: boolean
+  profile?: unknown
+  promoter?: unknown
+  subscription?: ArtiverseSubscription | string
+  agencies?: ArtiverseAgency[]
+  createdAt?: string
+  updatedAt?: string
+  // legacy / fallback fields
   id?: string
   _id?: string
-  email?: string
-  name?: string
   firstName?: string
   first_name?: string
   lastName?: string
   last_name?: string
   company?: string
   companyName?: string
-  company_name?: string
   role?: string
-  subscription?: string
   plan?: string
-  createdAt?: string
-  created_at?: string
-  updatedAt?: string
-  emailVerified?: boolean
   email_verified?: boolean
   profileComplete?: boolean
   profile_complete?: boolean
@@ -85,21 +106,41 @@ interface ArtiverseUser {
   [key: string]: unknown
 }
 
+function getPlanType(subscription: ArtiverseSubscription | string | undefined): string {
+  if (!subscription) return 'free'
+  if (typeof subscription === 'string') return subscription
+  return subscription.planType ?? 'free'
+}
+
 function normalizeUser(u: ArtiverseUser) {
-  const registeredAt = u.createdAt ?? u.created_at ?? ''
+  const registeredAt = u.createdAt ?? u.createdAt ?? ''
+  const agencies = u.agencies ?? []
+  const hasAgency = agencies.length > 0
+  const agency = agencies[0]
+  const agencyName = agency?.displayName ?? agency?.legalName ?? ''
+  const company = agencyName || (u.company ?? u.companyName ?? '')
+
+  // profileComplete: true if the user has a promoter profile filled in
+  const profileComplete = u.profile != null || u.promoter != null ||
+    (u.profileComplete ?? u.profile_complete ?? false)
+
+  const planType = getPlanType(u.subscription as ArtiverseSubscription | string)
+
   return {
-    id: u.id ?? u._id ?? '',
+    id: u.id ?? u._id ?? u.email ?? '',
     email: u.email ?? '',
     name: u.name ?? `${u.firstName ?? u.first_name ?? ''} ${u.lastName ?? u.last_name ?? ''}`.trim(),
-    company: u.company ?? u.companyName ?? u.company_name ?? '',
+    company,
     role: u.role ?? 'user',
-    subscription: u.subscription ?? u.plan ?? 'free',
+    subscription: planType,
     registeredAt,
     registeredDate: registeredAt ? registeredAt.slice(0, 10) : '',
     emailVerified: u.emailVerified ?? u.email_verified ?? false,
-    profileComplete: u.profileComplete ?? u.profile_complete ?? false,
-    hasAgency: u.hasAgency ?? false,
-    agencyName: u.agencyName ?? '',
+    profileComplete,
+    hasAgency,
+    agencyName,
+    city: agency?.city ?? '',
+    country: agency?.country ?? '',
   }
 }
 
@@ -133,12 +174,12 @@ export async function GET(req: NextRequest) {
     if (mode === 'page') {
       // Single page — for the usuarios page infinite scroll
       const data = await fetchPage(cursor, limit)
-      const items: ArtiverseUser[] = data.users ?? data.items ?? data.data ?? data.results ?? []
+      const items: ArtiverseUser[] = data.data ?? data.users ?? data.items ?? data.results ?? []
       const normalized = items.map(normalizeUser)
       return NextResponse.json({
         users: normalized,
-        cursor: data.cursor ?? data.nextCursor ?? data.next_cursor ?? null,
-        total: data.total ?? data.count ?? null,
+        cursor: data.nextCursor ?? data.cursor ?? data.next_cursor ?? null,
+        total: data.count ?? data.total ?? null,
       })
     }
 
