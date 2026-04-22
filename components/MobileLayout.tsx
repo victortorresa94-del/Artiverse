@@ -19,10 +19,6 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14"
         style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)' }}
       >
-        <div className="flex items-center gap-2.5">
-          <Image src="/artiverse-logo.jpg" alt="Artiverse" width={26} height={26} className="rounded-md" />
-          <span className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>Artiverse</span>
-        </div>
         <button
           onClick={() => setMobileOpen(true)}
           className="p-2 rounded-lg transition-colors"
@@ -30,6 +26,10 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         >
           <Menu size={19} />
         </button>
+        <div className="flex items-center gap-2.5">
+          <span className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>Artiverse</span>
+          <Image src="/artiverse-logo.jpg" alt="Artiverse" width={26} height={26} className="rounded-md" />
+        </div>
       </div>
 
       {/* Mobile sidebar overlay */}
@@ -37,7 +37,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <div
-            className="relative w-64 h-full flex flex-col slide-in-right"
+            className="relative w-64 h-full flex flex-col slide-in-left"
             style={{ background: 'var(--bg-surface)', borderRight: '1px solid var(--border)' }}
           >
             <div

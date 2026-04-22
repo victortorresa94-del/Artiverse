@@ -643,44 +643,85 @@ function ContactosContent() {
           })}
         </div>
 
-        <select
-          className="sm:hidden w-full text-xs rounded-lg px-3 py-2"
-          style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)', border: '1px solid var(--border)' }}
-          value={activeTab}
-          onChange={e => setActiveTab(e.target.value as TabId)}
+        {/* Mobile tabs — horizontal scroll pills */}
+        <div
+          className="sm:hidden overflow-x-auto flex items-center gap-1.5 pb-0.5"
+          style={{ scrollbarWidth: 'none' }}
         >
-          {TABS.map(tab => <option key={tab.id} value={tab.id}>{tab.label} ({tabCounts[tab.id] ?? 0})</option>)}
-        </select>
+          {TABS.map(tab => {
+            const active = activeTab === tab.id
+            const count  = tabCounts[tab.id]
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all"
+                style={{
+                  background: active ? tab.color : 'var(--bg-elevated)',
+                  color:      active ? (tab.color === '#44445A' ? 'var(--text-1)' : '#fff') : 'var(--text-2)',
+                  border:     `1px solid ${active ? tab.color : 'var(--border)'}`,
+                }}
+              >
+                {tab.label}
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{
+                    background: active ? 'rgba(255,255,255,0.2)' : 'var(--bg-hover)',
+                    color:      active ? '#fff' : 'var(--text-3)',
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* ── Filters + search bar ─────────────────────────────────────────────── */}
       <div
-        className="px-4 sm:px-6 py-2.5 shrink-0 flex items-center gap-2 flex-wrap"
+        className="px-4 sm:px-6 py-2.5 shrink-0 space-y-2"
         style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)' }}
       >
-        {/* Search */}
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar empresa, email, ciudad…"
-          className="text-xs rounded-lg px-3 py-1.5 w-52 focus:outline-none"
-          style={{
-            background: 'var(--bg-elevated)',
-            color:      'var(--text-1)',
-            border:     '1px solid var(--border)',
-          }}
-        />
+        {/* Search row */}
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar empresa, email, ciudad…"
+            className="text-xs rounded-lg px-3 py-1.5 flex-1 sm:flex-none sm:w-52 focus:outline-none"
+            style={{
+              background: 'var(--bg-elevated)',
+              color:      'var(--text-1)',
+              border:     '1px solid var(--border)',
+            }}
+          />
+          {/* Mobile: active filters indicator */}
+          {(campaignFilter || segmentFilter) && (
+            <button
+              onClick={() => { setCampaignFilter(''); setSegmentFilter('') }}
+              className="sm:hidden flex items-center gap-1 text-[10px] font-medium px-2 py-1.5 rounded-lg transition-colors"
+              style={{ background: 'var(--blue-dim)', color: 'var(--blue)', border: '1px solid var(--blue)' }}
+            >
+              <X size={10} />
+              Limpiar
+            </button>
+          )}
+        </div>
 
-        {/* Campaign pills */}
-        {campaigns.length > 0 && (
-          <div className="flex items-center gap-1 flex-wrap">
+        {/* Campaign + segment pills — single horizontal scroll row */}
+        {(campaigns.length > 0 || segments.length > 0) && (
+          <div
+            className="overflow-x-auto flex items-center gap-1.5 pb-0.5"
+            style={{ scrollbarWidth: 'none' }}
+          >
             <button
               onClick={() => setCampaignFilter('')}
-              className="text-[10px] font-medium px-2 py-1 rounded-full transition-all"
+              className="text-[10px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-all"
               style={{
-                background: !campaignFilter ? 'var(--blue)'          : 'var(--bg-elevated)',
-                color:      !campaignFilter ? '#fff'                  : 'var(--text-2)',
+                background: !campaignFilter ? 'var(--blue)'      : 'var(--bg-elevated)',
+                color:      !campaignFilter ? '#fff'              : 'var(--text-2)',
                 border:     `1px solid ${!campaignFilter ? 'var(--blue)' : 'var(--border)'}`,
               }}
             >
@@ -690,7 +731,7 @@ function ContactosContent() {
               <button
                 key={camp.id}
                 onClick={() => setCampaignFilter(campaignFilter === camp.id ? '' : camp.id)}
-                className="text-[10px] font-medium px-2 py-1 rounded-full transition-all"
+                className="text-[10px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-all"
                 style={{
                   background: campaignFilter === camp.id ? 'var(--blue)'  : 'var(--bg-elevated)',
                   color:      campaignFilter === camp.id ? '#fff'          : 'var(--text-2)',
@@ -700,17 +741,14 @@ function ContactosContent() {
                 {camp.name}
               </button>
             ))}
-          </div>
-        )}
-
-        {/* Segment pills */}
-        {segments.length > 0 && (
-          <div className="flex items-center gap-1 flex-wrap">
+            {segments.length > 0 && campaigns.length > 0 && (
+              <div className="w-px h-4 shrink-0" style={{ background: 'var(--border)' }} />
+            )}
             {segments.map(seg => (
               <button
                 key={seg}
                 onClick={() => setSegmentFilter(segmentFilter === seg ? '' : seg)}
-                className="text-[10px] font-medium px-2 py-1 rounded-full transition-all"
+                className="text-[10px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-all"
                 style={{
                   background: segmentFilter === seg ? 'rgba(204,255,0,0.15)' : 'var(--bg-elevated)',
                   color:      segmentFilter === seg ? 'var(--lime)'           : 'var(--text-2)',
@@ -825,30 +863,45 @@ function ContactosContent() {
                 </table>
 
                 {/* Mobile cards */}
-                <div className="sm:hidden divide-y" style={{ borderColor: 'var(--border)' }}>
+                <div className="sm:hidden">
                   {paginated.map(c => {
-                    const cls = classifications[c.email]
+                    const cls        = classifications[c.email]
+                    const isSelected = selected?.id === c.id
+                    const phaseColor = phaseConfig[c.phase]?.color ?? 'var(--text-3)'
                     return (
                       <div
                         key={c.id}
                         onClick={() => setSelected(prev => prev?.id === c.id ? null : c)}
-                        className="px-4 py-3.5 cursor-pointer transition-colors"
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        className="flex items-stretch cursor-pointer transition-colors"
+                        style={{
+                          borderBottom: '1px solid var(--border)',
+                          background:   isSelected ? 'var(--bg-active)' : 'transparent',
+                        }}
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)' }}
+                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-1)' }}>
-                              {c.company || c.email}
-                            </p>
-                            <p className="text-[10px] truncate font-mono" style={{ color: 'var(--text-3)' }}>{c.email}</p>
+                        {/* Phase color bar */}
+                        <div className="w-1 shrink-0" style={{ background: phaseColor }} />
+                        {/* Content */}
+                        <div className="flex-1 px-3 py-3 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                <p className="font-semibold text-sm leading-tight truncate" style={{ color: 'var(--text-1)' }}>
+                                  {c.company || c.email.split('@')[0]}
+                                </p>
+                                <PriorityBadge opens={c.opens} replies={c.replies} />
+                              </div>
+                              <p className="text-[10px] font-mono truncate" style={{ color: 'var(--text-3)' }}>{c.email}</p>
+                            </div>
+                            <PhaseBadge phase={c.phase} cls={cls} />
                           </div>
-                          <PhaseBadge phase={c.phase} cls={cls} />
-                        </div>
-                        <div className="mt-2 flex items-center gap-3">
-                          <EmailStatus status={c.emailStatus} opens={c.opens} clicks={c.clicks} replies={c.replies} />
-                          {c.campaignName && <span className="text-xs truncate" style={{ color: 'var(--text-3)' }}>{c.campaignName}</span>}
-                          <PriorityBadge opens={c.opens} replies={c.replies} />
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <EmailStatus status={c.emailStatus} opens={c.opens} clicks={c.clicks} replies={c.replies} />
+                            {c.campaignName && (
+                              <span className="text-[10px] truncate" style={{ color: 'var(--text-3)' }}>· {c.campaignName}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )
