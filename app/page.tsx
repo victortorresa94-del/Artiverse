@@ -375,111 +375,99 @@ export default function DashboardPage() {
       {/* ── Mini Funnel ───────────────────────────────────────────────────── */}
       <MiniFunnel ruta={ruta} />
 
-      {/* ── 2-col actividad ───────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-
-        {/* Últimos registros */}
-        <div className="surface-card overflow-hidden">
-          <div
-            className="flex items-center justify-between px-4 py-3.5"
-            style={{ borderBottom: '1px solid var(--border)' }}
-          >
-            <div className="flex items-center gap-2">
-              <UserCheck size={14} style={{ color: 'var(--success)' }} />
-              <h2 className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>
-                Últimos registros
-              </h2>
-              {artStats?.today ? (
-                <PillBadge label={`+${artStats.today} hoy`} variant="green" size="xs" />
-              ) : null}
-            </div>
-            <Link href="/registros" className="text-[10px] font-medium" style={{ color: 'var(--text-3)' }}>
-              Ver todos →
-            </Link>
+      {/* ── Últimos registros ────────────────────────────────────────────── */}
+      <div className="surface-card overflow-hidden mb-4">
+        <div
+          className="flex items-center justify-between px-4 py-3.5"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <div className="flex items-center gap-2">
+            <UserCheck size={14} style={{ color: 'var(--success)' }} />
+            <h2 className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>
+              Últimos registros
+            </h2>
+            {artStats?.today ? (
+              <PillBadge label={`+${artStats.today} hoy`} variant="green" size="xs" />
+            ) : null}
           </div>
-
-          {artLoading && artUsers.length === 0 ? (
-            <div className="overflow-hidden">
-              <table className="w-full">
-                <tbody><SkeletonRows count={5} cols={3} /></tbody>
-              </table>
-            </div>
-          ) : artUsers.length === 0 ? (
-            <EmptyState icon={UserCheck} title="Sin registros recientes" subtitle="Los nuevos usuarios aparecen aquí" />
-          ) : (
-            <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-              {artUsers.map((u: any, i: number) => {
-                const plan = u.subscription?.planType ?? u.subscription ?? 'free'
-                const isPro = plan !== 'free'
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 px-4 py-2.5 transition-colors"
-                    style={{ cursor: 'default' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {/* Avatar placeholder */}
-                    <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                      style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
-                    >
-                      {(u.name?.[0] || u.email?.[0] || '?').toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate" style={{ color: 'var(--text-1)' }}>
-                        {u.name || u.email?.split('@')[0] || '—'}
-                      </p>
-                      <p className="text-[10px] truncate font-mono" style={{ color: 'var(--text-3)' }}>
-                        {u.email}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <PillBadge
-                        label={isPro ? 'Pro' : 'Free'}
-                        variant={isPro ? 'lime' : 'gray'}
-                        size="xs"
-                      />
-                      <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>
-                        {timeAgo(u.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+          <Link href="/registros" className="text-[10px] font-medium" style={{ color: 'var(--text-3)' }}>
+            Ver todos →
+          </Link>
         </div>
 
-        {/* Últimas aperturas */}
-        <div className="surface-card overflow-hidden">
-          <div
-            className="flex items-center justify-between px-4 py-3.5"
-            style={{ borderBottom: '1px solid var(--border)' }}
-          >
-            <div className="flex items-center gap-2">
-              <MailOpen size={14} style={{ color: '#F59E0B' }} />
-              <h2 className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>
-                Actividad email
-              </h2>
-              {opens?.totalOpened ? (
-                <PillBadge label={`${opens.totalOpened} abiertos`} variant="amber" size="xs" />
-              ) : null}
-            </div>
-            <Link href="/campaigns" className="text-[10px] font-medium" style={{ color: 'var(--text-3)' }}>
-              Ver campañas →
-            </Link>
+        {artLoading && artUsers.length === 0 ? (
+          <div className="overflow-hidden">
+            <table className="w-full">
+              <tbody><SkeletonRows count={5} cols={3} /></tbody>
+            </table>
           </div>
+        ) : artUsers.length === 0 ? (
+          <EmptyState icon={UserCheck} title="Sin registros recientes" subtitle="Los nuevos usuarios aparecen aquí" />
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+            {artUsers.map((u: any, i: number) => {
+              const plan = u.subscription?.planType ?? u.subscription ?? 'free'
+              const isPro = plan !== 'free'
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 px-4 py-2.5 transition-colors"
+                  style={{ cursor: 'default' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
+                  >
+                    {(u.name?.[0] || u.email?.[0] || '?').toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate" style={{ color: 'var(--text-1)' }}>
+                      {u.name || u.email?.split('@')[0] || '—'}
+                    </p>
+                    <p className="text-[10px] truncate font-mono" style={{ color: 'var(--text-3)' }}>
+                      {u.email}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <PillBadge
+                      label={isPro ? 'Pro' : 'Free'}
+                      variant={isPro ? 'lime' : 'gray'}
+                      size="xs"
+                    />
+                    <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+                      {timeAgo(u.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
-          {opensLoading ? (
-            <div className="overflow-hidden">
-              <table className="w-full">
-                <tbody><SkeletonRows count={5} cols={3} /></tbody>
-              </table>
-            </div>
-          ) : !opens || opens.leads?.length === 0 ? (
-            <EmptyState icon={MailOpen} title="Sin aperturas recientes" subtitle="Los datos aparecen cuando Instantly registra actividad" />
-          ) : (
+      {/* ── Actividad email (collapsible) ────────────────────────────────── */}
+      <Collapsible
+        title="Actividad email"
+        badge={opens?.totalOpened || undefined}
+        badgeVariant="amber"
+        icon={MailOpen}
+        iconColor="#F59E0B"
+        defaultOpen={false}
+        onRefresh={fetchOpens}
+        refreshing={opensLoading}
+      >
+        {opensLoading ? (
+          <div className="overflow-hidden">
+            <table className="w-full">
+              <tbody><SkeletonRows count={5} cols={3} /></tbody>
+            </table>
+          </div>
+        ) : !opens || opens.leads?.length === 0 ? (
+          <EmptyState icon={MailOpen} title="Sin aperturas recientes" subtitle="Los datos aparecen cuando Instantly registra actividad" />
+        ) : (
+          <>
             <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
               {opens.leads.slice(0, 8).map((lead: any, i: number) => (
                 <div
@@ -518,9 +506,24 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
+            <div
+              className="px-4 py-3 flex items-center justify-between"
+              style={{ borderTop: '1px solid var(--border)' }}
+            >
+              <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+                Mostrando 8 de {opens.leads.length} contactos con actividad
+              </span>
+              <Link
+                href="/ruta?node=abierto"
+                className="text-xs font-medium flex items-center gap-1"
+                style={{ color: 'var(--blue)' }}
+              >
+                Ver todos en Ruta <ChevronRight size={11} />
+              </Link>
+            </div>
+          </>
+        )}
+      </Collapsible>
 
       {/* ── Health metrics ────────────────────────────────────────────────── */}
       <div className="surface-card p-5 mb-5">

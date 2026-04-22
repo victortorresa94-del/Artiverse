@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   X, RefreshCw, ExternalLink, Mail, Building2, MapPin,
   Calendar, ChevronRight, Zap, Globe, Users, Clock, Map,
@@ -618,6 +619,7 @@ export default function RutaPage() {
   const [selectedNode,    setSelectedNode]   = useState<string | null>(null)
   const [hubspotContact,  setHubspotContact] = useState<RutaContact | null>(null)
   const [mobileTab,       setMobileTab]      = useState<'outbound' | 'inbound'>('outbound')
+  const searchParams = useSearchParams()
 
   const load = useCallback(async () => {
     setLoading(true); setError(null); setAnimated(false)
@@ -632,6 +634,15 @@ export default function RutaPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (!data) return
+    const node = searchParams.get('node')
+    if (node) {
+      setSelectedNode(node)
+      if (INBOUND_NODES.some(n => n.key === node)) setMobileTab('inbound')
+    }
+  }, [data, searchParams])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
