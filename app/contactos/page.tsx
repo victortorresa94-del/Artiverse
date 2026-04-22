@@ -6,7 +6,7 @@ import {
   MailOpen, MailCheck, MousePointerClick, AlertCircle, Users,
   Building2, Phone, Globe, MapPin, Calendar, Zap, Network,
   CheckCircle2, XCircle, Clock, ArrowRight, ChevronLeft, ChevronRight,
-  Flame, Star,
+  Flame, Star, Copy, Sparkles,
 } from 'lucide-react'
 import PillBadge from '@/components/ui/PillBadge'
 import { SkeletonRows } from '@/components/ui/SkeletonRow'
@@ -189,6 +189,249 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
   )
 }
 
+// ── Thread Section ─────────────────────────────────────────────────────────────
+
+function ThreadSection({ contact }: { contact: Contact }) {
+  const [open,       setOpen]       = useState(contact.replies > 0)
+  const [data,       setData]       = useState<any>(null)
+  const [loading,    setLoading]    = useState(false)
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggestion, setSuggestion] = useState<string | null>(null)
+  const [copied,     setCopied]     = useState(false)
+
+  const load = useCallback(async () => {
+    if (loading || data || !contact.campaignId) return
+    setLoading(true)
+    try {
+      const r = await fetch(
+        `/api/contact-thread?email=${encodeURIComponent(contact.email)}&campaignId=${encodeURIComponent(contact.campaignId)}`
+      )
+      if (r.ok) setData(await r.json())
+    } finally { setLoading(false) }
+  }, [contact.email, contact.campaignId, loading, data])
+
+  // Auto-load when opened
+  useEffect(() => { if (open) load() }, [open]) // eslint-disable-line
+
+  const getSuggestion = async () => {
+    setSuggesting(true)
+    try {
+      const r = await fetch(
+        `/api/contact-thread?email=${encodeURIComponent(contact.email)}&campaignId=${encodeURIComponent(contact.campaignId)}&suggest=true`
+      )
+      if (r.ok) {
+        const d = await r.json()
+        setSuggestion(d.suggestedReply ?? null)
+      }
+    } finally { setSuggesting(false) }
+  }
+
+  const copy = () => {
+    if (!suggestion) return
+    navigator.clipboard.writeText(suggestion).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (!contact.campaignId) return null
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border)' }} className="last:border-0">
+      {/* Header */}
+      <button
+        onClick={() => { setOpen(v => !v); if (!open && !data) load() }}
+        className="w-full flex items-center justify-between px-5 py-3 text-left transition-colors"
+        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+            Conversación
+          </span>
+          {contact.replies > 0 && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
+              {contact.replies} resp.
+            </span>
+          )}
+          {contact.opens > 0 && contact.replies === 0 && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
+              {contact.opens} apert.
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {loading && <RefreshCw size={10} className="animate-spin" style={{ color: 'var(--text-3)' }} />}
+          {open ? <ChevronUp size={12} style={{ color: 'var(--text-3)' }} /> : <ChevronDown size={12} style={{ color: 'var(--text-3)' }} />}
+        </div>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 space-y-4">
+
+          {/* ── Secuencia enviada ── */}
+          {(data?.sequence?.length > 0 || loading) && (
+            <div className="space-y-2">
+              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+                Secuencia enviada
+              </p>
+              {loading && !data ? (
+                [1, 2, 3].map(i => (
+                  <div key={i} className="rounded-lg p-3 animate-pulse" style={{ background: 'var(--bg-elevated)' }}>
+                    <div className="h-2.5 rounded w-1/3 mb-2" style={{ background: 'var(--border)' }} />
+                    <div className="h-2.5 rounded w-full mb-1" style={{ background: 'var(--border)' }} />
+                    <div className="h-2.5 rounded w-4/5" style={{ background: 'var(--border)' }} />
+                  </div>
+                ))
+              ) : data?.sequence?.map((step: any) => {
+                const wasOpened  = data.openedCount  > 0 && step.step <= Math.max(data.lastStep ?? 1, 1)
+                const wasReplied = data.repliedCount > 0 && step.step <= Math.max(data.lastStep ?? 1, 1)
+                const borderColor = wasReplied
+                  ? 'rgba(34,197,94,0.35)'
+                  : wasOpened
+                    ? 'rgba(245,158,11,0.35)'
+                    : 'var(--border)'
+                return (
+                  <div
+                    key={step.step}
+                    className="rounded-lg p-3 space-y-1.5"
+                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${borderColor}` }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+                        Paso {step.step} · Día {step.delay}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {wasOpened  && <span className="text-[10px] font-medium" style={{ color: '#F59E0B' }}>Abrió ✓</span>}
+                        {wasReplied && <span className="text-[10px] font-medium" style={{ color: '#22C55E' }}>Respondió ✓</span>}
+                      </div>
+                    </div>
+                    {step.subject && (
+                      <p className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>{step.subject}</p>
+                    )}
+                    {step.body && (
+                      <p className="text-[10px] leading-relaxed line-clamp-3" style={{ color: 'var(--text-2)' }}>
+                        {step.body}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* ── Su respuesta ── */}
+          {contact.replies > 0 && (
+            <div className="space-y-2">
+              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+                Su respuesta
+              </p>
+              {loading && !data ? (
+                <div className="rounded-lg p-3 animate-pulse" style={{ background: 'var(--bg-elevated)' }}>
+                  <div className="h-2.5 rounded w-full mb-1.5" style={{ background: 'var(--border)' }} />
+                  <div className="h-2.5 rounded w-4/5 mb-1.5" style={{ background: 'var(--border)' }} />
+                  <div className="h-2.5 rounded w-3/5" style={{ background: 'var(--border)' }} />
+                </div>
+              ) : data?.replyText ? (
+                <div className="rounded-lg p-3 space-y-2"
+                  style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                  {data.replyFrom && (
+                    <p className="text-[10px] font-medium" style={{ color: '#22C55E' }}>
+                      De: {data.replyFrom}
+                    </p>
+                  )}
+                  <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-1)' }}>
+                    {data.replyText}
+                  </p>
+                  {data.replyDate && (
+                    <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>{fmtDate(data.replyDate)}</p>
+                  )}
+                </div>
+              ) : (
+                <a
+                  href="https://app.instantly.ai/app/unibox"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-xs rounded-lg p-3 transition-colors"
+                  style={{ background: 'var(--bg-elevated)', color: 'var(--blue)', border: '1px solid var(--border)' }}
+                >
+                  <ExternalLink size={11} />
+                  Ver respuesta en Instantly Unibox
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* ── Respuesta sugerida IA ── */}
+          {contact.replies > 0 && (
+            <div className="space-y-2">
+              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+                Respuesta sugerida IA
+              </p>
+              {!suggestion ? (
+                <button
+                  onClick={getSuggestion}
+                  disabled={suggesting || !data?.replyText}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-medium transition-all disabled:opacity-40"
+                  style={{
+                    background: 'var(--blue-dim)',
+                    color:      'var(--blue)',
+                    border:     '1px solid var(--blue)',
+                  }}
+                >
+                  {suggesting
+                    ? <><RefreshCw size={11} className="animate-spin" /> Generando…</>
+                    : <><Sparkles size={11} /> Sugerir respuesta con IA</>
+                  }
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <div className="rounded-lg p-3"
+                    style={{ background: 'var(--blue-dim)', border: '1px solid rgba(37,99,235,0.3)' }}>
+                    <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-1)' }}>
+                      {suggestion}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={copy}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+                      style={{
+                        background: copied ? '#22C55E'          : 'var(--bg-elevated)',
+                        color:      copied ? '#000'             : 'var(--text-2)',
+                        border:     '1px solid var(--border)',
+                      }}
+                    >
+                      {copied
+                        ? <><CheckCircle2 size={11} /> Copiado</>
+                        : <><Copy size={11} /> Copiar</>
+                      }
+                    </button>
+                    <button
+                      onClick={() => setSuggestion(null)}
+                      className="py-2 px-3 rounded-lg text-xs transition-all"
+                      style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)', border: '1px solid var(--border)' }}
+                    >
+                      Regenerar
+                    </button>
+                  </div>
+                </div>
+              )}
+              {data && !data.hasAnthropicKey && !suggestion && (
+                <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+                  Necesita ANTHROPIC_API_KEY en variables de entorno de Vercel.
+                </p>
+              )}
+            </div>
+          )}
+
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Dark Slide-over ────────────────────────────────────────────────────────────
 
 function SlideOver({ contact, onClose, classification, onClassify, note, onNoteChange }: {
@@ -294,6 +537,11 @@ function SlideOver({ contact, onClose, classification, onClassify, note, onNoteC
                 </a>
               )}
             </SOSection>
+          )}
+
+          {/* Email thread + AI suggestion */}
+          {c.source === 'outbound' && (c.opens > 0 || c.replies > 0) && (
+            <ThreadSection contact={c} />
           )}
 
           <SOSection title="Perfil Artiverse" defaultOpen={!!c.artiverseUser}>
