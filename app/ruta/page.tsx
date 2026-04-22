@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   X, RefreshCw, ExternalLink, Mail, Building2, MapPin,
@@ -611,7 +611,7 @@ function MobileNodeRow({ def, node, onClick }: {
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 
-export default function RutaPage() {
+function RutaContent() {
   const [data,            setData]           = useState<RutaData | null>(null)
   const [loading,         setLoading]        = useState(true)
   const [error,           setError]          = useState<string | null>(null)
@@ -928,5 +928,13 @@ export default function RutaPage() {
         <HubSpotModal contact={hubspotContact} onClose={() => setHubspotContact(null)} />
       )}
     </div>
+  )
+}
+
+export default function RutaPage() {
+  return (
+    <Suspense fallback={<div style={{ background: '#060610', minHeight: '100vh' }} />}>
+      <RutaContent />
+    </Suspense>
   )
 }
