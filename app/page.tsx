@@ -5,7 +5,7 @@ import {
   RefreshCw, Database, Send, UserCheck, Building2, Code,
   MailOpen, MessageSquare, AlertCircle, CheckCircle2,
   MessageCircle, XCircle, PlayCircle, Mail, ChevronRight,
-  TrendingUp, Zap, ArrowRightLeft,
+  TrendingUp, Zap, ArrowRightLeft, X, ExternalLink,
 } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import Collapsible from '@/components/ui/Collapsible'
@@ -182,6 +182,7 @@ export default function DashboardPage() {
   const [opens,           setOpens]           = useState<any | null>(null)
   const [opensLoading,    setOpensLoading]    = useState(true)
   const [ruta,            setRuta]            = useState<any>(null)
+  const [showFromCampaigns, setShowFromCampaigns] = useState(false)
 
   // ── Fetchers ──────────────────────────────────────────────────────────────
 
@@ -285,7 +286,8 @@ export default function DashboardPage() {
   const proProgramador     = rutaNodes?.pro_programador?.count  ?? 0
   const totalBase          = rutaNodes?.base_contactos?.count   ?? 2536
   const totalEnviado       = rutaNodes?.enviado?.count          ?? 0
-  const usersFromCampaigns = ruta?.usersFromCampaigns           ?? 0
+  const usersFromCampaigns  = ruta?.usersFromCampaigns            ?? 0
+  const fromCampaignsList   = (ruta?.fromCampaignsList ?? []) as any[]
 
   const artPlatform = artStats ? {
     emailVerification: pct(artStats.verified,        artStats.total),
@@ -356,14 +358,21 @@ export default function DashboardPage() {
           accentColor="var(--success)"
           loading={artLoading && !artStats}
         />
-        <KpiCard
-          label="De campañas"
-          value={!ruta ? '…' : usersFromCampaigns}
-          sub={usersFromCampaigns && artStats?.total ? `${Math.round((usersFromCampaigns / artStats.total) * 100)}% de la plataforma` : 'vienen de Instantly'}
-          icon={ArrowRightLeft}
-          accentColor="#F59E0B"
-          loading={!ruta && loading}
-        />
+        <button
+          className="text-left w-full"
+          onClick={() => setShowFromCampaigns(true)}
+          disabled={!ruta || usersFromCampaigns === 0}
+          style={{ outline: 'none' }}
+        >
+          <KpiCard
+            label="De campañas"
+            value={!ruta ? '…' : usersFromCampaigns}
+            sub={usersFromCampaigns && artStats?.total ? `${Math.round((usersFromCampaigns / artStats.total) * 100)}% de la plataforma` : 'vienen de Instantly'}
+            icon={ArrowRightLeft}
+            accentColor="#F59E0B"
+            loading={!ruta && loading}
+          />
+        </button>
         <KpiCard
           label="Pro agencia"
           value={artLoading ? '…' : proAgencia}
@@ -745,6 +754,114 @@ export default function DashboardPage() {
           </div>
         )}
       </Collapsible>
+
+      {/* ── Slide-over: De campañas ───────────────────────────────────────── */}
+      {showFromCampaigns && (
+        <>
+          {/* backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            style={{ background: 'rgba(0,0,0,0.45)' }}
+            onClick={() => setShowFromCampaigns(false)}
+          />
+          {/* panel */}
+          <div
+            className="fixed top-0 right-0 h-full w-full sm:w-[520px] z-50 flex flex-col overflow-hidden"
+            style={{
+              background: 'var(--bg-surface)',
+              borderLeft: '1px solid var(--border)',
+              boxShadow: '-8px 0 32px rgba(0,0,0,0.25)',
+            }}
+          >
+            {/* header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <div>
+                <h2 className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
+                  Usuarios de campañas
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+                  {fromCampaignsList.length} usuarios de Artiverse que fueron contactados vía Instantly
+                </p>
+              </div>
+              <button
+                onClick={() => setShowFromCampaigns(false)}
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: 'var(--text-3)', background: 'var(--bg-elevated)' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* list */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {fromCampaignsList.length === 0 ? (
+                <p className="text-sm text-center mt-10" style={{ color: 'var(--text-3)' }}>
+                  Sin datos todavía
+                </p>
+              ) : (
+                fromCampaignsList.map((c: any, i: number) => (
+                  <div
+                    key={c.email + i}
+                    className="rounded-xl p-3.5"
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>
+                          {c.contact || c.artName || c.email}
+                        </p>
+                        <p className="text-xs truncate font-mono mt-0.5" style={{ color: 'var(--text-3)' }}>
+                          {c.email}
+                        </p>
+                      </div>
+                      {c.subscription && c.subscription !== 'free' && (
+                        <span
+                          className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase"
+                          style={{
+                            background: c.subscription === 'pro_agencia' ? 'rgba(167,139,250,0.15)' : 'rgba(163,230,53,0.15)',
+                            color:      c.subscription === 'pro_agencia' ? '#A78BFA' : 'var(--lime)',
+                          }}
+                        >
+                          {c.subscription === 'pro_agencia' ? 'Pro Agencia' : 'Pro Dev'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {c.company && (
+                        <span className="text-[11px]" style={{ color: 'var(--text-2)' }}>{c.company}</span>
+                      )}
+                      {c.city && (
+                        <span className="text-[11px]" style={{ color: 'var(--text-3)' }}>{c.city}</span>
+                      )}
+                      {c.campaignName && (
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded"
+                          style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}
+                        >
+                          {c.campaignName}
+                        </span>
+                      )}
+                    </div>
+                    {c.registeredAt && (
+                      <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-3)' }}>
+                        Registrado {new Date(c.registeredAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {c.opens > 0 && ` · ${c.opens} aperturas`}
+                        {c.replies > 0 && ` · ${c.replies} respuestas`}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   )

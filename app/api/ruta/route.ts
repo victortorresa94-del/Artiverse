@@ -58,6 +58,7 @@ export interface RutaResponse {
   conversion_rates: Record<string, number | null>
   campaigns: { id: string; name: string; sent: number; opened: number; replied: number; bounced: number }[]
   usersFromCampaigns: number          // Artiverse users who were in an Instantly campaign
+  fromCampaignsList: RutaContact[]    // full contact list for the above
   cached?: boolean
   stale?: boolean
 }
@@ -379,11 +380,36 @@ async function buildRuta(): Promise<RutaResponse> {
   }
 
   // ── 9. Conversion rates ────────────────────────────────────────────────────
-  // How many platform users were originally contacted via our campaigns
+  // Platform users who were originally contacted via our campaigns
   let usersFromCampaigns = 0
+  const fromCampaignsList: RutaContact[] = []
   for (const u of artUsers) {
     const email = (u.email ?? '').toLowerCase()
-    if (email && instByEmail.has(email)) usersFromCampaigns++
+    if (!email || !instByEmail.has(email)) continue
+    usersFromCampaigns++
+    const il       = instByEmail.get(email)!
+    const excelC   = excelByEmail.get(email)
+    const agencies = u.agencies ?? []
+    const plan     = artPlanType(u.subscription)
+    fromCampaignsList.push({
+      email,
+      company:     agencies[0]?.displayName ?? agencies[0]?.legalName ?? il.company ?? excelC?.company ?? '',
+      contact:     u.name ?? '',
+      phone:       '',
+      website:     agencies[0]?.website ?? excelC?.website ?? '',
+      city:        agencies[0]?.city ?? excelC?.city ?? '',
+      segment:     excelC?.segment ?? (agencies.length > 0 ? 'Agencia' : 'Programador'),
+      source:      'artiverse',
+      campaignName:  il.campaignName,
+      lastContact:   il.lastContact,
+      opens:         il.opens,
+      replies:       il.replies,
+      artName:       u.name ?? '',
+      subscription:  plan,
+      hasAgency:     agencies.length > 0,
+      agencyName:    agencies[0]?.displayName ?? agencies[0]?.legalName ?? '',
+      registeredAt:  u.createdAt ?? '',
+    })
   }
 
   function rate(a: number, b: number): number | null {
@@ -411,6 +437,7 @@ async function buildRuta(): Promise<RutaResponse> {
     conversion_rates,
     campaigns:     campaignStats,
     usersFromCampaigns,
+    fromCampaignsList,
   }
 }
 
