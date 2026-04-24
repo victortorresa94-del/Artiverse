@@ -155,7 +155,7 @@ function RutaNodeCircle({
         <div className="text-xs font-semibold uppercase tracking-wider leading-tight" style={{ color: def.isMeta ? '#CCFF00' : def.color }}>
           {def.label}
         </div>
-        <div className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{def.sub}</div>
+        <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>{def.sub}</div>
       </div>
     </div>
   )
@@ -172,7 +172,7 @@ function Connector({ rate, fromColor, toColor, animated }: {
       {label && (
         <div
           className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono whitespace-nowrap px-1.5 py-0.5 rounded"
-          style={{ color: 'rgba(255,255,255,0.4)', background: 'rgba(0,0,0,0.4)' }}
+          style={{ color: 'var(--text-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
         >
           {label}
         </div>
@@ -205,7 +205,7 @@ function BounceNode({ count, onClick }: { count: number; onClick: () => void }) 
       <button
         onClick={onClick}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:scale-105"
-        style={{ background: '#1A0A0A', border: '1px solid #EF444433', color: '#EF4444', boxShadow: '0 0 12px #EF444422' }}
+        style={{ background: 'var(--bg-surface)', border: '1px solid #EF444433', color: '#EF4444', boxShadow: '0 0 12px #EF444422' }}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
         BOUNCED · {count}
@@ -223,18 +223,18 @@ function NodeTooltip({ def, node }: { def: NodeDef; node: NodeData }) {
   return (
     <div
       className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 z-50 min-w-[200px] rounded-xl p-3 text-xs pointer-events-none"
-      style={{ background: '#0D0D1F', border: `1px solid ${def.color}33`, boxShadow: `0 8px 32px ${def.glow}` }}
+      style={{ background: 'var(--bg-elevated)', border: `1px solid ${def.color}33`, boxShadow: `0 8px 32px ${def.glow}` }}
     >
       <div className="font-semibold mb-2" style={{ color: def.color }}>{def.label}</div>
       <div className="space-y-1">
         {entries.map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-4" style={{ color: 'rgba(255,255,255,0.5)' }}>
+          <div key={k} className="flex justify-between gap-4" style={{ color: 'var(--text-2)' }}>
             <span className="truncate">{k}</span>
             <span className="font-mono font-bold" style={{ color: def.color }}>{v}</span>
           </div>
         ))}
         {node.hasMore && (
-          <div className="pt-1 text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          <div className="pt-1 text-center" style={{ color: 'var(--text-3)' }}>
             + más… click para ver todos
           </div>
         )}
@@ -256,10 +256,10 @@ function Lane({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-2">
-        <div className="text-[10px] uppercase tracking-[0.25em] flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+        <div className="text-[10px] uppercase tracking-[0.25em] flex items-center gap-1.5" style={{ color: 'var(--text-3)' }}>
           {icon} {label}
         </div>
-        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.15), transparent)' }} />
+        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, var(--border), transparent)' }} />
       </div>
       <div className="flex items-center relative">
         {nodes.map((def, i) => {
@@ -304,8 +304,8 @@ function LaneSkeleton({ count }: { count: number }) {
     <div className="flex items-center gap-2">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className={`flex items-center ${i < count - 1 ? 'flex-1' : ''}`}>
-          <div className="rounded-full animate-pulse shrink-0" style={{ width: 88, height: 88, background: 'rgba(255,255,255,0.08)' }} />
-          {i < count - 1 && <div className="flex-1 h-[2px] mx-2 rounded-full animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />}
+          <div className="rounded-full animate-pulse shrink-0" style={{ width: 88, height: 88, background: 'var(--bg-elevated)' }} />
+          {i < count - 1 && <div className="flex-1 h-[2px] mx-2 rounded-full animate-pulse" style={{ background: 'var(--bg-elevated)' }} />}
         </div>
       ))}
     </div>
@@ -316,7 +316,7 @@ function LaneSkeleton({ count }: { count: number }) {
 
 function ContactCard({ c, onHubspot }: { c: RutaContact; onHubspot: (c: RutaContact) => void }) {
   const sourceBadge = {
-    excel:     { label: 'Excel',     bg: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' },
+    excel:     { label: 'Excel',     bg: 'var(--bg-elevated)', color: 'var(--text-2)' },
     instantly: { label: 'Instantly', bg: 'rgba(37,99,235,0.15)',   color: '#60A5FA' },
     artiverse: { label: 'Artiverse', bg: 'rgba(34,197,94,0.12)',   color: '#34D399' },
   }[c.source]
@@ -324,16 +324,16 @@ function ContactCard({ c, onHubspot }: { c: RutaContact; onHubspot: (c: RutaCont
   return (
     <div
       className="p-3 rounded-xl border transition-all duration-200"
-      style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+      style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border-strong)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold truncate" style={{ color: 'rgba(255,255,255,0.9)' }}>
+          <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>
             {c.company || c.contact || c.email.split('@')[0]}
           </div>
-          <div className="text-xs truncate font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>{c.email}</div>
+          <div className="text-xs truncate font-mono" style={{ color: 'var(--text-3)' }}>{c.email}</div>
         </div>
         <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0"
           style={{ background: sourceBadge.bg, color: sourceBadge.color }}>
@@ -342,17 +342,17 @@ function ContactCard({ c, onHubspot }: { c: RutaContact; onHubspot: (c: RutaCont
       </div>
       <div className="flex flex-wrap gap-2 mb-3">
         {c.city && (
-          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
             <MapPin size={10} /> {c.city}
           </span>
         )}
         {c.segment && (
-          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
             <Users size={10} /> {c.segment}
           </span>
         )}
         {c.campaignName && (
-          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
             <Mail size={10} /> {c.campaignName}
           </span>
         )}
@@ -367,7 +367,7 @@ function ContactCard({ c, onHubspot }: { c: RutaContact; onHubspot: (c: RutaCont
           </span>
         )}
         {c.registeredAt && (
-          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
             <Calendar size={10} /> {c.registeredAt.slice(0, 10)}
           </span>
         )}
@@ -385,7 +385,7 @@ function ContactCard({ c, onHubspot }: { c: RutaContact; onHubspot: (c: RutaCont
             href={c.website.startsWith('http') ? c.website : `https://${c.website}`}
             target="_blank" rel="noopener noreferrer"
             className="px-2 py-1.5 rounded-lg text-xs flex items-center gap-1 transition-opacity hover:opacity-80"
-            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
           >
             <Globe size={11} />
           </a>
@@ -414,46 +414,46 @@ function HubSpotModal({ contact, onClose }: { contact: RutaContact; onClose: () 
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: '#0D0D1F', border: '1px solid rgba(255,122,89,0.2)' }}>
-        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,122,89,0.2)' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
           <div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ background: '#FF7A59' }} />
-              <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>Contactar en HubSpot</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Contactar en HubSpot</span>
             </div>
-            <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{contact.company || contact.email}</div>
+            <div className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{contact.company || contact.email}</div>
           </div>
-          <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.4)' }}><X size={16} /></button>
+          <button onClick={onClose} style={{ color: 'var(--text-2)' }}><X size={16} /></button>
         </div>
         <div className="px-6 py-5 space-y-4">
           <div className="flex flex-col gap-2 text-sm">
             <div className="flex items-center gap-3">
-              <Mail size={14} style={{ color: 'rgba(255,255,255,0.25)' }} />
-              <span className="font-mono text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>{contact.email}</span>
+              <Mail size={14} style={{ color: 'var(--text-3)' }} />
+              <span className="font-mono text-xs" style={{ color: 'var(--text-1)' }}>{contact.email}</span>
               <button
                 onClick={copyEmail}
                 className="ml-auto text-xs px-2 py-0.5 rounded transition-colors"
-                style={{ color: copied ? '#34D399' : 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.06)' }}
+                style={{ color: copied ? '#34D399' : 'var(--text-2)', background: 'var(--bg-elevated)' }}
               >
                 {copied ? '✓ Copiado' : 'Copiar'}
               </button>
             </div>
             {contact.company && (
               <div className="flex items-center gap-3">
-                <Building2 size={14} style={{ color: 'rgba(255,255,255,0.25)' }} />
-                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{contact.company}</span>
+                <Building2 size={14} style={{ color: 'var(--text-3)' }} />
+                <span className="text-xs" style={{ color: 'var(--text-2)' }}>{contact.company}</span>
               </div>
             )}
             {contact.city && (
               <div className="flex items-center gap-3">
-                <MapPin size={14} style={{ color: 'rgba(255,255,255,0.25)' }} />
-                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{contact.city}</span>
+                <MapPin size={14} style={{ color: 'var(--text-3)' }} />
+                <span className="text-xs" style={{ color: 'var(--text-2)' }}>{contact.city}</span>
               </div>
             )}
           </div>
           <div className="rounded-lg p-3 text-xs" style={{ background: 'rgba(255,122,89,0.05)', border: '1px solid rgba(255,122,89,0.15)', color: '#FF7A59' }}>
             <div className="font-semibold mb-1">Integración HubSpot — próximamente</div>
-            <div className="leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <div className="leading-relaxed" style={{ color: 'var(--text-2)' }}>
               El botón creará automáticamente el contacto en HubSpot y abrirá un deal vacío listo para editar.
             </div>
           </div>
@@ -467,7 +467,7 @@ function HubSpotModal({ contact, onClose }: { contact: RutaContact; onClose: () 
             </a>
             <button
               className="flex items-center justify-center gap-2 py-2 rounded-xl text-xs transition-colors"
-              style={{ border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }}
+              style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}
               onClick={onClose}
             >
               Cerrar
@@ -514,21 +514,21 @@ function SlideOver({
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div
         className="fixed top-0 right-0 h-full z-50 flex flex-col overflow-hidden"
-        style={{ width: 'min(480px, 100vw)', background: '#070710', borderLeft: `1px solid ${color}22` }}
+        style={{ width: 'min(480px, 100vw)', background: 'var(--bg-surface)', borderLeft: `1px solid ${color}44` }}
       >
-        <div className="px-6 py-5 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-6 py-5 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: color }} />
-                <span className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</span>
+                <span className="text-base font-bold" style={{ color: 'var(--text-1)' }}>{label}</span>
               </div>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-3xl font-mono font-bold" style={{ color }}>{fmt(node.count)}</span>
-                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>contactos en esta fase</span>
+                <span className="text-xs" style={{ color: 'var(--text-3)' }}>contactos en esta fase</span>
               </div>
             </div>
-            <button onClick={onClose} className="mt-1 transition-opacity hover:opacity-70" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <button onClick={onClose} className="mt-1 transition-opacity hover:opacity-70" style={{ color: 'var(--text-2)' }}>
               <X size={18} />
             </button>
           </div>
@@ -548,14 +548,14 @@ function SlideOver({
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="mt-3 w-full text-sm bg-transparent outline-none pb-1"
-            style={{ color: 'rgba(255,255,255,0.7)', borderBottom: '1px solid rgba(255,255,255,0.08)', caretColor: color }}
+            style={{ color: 'var(--text-1)', borderBottom: '1px solid var(--border)', caretColor: color }}
             onFocus={e => (e.currentTarget.style.borderBottomColor = `${color}66`)}
-            onBlur={e => (e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.08)')}
+            onBlur={e => (e.currentTarget.style.borderBottomColor = 'var(--border)')}
           />
         </div>
         <div className="flex-1 overflow-y-auto ruta-scroll px-6 py-4 space-y-2">
           {filtered.length === 0 && (
-            <div className="text-center py-12 text-sm" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            <div className="text-center py-12 text-sm" style={{ color: 'var(--text-3)' }}>
               {search ? 'Sin resultados para tu búsqueda' : 'No hay contactos en esta fase'}
             </div>
           )}
@@ -582,29 +582,27 @@ function MobileNodeRow({ def, node, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all"
-      style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${def.color}33` }}
-      onMouseEnter={e => (e.currentTarget.style.background = `${def.color}10`)}
-      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+      className="surface-card w-full flex items-center gap-4 px-4 py-4 text-left transition-all"
+      style={{ borderLeftWidth: 3, borderLeftColor: def.color }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
     >
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold font-mono"
-        style={{
-          background: `${def.color}15`,
-          border:     `1.5px solid ${def.color}`,
-          color:      def.isMeta ? '#CCFF00' : def.color,
-          boxShadow:  `0 0 12px ${def.glow}`,
-        }}
-      >
-        {fmt(node.count)}
-      </div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold" style={{ color: def.isMeta ? '#CCFF00' : def.color }}>
-          {def.label}
+        <div
+          className="text-2xl font-bold font-mono leading-none"
+          style={{ color: def.color }}
+        >
+          {fmt(node.count)}
         </div>
-        <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{def.sub}</div>
+        <div className="text-xs font-semibold mt-1" style={{ color: 'var(--text-1)' }}>{def.label}</div>
+        <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>{def.sub}</div>
       </div>
-      <ChevronRight size={14} style={{ color: `${def.color}66`, flexShrink: 0 }} />
+      <div
+        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+        style={{ background: `${def.color}15`, border: `1px solid ${def.color}33` }}
+      >
+        <ChevronRight size={14} style={{ color: def.color }} />
+      </div>
     </button>
   )
 }
@@ -655,77 +653,68 @@ function RutaContent() {
   const mobileNodes = mobileTab === 'outbound' ? OUTBOUND_NODES : INBOUND_NODES
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ background: '#060610', color: 'rgba(255,255,255,0.9)' }}
-    >
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)' }}>
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <header
         className="shrink-0 px-4 sm:px-8 py-4 flex items-center justify-between"
-        style={{ background: 'rgba(7,7,16,0.95)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)' }}
       >
         <div>
-          <div className="flex items-center gap-2">
-            <Map size={14} style={{ color: '#2563EB' }} />
-            <span
-              className="text-base sm:text-lg font-bold tracking-tight"
-              style={{ background: 'linear-gradient(135deg, #2563EB, #CCFF00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-            >
-              RUTA ARTIVERSE
-            </span>
-            <span className="hidden sm:block text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.2)' }}>
-              · mapa de crecimiento
-            </span>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-1)' }}>
+            Ruta
+          </h1>
           {data && (
             <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-              <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                <span className="font-mono" style={{ color: 'rgba(255,255,255,0.6)' }}>{fmt(data.total_base)}</span> contactos
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+                <span className="font-mono font-semibold" style={{ color: 'var(--text-2)' }}>{fmt(data.total_base)}</span> contactos
               </span>
-              <span style={{ color: 'rgba(255,255,255,0.15)' }}>·</span>
-              <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              <span style={{ color: 'var(--border)' }}>·</span>
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>
                 {timeAgo(data.last_updated)}
               </span>
               {data.cached && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>CACHÉ</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>CACHÉ</span>
               )}
               {data.stale && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#EF4444' }}>CACHÉ ANTIGUA</span>
               )}
             </div>
           )}
+          {!data && !loading && (
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Embudo de crecimiento · Outbound + Plataforma</p>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
           {/* Conversion summary — desktop only */}
           {data && !loading && (
-            <div className="hidden lg:flex items-center gap-4 text-xs mr-4" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            <div className="hidden lg:flex items-center gap-4 text-xs mr-4" style={{ color: 'var(--text-3)' }}>
               <div className="text-center">
-                <div className="font-mono font-bold text-sm" style={{ color: '#CCFF00' }}>
+                <div className="font-mono font-bold text-sm" style={{ color: 'var(--lime)' }}>
                   {pct(data.conversion_rates.registrado_to_pro) ?? '—'}
                 </div>
-                <div className="text-[10px]">registrado → Pro</div>
+                <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>registrado → Pro</div>
               </div>
-              <div className="w-px h-6" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="w-px h-6" style={{ background: 'var(--border)' }} />
               <div className="text-center">
                 <div className="font-mono font-bold text-sm" style={{ color: '#2563EB' }}>
                   {pct(data.conversion_rates.enviado_to_abierto) ?? '—'}
                 </div>
-                <div className="text-[10px]">open rate</div>
+                <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>open rate</div>
               </div>
-              <div className="w-px h-6" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="w-px h-6" style={{ background: 'var(--border)' }} />
               <div className="text-center">
-                <div className="font-mono font-bold text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <div className="font-mono font-bold text-sm" style={{ color: 'var(--text-2)' }}>
                   {pct(data.conversion_rates.base_to_pro) ?? '—'}
                 </div>
-                <div className="text-[10px]">base → Pro</div>
+                <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>base → Pro</div>
               </div>
             </div>
           )}
           <button
             onClick={load} disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
-            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)', border: '1px solid var(--border)' }}
           >
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
             <span className="hidden sm:inline">{loading ? 'Cargando…' : 'Actualizar'}</span>
@@ -749,9 +738,9 @@ function RutaContent() {
               { label: 'Reg → Pro',   value: pct(data.conversion_rates.registrado_to_pro),  color: '#CCFF00' },
               { label: 'Reply rate',  value: pct(data.conversion_rates.abierto_to_respondido), color: '#0EA5E9' },
             ].map(s => (
-              <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
                 <div className="text-base font-bold font-mono" style={{ color: s.color }}>{s.value ?? '—'}</div>
-                <div className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.label}</div>
+                <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -765,8 +754,9 @@ function RutaContent() {
               onClick={() => setMobileTab(id)}
               className="flex-1 py-2 rounded-lg text-xs font-medium transition-all"
               style={{
-                background: mobileTab === id ? '#2563EB' : 'rgba(255,255,255,0.05)',
-                color:      mobileTab === id ? '#fff'    : 'rgba(255,255,255,0.4)',
+                background: mobileTab === id ? 'var(--blue)' : 'var(--bg-elevated)',
+                color:      mobileTab === id ? '#fff'        : 'var(--text-2)',
+                border:     `1px solid ${mobileTab === id ? 'var(--blue)' : 'var(--border)'}`,
               }}
             >
               {label}
@@ -778,7 +768,7 @@ function RutaContent() {
         <div className="space-y-2.5">
           {loading || !data ? (
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }} />
+              <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'var(--bg-elevated)' }} />
             ))
           ) : (
             mobileNodes.map(def => {
@@ -798,16 +788,16 @@ function RutaContent() {
 
         {/* Mobile campaign table */}
         {data && !loading && data.campaigns.filter(c => c.sent > 0).length > 0 && (
-          <div className="mt-6 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Campañas Instantly</span>
+          <div className="mt-6 surface-card overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+              <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--text-3)' }}>Campañas Instantly</span>
             </div>
             {data.campaigns.filter(c => c.sent > 0).map(c => {
               const openRate = c.sent > 0 ? c.opened / c.sent : 0
               return (
-                <div key={c.id} className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div className="text-xs font-medium mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>{c.name}</div>
-                  <div className="flex gap-3 text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <div key={c.id} className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-1)' }}>{c.name}</div>
+                  <div className="flex gap-3 text-[10px] font-mono" style={{ color: 'var(--text-2)' }}>
                     <span>{c.sent} env.</span>
                     <span style={{ color: openRate > 0.5 ? '#22C55E' : '#2563EB' }}>
                       {c.opened} abiertos ({(openRate * 100).toFixed(0)}%)
@@ -828,15 +818,11 @@ function RutaContent() {
       >
         {/* OUTBOUND LANE */}
         <div
-          className="rounded-2xl p-6 mb-6"
-          style={{
-            background: 'linear-gradient(135deg, #0D1021, #060610)',
-            border:     '1px solid rgba(37,99,235,0.15)',
-            boxShadow:  '0 4px 40px rgba(37,99,235,0.05)',
-          }}
+          className="surface-card p-6 mb-6"
+          style={{ border: '1px solid rgba(37,99,235,0.2)' }}
         >
           {loading || !data ? (
-            <><div className="w-40 h-3 rounded animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            <><div className="w-40 h-3 rounded animate-pulse mb-6" style={{ background: 'var(--bg-elevated)' }} />
               <LaneSkeleton count={4} /></>
           ) : (
             <Lane
@@ -851,27 +837,23 @@ function RutaContent() {
         {/* Divider */}
         {data && !loading && (
           <div className="flex items-center gap-6 px-4 mb-6">
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }} />
-            <div className="flex items-center gap-6 text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
-              <span><span className="font-mono" style={{ color: 'rgba(255,255,255,0.45)' }}>{pct(data.conversion_rates.abierto_to_respondido)}</span>{' '}reply rate</span>
-              <span style={{ color: 'rgba(255,255,255,0.15)' }}>→ respondidos entran a Artiverse</span>
-              <span><span className="font-mono" style={{ color: 'rgba(255,255,255,0.45)' }}>{pct(data.conversion_rates.registrado_to_pro)}</span>{' '}conversion to Pro</span>
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, var(--border-strong), transparent)' }} />
+            <div className="flex items-center gap-6 text-xs" style={{ color: 'var(--text-3)' }}>
+              <span><span className="font-mono font-semibold" style={{ color: 'var(--text-2)' }}>{pct(data.conversion_rates.abierto_to_respondido)}</span>{' '}reply rate</span>
+              <span style={{ color: 'var(--text-3)' }}>→ respondidos entran a Artiverse</span>
+              <span><span className="font-mono font-semibold" style={{ color: 'var(--text-2)' }}>{pct(data.conversion_rates.registrado_to_pro)}</span>{' '}conversion to Pro</span>
             </div>
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.1), transparent)' }} />
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, var(--border-strong), transparent)' }} />
           </div>
         )}
 
         {/* INBOUND LANE */}
         <div
-          className="rounded-2xl p-6"
-          style={{
-            background: 'linear-gradient(135deg, #061806, #060610)',
-            border:     '1px solid rgba(34,197,94,0.1)',
-            boxShadow:  '0 4px 40px rgba(34,197,94,0.04)',
-          }}
+          className="surface-card p-6"
+          style={{ border: '1px solid rgba(34,197,94,0.2)' }}
         >
           {loading || !data ? (
-            <><div className="w-48 h-3 rounded animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            <><div className="w-48 h-3 rounded animate-pulse mb-6" style={{ background: 'var(--bg-elevated)' }} />
               <LaneSkeleton count={5} /></>
           ) : (
             <Lane
@@ -885,10 +867,10 @@ function RutaContent() {
 
         {/* Campaign table */}
         {data && !loading && data.campaigns.filter(c => c.sent > 0).length > 0 && (
-          <div className="mt-6 rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Campañas Instantly</span>
-              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.25)' }}>{data.campaigns.filter(c => c.sent > 0).length} activas</span>
+          <div className="mt-6 surface-card overflow-hidden">
+            <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+              <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--text-3)' }}>Campañas Instantly</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{data.campaigns.filter(c => c.sent > 0).length} activas</span>
             </div>
             <div>
               {data.campaigns.filter(c => c.sent > 0).map(c => {
@@ -897,13 +879,13 @@ function RutaContent() {
                   <div
                     key={c.id}
                     className="px-5 py-2.5 flex items-center gap-4 border-b text-xs transition-colors"
-                    style={{ borderColor: 'rgba(255,255,255,0.03)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
+                    style={{ borderColor: 'var(--border)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <span className="flex-1 truncate" style={{ color: 'rgba(255,255,255,0.6)' }}>{c.name}</span>
-                    <div className="flex items-center gap-3 font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                      <span><span style={{ color: 'rgba(255,255,255,0.55)' }}>{c.sent}</span> enviados</span>
+                    <span className="flex-1 truncate" style={{ color: 'var(--text-1)' }}>{c.name}</span>
+                    <div className="flex items-center gap-3 font-mono" style={{ color: 'var(--text-2)' }}>
+                      <span><span style={{ color: 'var(--text-2)' }}>{c.sent}</span> enviados</span>
                       <span style={{ color: openRate > 0.5 ? '#22C55E' : '#2563EB' }}>
                         {c.opened} abiertos ({(openRate * 100).toFixed(0)}%)
                       </span>
@@ -933,7 +915,7 @@ function RutaContent() {
 
 export default function RutaPage() {
   return (
-    <Suspense fallback={<div style={{ background: '#060610', minHeight: '100vh' }} />}>
+    <Suspense fallback={<div style={{ background: 'var(--bg-base)', minHeight: '100vh' }} />}>
       <RutaContent />
     </Suspense>
   )

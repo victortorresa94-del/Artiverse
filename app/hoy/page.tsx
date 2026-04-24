@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
   MessageSquare, Flame, UserPlus, RefreshCw,
-  ExternalLink, CheckCircle2, MailOpen, ChevronRight,
+  ExternalLink, CheckCircle2, MailOpen, ChevronRight, Send,
 } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import PillBadge from '@/components/ui/PillBadge'
@@ -19,6 +19,7 @@ interface HoyData {
     totalNeedsReply: number; totalHot: number; totalNewToday: number
     totalOutbound: number; totalInPlatform: number
     artiverseTotal: number; artiverseToday: number
+    sentToday: number; openedToday: number
   }
   last_updated: string
 }
@@ -138,7 +139,7 @@ export default function HoyPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <KpiCard
           label="Necesitan respuesta"
           value={loading ? '…' : stats?.totalNeedsReply ?? 0}
@@ -166,6 +167,20 @@ export default function HoyPage() {
           value={loading ? '…' : stats?.totalInPlatform ?? 0}
           icon={CheckCircle2}
           accentColor="var(--blue)"
+          loading={loading && !data}
+        />
+        <KpiCard
+          label="Enviados hoy"
+          value={loading ? '…' : stats?.sentToday ?? 0}
+          icon={Send}
+          accentColor="var(--text-2)"
+          loading={loading && !data}
+        />
+        <KpiCard
+          label="Abiertos hoy"
+          value={loading ? '…' : stats?.openedToday ?? 0}
+          icon={MailOpen}
+          accentColor="#F59E0B"
           loading={loading && !data}
         />
       </div>
@@ -347,6 +362,8 @@ export default function HoyPage() {
                 { label: 'Nuevos hoy',        value: stats?.artiverseToday  ?? 0, color: '#CCFF00' },
                 { label: 'Necesitan reply',   value: stats?.totalNeedsReply ?? 0, color: '#EF4444' },
                 { label: 'Hot (3+ opens)',     value: stats?.totalHot        ?? 0, color: '#F59E0B' },
+                { label: 'Enviados hoy',      value: stats?.sentToday       ?? 0, color: 'var(--text-2)' },
+                { label: 'Abiertos hoy',      value: stats?.openedToday     ?? 0, color: '#F59E0B' },
               ].map(m => (
                 <div key={m.label} className="flex items-center justify-between">
                   <span className="text-xs" style={{ color: 'var(--text-2)' }}>{m.label}</span>

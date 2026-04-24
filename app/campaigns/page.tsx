@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { campaigns as mockCampaigns } from '@/data/mock'
 import {
   ChevronDown, ChevronUp, RefreshCw, Upload, X, CheckCircle,
-  BarChart2, Megaphone, Mail,
+  BarChart2, Megaphone, Mail, Users,
 } from 'lucide-react'
 import PillBadge from '@/components/ui/PillBadge'
 
@@ -193,14 +193,180 @@ function StatChip({ label, value, accent }: { label: string; value: string | num
   )
 }
 
+// ── Email status config ────────────────────────────────────────────────────────
+
+const emailStatusConfig: Record<string, { label: string; variant: 'green' | 'gray' | 'amber' | 'blue' | 'red' | 'purple' }> = {
+  replied:  { label: 'Respondido',   variant: 'green' },
+  clicked:  { label: 'Clic',         variant: 'purple' },
+  opened:   { label: 'Abierto',      variant: 'amber' },
+  sent:     { label: 'Enviado',      variant: 'blue' },
+  not_sent: { label: 'Sin enviar',   variant: 'gray' },
+  bounced:  { label: 'Bounced',      variant: 'red' },
+}
+
+// ── Campaign contacts list ─────────────────────────────────────────────────────
+
+function CampaignContacts({ campaignId }: { campaignId: string }) {
+  const [data,    setData]    = useState<{ contacts: any[]; stats: any } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [filter,  setFilter]  = useState<string>('all')
+
+  useEffect(() => {
+    if (!campaignId) return
+    setLoading(true)
+    setData(null)
+    fetch(`/api/campaigns/${campaignId}/contacts`)
+      .then(r => r.json())
+      .then(d => setData(d))
+      .catch(() => setData(null))
+      .finally(() => setLoading(false))
+  }, [campaignId])
+
+  const filterOptions = [
+    { id: 'all',      label: 'Todos' },
+    { id: 'replied',  label: 'Respondidos' },
+    { id: 'opened',   label: 'Abiertos' },
+    { id: 'sent',     label: 'Enviados' },
+    { id: 'bounced',  label: 'Bounced' },
+  ]
+
+  const filtered = data?.contacts.filter(c =>
+    filter === 'all' ? true :
+    filter === 'opened' ? (c.emailStatus === 'opened' || c.emailStatus === 'clicked') :
+    c.emailStatus === filter
+  ) ?? []
+
+  if (loading) {
+    return (
+      <div className="px-2 py-6 text-center text-xs animate-pulse" style={{ color: 'var(--text-3)' }}>
+        Cargando contactos de Instantly…
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="px-2 py-6 text-center text-xs" style={{ color: 'var(--text-3)' }}>
+        No se pudo cargar los contactos.
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* Stats mini-row */}
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        {[
+          { label: 'Total leads',  value: data.stats.total,   color: 'var(--text-1)' },
+          { label: 'Abiertos',     value: data.stats.opened,  color: '#F59E0B' },
+          { label: 'Respondidos',  value: data.stats.replied, color: 'var(--success)' },
+          { label: 'Bounced',      value: data.stats.bounced, color: 'var(--error)' },
+        ].map(s => (
+          <div
+            key={s.label}
+            className="rounded-xl p-3 text-center"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+          >
+            <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-[10px] mt-0.5 uppercase tracking-wider font-semibold" style={{ color: 'var(--text-3)' }}>{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter pills */}
+      <div className="flex gap-1.5 flex-wrap mb-3">
+        {filterOptions.map(f => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className="px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all"
+            style={{
+              background: filter === f.id ? 'var(--blue)'     : 'var(--bg-elevated)',
+              color:      filter === f.id ? '#fff'            : 'var(--text-2)',
+              border:     `1px solid ${filter === f.id ? 'var(--blue)' : 'var(--border)'}`,
+            }}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--border)' }}>
+        <table className="w-full text-xs">
+          <thead>
+            <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+              {['Contacto', 'Estado', 'Paso', 'Aperturas', 'Última apertura'].map(h => (
+                <th
+                  key={h}
+                  className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider font-semibold whitespace-nowrap"
+                  style={{ color: 'var(--text-3)' }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-3 py-6 text-center text-xs" style={{ color: 'var(--text-3)' }}>
+                  Sin contactos para este filtro
+                </td>
+              </tr>
+            ) : (
+              filtered.map((c, i) => {
+                const st = emailStatusConfig[c.emailStatus] ?? emailStatusConfig['not_sent']
+                return (
+                  <tr
+                    key={i}
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td className="px-3 py-2.5">
+                      <p className="font-medium text-xs" style={{ color: 'var(--text-1)' }}>
+                        {c.company || c.contact || c.email.split('@')[0]}
+                      </p>
+                      <p className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>{c.email}</p>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <PillBadge label={st.label} variant={st.variant} size="xs" />
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-xs" style={{ color: 'var(--text-2)' }}>
+                      {c.step != null ? `Paso ${c.step}` : '—'}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className="font-mono font-semibold text-xs"
+                        style={{ color: c.opens > 0 ? '#F59E0B' : 'var(--text-3)' }}
+                      >
+                        {c.opens > 0 ? `${c.opens}x` : '—'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-[10px] font-mono whitespace-nowrap" style={{ color: 'var(--text-3)' }}>
+                      {c.lastOpen ? c.lastOpen.slice(0, 10) : '—'}
+                    </td>
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function CampaignsPage() {
-  const [campaigns,   setCampaigns]   = useState<any[]>([])
-  const [selected,    setSelected]    = useState<string>('')
-  const [loading,     setLoading]     = useState(true)
-  const [showImport,  setShowImport]  = useState(false)
-  const [activeTab,   setActiveTab]   = useState<'resumen' | 'analytics'>('resumen')
+  const [campaigns,      setCampaigns]      = useState<any[]>([])
+  const [selected,       setSelected]       = useState<string>('')
+  const [loading,        setLoading]        = useState(true)
+  const [showImport,     setShowImport]     = useState(false)
+  const [activeTab,      setActiveTab]      = useState<'resumen' | 'analytics'>('resumen')
+  const [detailTab,      setDetailTab]      = useState<'resumen' | 'contactos'>('resumen')
 
   const fetchData = async () => {
     setLoading(true)
@@ -483,117 +649,145 @@ export default function CampaignsPage() {
             {campaign && (
               <div className="flex-1 min-w-0 space-y-5">
 
-                {/* Stats card */}
-                <div className="surface-card p-5 sm:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-5 gap-3">
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-1)' }}>
-                        {campaign.name}
-                      </h2>
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>
-                        {campaign.segment} · <span className="font-mono">{campaign.sendingEmail}</span>
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {campaign._statsSource === 'csv' && (
-                        <span
-                          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                          style={{
-                            border: '1px solid var(--blue)',
-                            color:  'var(--blue)',
-                            background: 'var(--blue-dim)',
-                          }}
-                        >
-                          CSV
-                        </span>
-                      )}
-                      <PillBadge
-                        label={(statusConfig[String(campaign.status)] ?? statusConfig['0']).label}
-                        variant={(statusConfig[String(campaign.status)] ?? statusConfig['0']).variant}
-                        size="sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                    <StatChip label="Total leads" value={campaign.total ?? 0} />
-                    <StatChip label="Enviados"    value={campaign.sent   ?? 0} />
-                    <StatChip label="Abiertos"    value={campaign.opened ?? 0} />
-                    <StatChip
-                      label="Open rate"
-                      value={(campaign.openRate ?? 0) > 0 ? `${campaign.openRate}%` : '—'}
-                      accent="#D97706"
-                    />
-                    <StatChip
-                      label="Reply rate"
-                      value={(campaign.replyRate ?? 0) > 0 ? `${campaign.replyRate}%` : '—'}
-                      accent="var(--success)"
-                    />
-                  </div>
+                {/* Detail tabs */}
+                <div className="flex items-center gap-0" style={{ borderBottom: '1px solid var(--border)' }}>
+                  {([
+                    { id: 'resumen',   label: 'Resumen',   icon: Megaphone },
+                    { id: 'contactos', label: 'Contactos', icon: Users },
+                  ] as const).map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setDetailTab(tab.id)}
+                      className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-all"
+                      style={{
+                        color:        detailTab === tab.id ? 'var(--text-1)' : 'var(--text-3)',
+                        borderBottom: detailTab === tab.id ? '2px solid var(--blue)' : '2px solid transparent',
+                        marginBottom: '-1px',
+                      }}
+                    >
+                      <tab.icon size={12} />
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Email steps */}
-                {campaign.steps?.length > 0 && (
-                  <div className="space-y-3">
-                    <h3
-                      className="text-[10px] font-semibold uppercase tracking-wider px-1"
-                      style={{ color: 'var(--text-3)' }}
-                    >
-                      Secuencia de emails
-                    </h3>
-                    {campaign.steps.map((step: any, i: number) => (
-                      <div
-                        key={i}
-                        className="surface-card overflow-hidden"
-                      >
-                        <div
-                          className="flex items-center gap-4 px-4 sm:px-5 py-4"
-                          style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
-                        >
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-                            style={{ background: 'var(--blue-dim)', border: '1px solid var(--blue)', color: 'var(--blue)' }}
-                          >
-                            {step.step}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
-                              Step {step.step}
-                            </p>
-                            <p className="text-xs" style={{ color: 'var(--text-3)' }}>
-                              {step.delayDays === 0 ? 'Día 1 — Email inicial' : `+${step.delayDays} días`}
-                            </p>
-                          </div>
-                          <div className="flex gap-3 text-xs font-mono shrink-0 flex-wrap justify-end">
-                            {(step.sent ?? 0) > 0 && (
-                              <span style={{ color: 'var(--text-2)' }}>{step.sent} env.</span>
-                            )}
-                            {(step.openRate ?? 0) > 0 && (
-                              <span className="font-semibold" style={{ color: '#D97706' }}>
-                                {step.openRate}% open
-                              </span>
-                            )}
-                            {(step.replyRate ?? 0) > 0 && (
-                              <span className="font-semibold" style={{ color: 'var(--success)' }}>
-                                {step.replyRate}% reply
-                              </span>
-                            )}
-                          </div>
+                {/* Resumen tab content */}
+                {detailTab === 'resumen' && (
+                  <>
+                    {/* Stats card */}
+                    <div className="surface-card p-5 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-5 gap-3">
+                        <div>
+                          <h2 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-1)' }}>
+                            {campaign.name}
+                          </h2>
+                          <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>
+                            {campaign.segment} · <span className="font-mono">{campaign.sendingEmail}</span>
+                          </p>
                         </div>
-                        <div className="px-4 sm:px-5 py-4">
-                          <div className="mb-3">
-                            <span className="text-[10px] uppercase tracking-wider font-medium" style={{ color: 'var(--text-3)' }}>
-                              Asunto:{' '}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {campaign._statsSource === 'csv' && (
+                            <span
+                              className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                              style={{
+                                border: '1px solid var(--blue)',
+                                color:  'var(--blue)',
+                                background: 'var(--blue-dim)',
+                              }}
+                            >
+                              CSV
                             </span>
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
-                              {step.subject || '(sin asunto)'}
-                            </span>
-                          </div>
-                          {step.body && <EmailBody body={step.body} />}
+                          )}
+                          <PillBadge
+                            label={(statusConfig[String(campaign.status)] ?? statusConfig['0']).label}
+                            variant={(statusConfig[String(campaign.status)] ?? statusConfig['0']).variant}
+                            size="sm"
+                          />
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <StatChip label="Total leads" value={campaign.total ?? 0} />
+                        <StatChip label="Enviados"    value={campaign.sent   ?? 0} />
+                        <StatChip label="Abiertos"    value={campaign.opened ?? 0} />
+                        <StatChip
+                          label="Open rate"
+                          value={(campaign.openRate ?? 0) > 0 ? `${campaign.openRate}%` : '—'}
+                          accent="#D97706"
+                        />
+                        <StatChip
+                          label="Reply rate"
+                          value={(campaign.replyRate ?? 0) > 0 ? `${campaign.replyRate}%` : '—'}
+                          accent="var(--success)"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email steps */}
+                    {campaign.steps?.length > 0 && (
+                      <div className="space-y-3">
+                        <h3
+                          className="text-[10px] font-semibold uppercase tracking-wider px-1"
+                          style={{ color: 'var(--text-3)' }}
+                        >
+                          Secuencia de emails
+                        </h3>
+                        {campaign.steps.map((step: any, i: number) => (
+                          <div key={i} className="surface-card overflow-hidden">
+                            <div
+                              className="flex items-center gap-4 px-4 sm:px-5 py-4"
+                              style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                            >
+                              <div
+                                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
+                                style={{ background: 'var(--blue-dim)', border: '1px solid var(--blue)', color: 'var(--blue)' }}
+                              >
+                                {step.step}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
+                                  Step {step.step}
+                                </p>
+                                <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+                                  {step.delayDays === 0 ? 'Día 1 — Email inicial' : `+${step.delayDays} días`}
+                                </p>
+                              </div>
+                              <div className="flex gap-3 text-xs font-mono shrink-0 flex-wrap justify-end">
+                                {(step.sent ?? 0) > 0 && (
+                                  <span style={{ color: 'var(--text-2)' }}>{step.sent} env.</span>
+                                )}
+                                {(step.openRate ?? 0) > 0 && (
+                                  <span className="font-semibold" style={{ color: '#D97706' }}>
+                                    {step.openRate}% open
+                                  </span>
+                                )}
+                                {(step.replyRate ?? 0) > 0 && (
+                                  <span className="font-semibold" style={{ color: 'var(--success)' }}>
+                                    {step.replyRate}% reply
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="px-4 sm:px-5 py-4">
+                              <div className="mb-3">
+                                <span className="text-[10px] uppercase tracking-wider font-medium" style={{ color: 'var(--text-3)' }}>
+                                  Asunto:{' '}
+                                </span>
+                                <span className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
+                                  {step.subject || '(sin asunto)'}
+                                </span>
+                              </div>
+                              {step.body && <EmailBody body={step.body} />}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Contactos tab content */}
+                {detailTab === 'contactos' && (
+                  <CampaignContacts campaignId={campaign.id} />
                 )}
               </div>
             )}

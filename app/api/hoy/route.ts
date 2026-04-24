@@ -40,6 +40,11 @@ export async function GET(request: Request) {
 
     const contacts: any[] = pipeline.contacts ?? []
 
+    // Today's date (YYYY-MM-DD) for filtering email activity
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const sentToday   = contacts.filter((c: any) => c.lastContact?.startsWith(todayStr)).length
+    const openedToday = contacts.filter((c: any) => c.lastOpen?.startsWith(todayStr)).length
+
     // Contacts that replied (need manual response)
     const needsReply = contacts
       .filter((c: any) => c.phase === 'contestado')
@@ -91,6 +96,8 @@ export async function GET(request: Request) {
         totalInPlatform: pipeline.stats?.totalInPlatform ?? 0,
         artiverseTotal:  users.stats?.total              ?? 0,
         artiverseToday:  users.stats?.today              ?? 0,
+        sentToday,
+        openedToday,
       },
     }
 
