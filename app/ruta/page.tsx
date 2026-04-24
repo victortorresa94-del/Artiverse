@@ -96,7 +96,7 @@ function useCountUp(target: number, delay = 0, run = false) {
   return val
 }
 
-// ── NODE CIRCLE (desktop visualization) ──────────────────────────────────────
+// ── NODE CARD (desktop visualization) ────────────────────────────────────────
 
 function RutaNodeCircle({
   def, count, onClick, onHover, onLeave, animated, delay, isSelected,
@@ -106,57 +106,48 @@ function RutaNodeCircle({
   animated: boolean; delay: number; isSelected: boolean
 }) {
   const displayed = useCountUp(count, delay, animated)
-  const sizes = {
-    sm: { outer: 72, inner: 56 },
-    md: { outer: 88, inner: 68 },
-    lg: { outer: 104, inner: 82 },
-    xl: { outer: 128, inner: 100 },
-  }
-  const sz = sizes[def.size ?? 'md']
 
   return (
     <div
-      className={`flex flex-col items-center gap-2 cursor-pointer group node-pop ${isSelected ? 'opacity-100' : ''}`}
-      style={{ animationDelay: `${delay}ms` }}
+      className="relative cursor-pointer shrink-0 node-pop group"
+      style={{ animationDelay: `${delay}ms`, width: 118 }}
       onClick={onClick}
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
     >
       <div
-        className={`relative flex items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-110 ${def.isMeta ? 'meta-pulse' : ''}`}
+        className="rounded-xl p-3.5 border transition-all duration-200"
         style={{
-          width: sz.outer, height: sz.outer,
-          background: `radial-gradient(circle at 35% 35%, ${def.color}22, ${def.color}08)`,
-          border: `2px solid ${def.color}`,
-          boxShadow: `0 0 20px 4px ${def.glow}, inset 0 0 20px ${def.color}11`,
+          background:  isSelected ? `${def.color}10` : 'var(--bg-base)',
+          border:      `1px solid ${isSelected ? def.color : 'var(--border)'}`,
+          boxShadow:   isSelected ? `0 0 0 3px ${def.color}22` : 'none',
         }}
       >
         <div
-          className="flex flex-col items-center justify-center rounded-full"
-          style={{ width: sz.inner, height: sz.inner, background: `radial-gradient(circle at 40% 30%, ${def.color}18, transparent)` }}
+          className="w-7 h-7 rounded-lg flex items-center justify-center mb-3"
+          style={{ background: `${def.color}15`, border: `1px solid ${def.color}30` }}
         >
-          <span
-            className="font-mono font-bold leading-none tabular-nums"
-            style={{
-              fontSize: def.isMeta ? 28 : def.size === 'lg' ? 24 : 20,
-              color: def.isMeta ? '#CCFF00' : '#F9FAFB',
-              textShadow: def.isMeta ? '0 0 20px #CCFF00' : `0 0 12px ${def.color}`,
-            }}
-          >
-            {fmt(animated ? displayed : count)}
-          </span>
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: def.color }} />
         </div>
-        <div
-          className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          style={{ boxShadow: `0 0 40px 8px ${def.glow}` }}
-        />
-      </div>
-      <div className="text-center">
-        <div className="text-xs font-semibold uppercase tracking-wider leading-tight" style={{ color: def.isMeta ? '#CCFF00' : def.color }}>
+        <p
+          className="text-xl font-bold font-mono leading-none tabular-nums"
+          style={{ color: 'var(--text-1)' }}
+        >
+          {fmt(animated ? displayed : count)}
+        </p>
+        <p className="text-[11px] font-semibold mt-1.5 leading-tight" style={{ color: 'var(--text-1)' }}>
           {def.label}
-        </div>
-        <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>{def.sub}</div>
+        </p>
+        <p className="text-[9px] mt-0.5 uppercase tracking-wider font-medium" style={{ color: 'var(--text-3)' }}>
+          {def.sub}
+        </p>
       </div>
+      {isSelected && (
+        <div
+          className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
+          style={{ background: def.color }}
+        />
+      )}
     </div>
   )
 }
@@ -168,28 +159,27 @@ function Connector({ rate, fromColor, toColor, animated }: {
 }) {
   const label = pct(rate)
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative px-1 min-w-[40px]">
+    <div className="flex-1 flex flex-col items-center justify-center relative px-2 min-w-[36px] mt-4">
       {label && (
         <div
-          className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono whitespace-nowrap px-1.5 py-0.5 rounded"
+          className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-mono whitespace-nowrap px-1.5 py-0.5 rounded font-semibold"
           style={{ color: 'var(--text-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
         >
           {label}
         </div>
       )}
       <div
-        className="w-full h-[2px] rounded-full relative overflow-hidden road-shimmer"
+        className="w-full h-px rounded-full"
         style={{
-          background: `linear-gradient(90deg, ${fromColor}99, ${toColor}99)`,
-          boxShadow:  animated ? `0 0 8px 1px ${fromColor}44` : 'none',
-          opacity:    animated ? 1 : 0.3,
-          transition: 'opacity 0.8s ease',
+          background: `linear-gradient(90deg, ${fromColor}44, ${toColor}44)`,
+          opacity: animated ? 1 : 0.3,
+          transition: 'opacity 0.6s ease',
         }}
       />
       <ChevronRight
-        size={14}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1"
-        style={{ color: `${toColor}88` }}
+        size={12}
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0.5"
+        style={{ color: 'var(--text-3)' }}
       />
     </div>
   )
@@ -199,7 +189,7 @@ function Connector({ rate, fromColor, toColor, animated }: {
 
 function BounceNode({ count, onClick }: { count: number; onClick: () => void }) {
   return (
-    <div className="absolute" style={{ left: '38%', top: 'calc(100% + 16px)' }}>
+    <div className="absolute" style={{ left: '10%', top: 'calc(100% + 12px)' }}>
       <div className="absolute -top-6 left-1/2 w-[2px] h-6 -translate-x-1/2"
         style={{ background: 'linear-gradient(to bottom, #EF444433, #EF444499)' }} />
       <button
@@ -261,7 +251,7 @@ function Lane({
         </div>
         <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, var(--border), transparent)' }} />
       </div>
-      <div className="flex items-center relative">
+      <div className="flex items-start relative">
         {nodes.map((def, i) => {
           const nodeData = data.nodes[def.key]
           if (!nodeData) return null
@@ -271,8 +261,8 @@ function Lane({
           const nextNode = nodes[i + 1]
           const delay   = baseDelay + i * 120
           return (
-            <div key={def.key} className={`flex items-center ${isLast ? '' : 'flex-1'} relative`}>
-              <div className="relative flex items-center justify-center">
+            <div key={def.key} className={`flex items-start ${isLast ? '' : 'flex-1'} relative`}>
+              <div className="relative">
                 <RutaNodeCircle
                   def={def} count={nodeData.count}
                   onClick={() => onSelect(def.key === selectedNode ? '' : def.key)}
@@ -301,11 +291,21 @@ function Lane({
 
 function LaneSkeleton({ count }: { count: number }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-start gap-2">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className={`flex items-center ${i < count - 1 ? 'flex-1' : ''}`}>
-          <div className="rounded-full animate-pulse shrink-0" style={{ width: 88, height: 88, background: 'var(--bg-elevated)' }} />
-          {i < count - 1 && <div className="flex-1 h-[2px] mx-2 rounded-full animate-pulse" style={{ background: 'var(--bg-elevated)' }} />}
+        <div key={i} className={`flex items-start ${i < count - 1 ? 'flex-1' : ''}`}>
+          <div
+            className="rounded-xl p-3.5 border shrink-0 animate-pulse"
+            style={{ width: 118, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+          >
+            <div className="w-7 h-7 rounded-lg mb-3" style={{ background: 'var(--bg-hover)' }} />
+            <div className="h-5 w-10 rounded mb-2" style={{ background: 'var(--bg-hover)' }} />
+            <div className="h-2.5 w-14 rounded mb-1" style={{ background: 'var(--bg-hover)' }} />
+            <div className="h-2 w-10 rounded" style={{ background: 'var(--bg-hover)' }} />
+          </div>
+          {i < count - 1 && (
+            <div className="flex-1 h-px mt-8 mx-1 rounded-full animate-pulse" style={{ background: 'var(--bg-elevated)' }} />
+          )}
         </div>
       ))}
     </div>
