@@ -5,7 +5,7 @@ import {
   RefreshCw, Database, Send, UserCheck, Building2, Code,
   MailOpen, MessageSquare, AlertCircle, CheckCircle2,
   MessageCircle, XCircle, PlayCircle, Mail, ChevronRight,
-  TrendingUp, Zap,
+  TrendingUp, Zap, ArrowRightLeft,
 } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import Collapsible from '@/components/ui/Collapsible'
@@ -36,7 +36,7 @@ function timeAgo(iso: string) {
 
 // ── Mini Funnel ────────────────────────────────────────────────────────────────
 
-function MiniFunnel({ ruta }: { ruta: any }) {
+function MiniFunnel({ ruta, usersFromCampaigns }: { ruta: any; usersFromCampaigns: number }) {
   if (!ruta) {
     return (
       <div className="surface-card p-5 mb-5">
@@ -109,10 +109,11 @@ function MiniFunnel({ ruta }: { ruta: any }) {
           style={{ borderTop: '1px solid var(--border)' }}
         >
           {[
-            { label: 'Base → Enviado', rate: ruta.conversion_rates.base_to_enviado },
+            { label: 'Base → Enviado',    rate: ruta.conversion_rates.base_to_enviado },
             { label: 'Enviado → Abierto', rate: ruta.conversion_rates.enviado_to_abierto },
-            { label: 'Abierto → Reply', rate: ruta.conversion_rates.abierto_to_respondido },
-            { label: 'Base → Pro', rate: ruta.conversion_rates.base_to_pro },
+            { label: 'Abierto → Reply',   rate: ruta.conversion_rates.abierto_to_respondido },
+            { label: 'Campaña → Plataforma', rate: ruta.nodes?.registrado?.count ? usersFromCampaigns / ruta.nodes.registrado.count : null },
+            { label: 'Base → Pro',        rate: ruta.conversion_rates.base_to_pro },
           ].map(({ label, rate }) => (
             <div key={label} className="flex items-center gap-1.5">
               <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{label}</span>
@@ -280,10 +281,11 @@ export default function DashboardPage() {
     })
   }, [rawCampaigns, ruta])
 
-  const proAgencia     = rutaNodes?.pro_agencia?.count      ?? 0
-  const proProgramador = rutaNodes?.pro_programador?.count  ?? 0
-  const totalBase      = rutaNodes?.base_contactos?.count   ?? 2536
-  const totalEnviado   = rutaNodes?.enviado?.count          ?? 0
+  const proAgencia         = rutaNodes?.pro_agencia?.count      ?? 0
+  const proProgramador     = rutaNodes?.pro_programador?.count  ?? 0
+  const totalBase          = rutaNodes?.base_contactos?.count   ?? 2536
+  const totalEnviado       = rutaNodes?.enviado?.count          ?? 0
+  const usersFromCampaigns = ruta?.usersFromCampaigns           ?? 0
 
   const artPlatform = artStats ? {
     emailVerification: pct(artStats.verified,        artStats.total),
@@ -328,8 +330,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 5 KPI Cards ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+      {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
         <KpiCard
           label="Base total"
           value={totalBase.toLocaleString()}
@@ -355,6 +357,14 @@ export default function DashboardPage() {
           loading={artLoading && !artStats}
         />
         <KpiCard
+          label="De campañas"
+          value={!ruta ? '…' : usersFromCampaigns}
+          sub={usersFromCampaigns && artStats?.total ? `${Math.round((usersFromCampaigns / artStats.total) * 100)}% de la plataforma` : 'vienen de Instantly'}
+          icon={ArrowRightLeft}
+          accentColor="#F59E0B"
+          loading={!ruta && loading}
+        />
+        <KpiCard
           label="Pro agencia"
           value={artLoading ? '…' : proAgencia}
           sub="suscriptores activos"
@@ -373,7 +383,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Mini Funnel ───────────────────────────────────────────────────── */}
-      <MiniFunnel ruta={ruta} />
+      <MiniFunnel ruta={ruta} usersFromCampaigns={usersFromCampaigns} />
 
       {/* ── Últimos registros ────────────────────────────────────────────── */}
       <div className="surface-card overflow-hidden mb-4">

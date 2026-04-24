@@ -57,6 +57,7 @@ export interface RutaResponse {
   nodes: Record<string, RutaNode>
   conversion_rates: Record<string, number | null>
   campaigns: { id: string; name: string; sent: number; opened: number; replied: number; bounced: number }[]
+  usersFromCampaigns: number          // Artiverse users who were in an Instantly campaign
   cached?: boolean
   stale?: boolean
 }
@@ -378,6 +379,13 @@ async function buildRuta(): Promise<RutaResponse> {
   }
 
   // ── 9. Conversion rates ────────────────────────────────────────────────────
+  // How many platform users were originally contacted via our campaigns
+  let usersFromCampaigns = 0
+  for (const u of artUsers) {
+    const email = (u.email ?? '').toLowerCase()
+    if (email && instByEmail.has(email)) usersFromCampaigns++
+  }
+
   function rate(a: number, b: number): number | null {
     if (!b) return null
     return Math.round((a / b) * 1000) / 1000
@@ -402,6 +410,7 @@ async function buildRuta(): Promise<RutaResponse> {
     nodes,
     conversion_rates,
     campaigns:     campaignStats,
+    usersFromCampaigns,
   }
 }
 
