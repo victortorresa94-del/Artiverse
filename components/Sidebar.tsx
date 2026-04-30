@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import {
-  LayoutDashboard, Zap, Map, Users, Megaphone, Settings, Sun, Moon,
+  LayoutDashboard, Zap, Map, Users, Megaphone, Settings, Sun, Moon, Mail,
 } from 'lucide-react'
 import { useTheme } from './ThemeProvider'
 
@@ -13,6 +13,7 @@ const nav = [
   { href: '/ruta',      label: 'Ruta',      icon: Map },
   { href: '/contactos', label: 'Contactos', icon: Users },
   { href: '/campaigns', label: 'Campañas',  icon: Megaphone },
+  { href: '/marketing', label: 'Marketing', icon: Mail },
 ]
 
 const configNav = [
