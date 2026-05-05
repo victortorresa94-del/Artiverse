@@ -1,14 +1,172 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Mail, Send, Users, List, BarChart2, Plus, Upload,
   Clock, Star, Copy, Trash2, Eye, Edit2, Filter,
   ChevronRight, CheckCircle, Calendar, Zap, Layers,
   FileText, Tag, Globe, Building2, MailOpen, MessageSquare,
-  TrendingUp, AlertCircle, ArrowRight, Inbox, X,
+  TrendingUp, AlertCircle, ArrowRight, Inbox, X, Key,
 } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import PillBadge from '@/components/ui/PillBadge'
+
+// ── HubSpot Service Key Modal ──────────────────────────────────────────────────
+
+function HubSpotModal({ open, onClose, onConnected }: {
+  open: boolean
+  onClose: () => void
+  onConnected: () => void
+}) {
+  const [testing, setTesting] = useState(false)
+  const [result, setResult] = useState<'ok' | 'error' | null>(null)
+  const [errMsg, setErrMsg] = useState('')
+
+  async function handleTest() {
+    setTesting(true)
+    setResult(null)
+    try {
+      const res = await fetch('/api/hubspot')
+      const data = await res.json()
+      if (data.connected) {
+        setResult('ok')
+        setTimeout(() => { onConnected(); onClose() }, 1000)
+      } else {
+        setResult('error')
+        setErrMsg(data.error || 'Token inválido')
+      }
+    } catch {
+      setResult('error')
+      setErrMsg('Error de conexión')
+    }
+    setTesting(false)
+  }
+
+  if (!open) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl shadow-2xl"
+        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-2">
+            <Key size={15} style={{ color: '#FB923C' }} />
+            <h2 className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>Conectar HubSpot</h2>
+          </div>
+          <button onClick={onClose} style={{ color: 'var(--text-2)' }}><X size={15} /></button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Instrucciones Clave de servicio */}
+          <div className="rounded-xl p-4 space-y-2.5"
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <p className="text-xs font-semibold" style={{ color: '#FB923C' }}>
+              Cómo obtener tu Clave de servicio:
+            </p>
+            {[
+              ['1', '⚙️ Configuración (engranaje arriba derecha)'],
+              ['2', '🔗 Integraciones → Aplicaciones privadas'],
+              ['3', '✅ En el aviso, clic en "Usar las claves de servicio"'],
+              ['4', '📝 Ponle un nombre (ej: "Control Center")'],
+              ['5', '🔑 Copia la clave generada'],
+            ].map(([n, step]) => (
+              <div key={n} className="flex items-start gap-2">
+                <span className="text-[10px] font-bold w-4 shrink-0 mt-0.5"
+                  style={{ color: '#FB923C' }}>{n}</span>
+                <p className="text-xs" style={{ color: 'var(--text-2)' }}>{step}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Info: dónde pegar */}
+          <div className="rounded-xl p-3 flex items-start gap-2"
+            style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)' }}>
+            <AlertCircle size={13} style={{ color: 'var(--blue)' }} className="mt-0.5 shrink-0" />
+            <p className="text-xs" style={{ color: 'var(--text-2)' }}>
+              Pega la clave en <code className="px-1 py-0.5 rounded text-[10px]"
+                style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)' }}>.env.local</code>{' '}
+              como <code className="px-1 py-0.5 rounded text-[10px]"
+                style={{ background: 'var(--bg-elevated)', color: '#CCFF00' }}>HUBSPOT_API_KEY=tu_clave</code>{' '}
+              y reinicia el servidor. Luego pulsa "Probar conexión".
+            </p>
+          </div>
+
+          {/* Test */}
+          <button
+            onClick={handleTest}
+            disabled={testing}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: result === 'ok' ? 'rgba(34,197,94,0.15)' : result === 'error' ? 'rgba(239,68,68,0.1)' : 'var(--blue)',
+              color: result === 'ok' ? '#22C55E' : result === 'error' ? '#EF4444' : '#fff',
+            }}>
+            {testing ? 'Probando...'
+              : result === 'ok' ? '✓ Conectado correctamente'
+              : result === 'error' ? `✗ ${errMsg}`
+              : 'Probar conexión'}
+          </button>
+
+          <p className="text-[10px] text-center" style={{ color: 'var(--text-3)' }}>
+            La clave no se comparte y sólo se usa desde tu servidor.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── HubSpot Status Banner ─────────────────────────────────────────────────────
+
+function HubSpotBanner({ onConfigure }: { onConfigure: () => void }) {
+  const [status, setStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading')
+  const [portal, setPortal] = useState('')
+
+  useEffect(() => {
+    fetch('/api/hubspot')
+      .then(r => r.json())
+      .then(d => {
+        setStatus(d.connected ? 'connected' : 'disconnected')
+        if (d.portal) setPortal(d.portal)
+      })
+      .catch(() => setStatus('disconnected'))
+  }, [])
+
+  if (status === 'loading') return null
+
+  if (status === 'connected') {
+    return (
+      <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl mb-5"
+        style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.18)' }}>
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#22C55E' }} />
+        <Building2 size={13} style={{ color: '#FB923C' }} />
+        <span className="text-xs font-semibold" style={{ color: '#FB923C' }}>HubSpot conectado</span>
+        {portal && <span className="text-xs" style={{ color: 'var(--text-3)' }}>· portal {portal}</span>}
+        <button onClick={onConfigure} className="ml-auto text-[11px] px-2 py-0.5 rounded-lg"
+          style={{ background: 'rgba(249,115,22,0.15)', color: '#FB923C' }}>
+          Gestionar
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl mb-5"
+      style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
+      <AlertCircle size={13} style={{ color: '#F59E0B' }} className="shrink-0" />
+      <div className="flex-1">
+        <span className="text-xs font-semibold" style={{ color: '#F59E0B' }}>HubSpot no conectado </span>
+        <span className="text-xs" style={{ color: 'var(--text-3)' }}>— los envíos funcionan en modo demo</span>
+      </div>
+      <button onClick={onConfigure}
+        className="text-xs px-3 py-1 rounded-lg font-semibold shrink-0"
+        style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
+        Conectar →
+      </button>
+    </div>
+  )
+}
 
 // ── Mock data ──────────────────────────────────────────────────────────────────
 
@@ -723,6 +881,7 @@ function TabListas({ onSendToList }: { onSendToList: () => void }) {
 
 export default function MarketingPage() {
   const [tab, setTab] = useState<'resumen' | 'nuevo' | 'listas' | 'historial' | 'plantillas'>('resumen')
+  const [hsModal, setHsModal] = useState(false)
 
   const TABS = [
     { id: 'resumen',    label: 'Resumen',    icon: BarChart2  },
@@ -736,7 +895,7 @@ export default function MarketingPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px]">
 
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Marketing</h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
@@ -752,6 +911,16 @@ export default function MarketingPage() {
           Nuevo envío
         </button>
       </div>
+
+      {/* HubSpot status banner */}
+      <HubSpotBanner onConfigure={() => setHsModal(true)} />
+
+      {/* HubSpot modal */}
+      <HubSpotModal
+        open={hsModal}
+        onClose={() => setHsModal(false)}
+        onConnected={() => window.location.reload()}
+      />
 
       {/* Tab bar */}
       <div className="flex items-center gap-1 mb-6 p-1 rounded-xl w-fit"
