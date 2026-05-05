@@ -4,7 +4,8 @@
 // Token format: cualquier Bearer token que HubSpot emita (pat-eu1-..., pat-na1-..., etc.)
 // Pega el token en .env.local como HUBSPOT_API_KEY=<tu_clave>
 
-const HUBSPOT_TOKEN = process.env.HUBSPOT_API_KEY || ''
+// Acepta tanto HUBSPOT_SERVICE_KEY (nuevo, recomendado) como HUBSPOT_API_KEY (legacy)
+const HUBSPOT_TOKEN = process.env.HUBSPOT_SERVICE_KEY || process.env.HUBSPOT_API_KEY || ''
 const HS_BASE = 'https://api.hubapi.com'
 
 function hsHeaders() {
