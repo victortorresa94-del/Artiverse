@@ -3,13 +3,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import {
-  LayoutDashboard, Zap, Map, Users, Megaphone, Settings, Sun, Moon, Mail, Inbox, GitBranch,
+  LayoutDashboard, Zap, Map, Users, Megaphone, Settings, Sun, Moon, Mail, Inbox, GitBranch, Send,
 } from 'lucide-react'
 import { useTheme } from './ThemeProvider'
 
 // Nuevas vistas — las que estamos construyendo limpias y con sentido
 const newNav = [
   { href: '/conversaciones', label: 'Conversaciones', icon: Inbox },
+  { href: '/enviados',       label: 'Enviados',       icon: Send },
   { href: '/funnel',         label: 'Funnel',         icon: GitBranch },
 ]
 
