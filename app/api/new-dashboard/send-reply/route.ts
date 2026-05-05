@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
     port:   SMTP_PORT,
     secure: SMTP_PORT === 465,
     auth:   { user: SMTP_USER, pass: SMTP_PASS },
+    tls:    { rejectUnauthorized: false },
   })
 
   const htmlBody = `<div style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;max-width:640px">
