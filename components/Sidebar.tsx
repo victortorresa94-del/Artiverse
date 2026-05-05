@@ -7,19 +7,37 @@ import {
 } from 'lucide-react'
 import { useTheme } from './ThemeProvider'
 
-const nav = [
-  { href: '/new-dashboard', label: 'New Dashboard', icon: Inbox },
-  { href: '/',              label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/hoy',           label: 'Hoy',           icon: Zap },
-  { href: '/ruta',          label: 'Ruta',          icon: Map },
-  { href: '/contactos',     label: 'Contactos',     icon: Users },
-  { href: '/campaigns',     label: 'Campañas',      icon: Megaphone },
-  { href: '/marketing',     label: 'Marketing',     icon: Mail },
+// Nuevas vistas — las que estamos construyendo limpias y con sentido
+const newNav = [
+  { href: '/conversaciones', label: 'Conversaciones', icon: Inbox },
+]
+
+// Vistas legacy — pendientes de revisar/migrar
+const legacyNav = [
+  { href: '/',          label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/hoy',       label: 'Hoy',       icon: Zap },
+  { href: '/ruta',      label: 'Ruta',      icon: Map },
+  { href: '/contactos', label: 'Contactos', icon: Users },
+  { href: '/campaigns', label: 'Campañas',  icon: Megaphone },
+  { href: '/marketing', label: 'Marketing', icon: Mail },
 ]
 
 const configNav = [
   { href: '/config', label: 'Config', icon: Settings },
 ]
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-3 pt-3 pb-1.5">
+      <span
+        className="text-[9px] uppercase tracking-[0.15em] font-semibold"
+        style={{ color: 'var(--text-3)' }}
+      >
+        {children}
+      </span>
+    </div>
+  )
+}
 
 function NavItem({
   href, label, icon: Icon, active,
@@ -102,8 +120,25 @@ export default function Sidebar({ mobile = false }: { mobile?: boolean }) {
       )}
 
       {/* Primary nav */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5">
-        {nav.map(item => (
+      <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+        {/* Sección NUEVO */}
+        <SectionLabel>Nuevo</SectionLabel>
+        {newNav.map(item => (
+          <NavItem
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            active={path === item.href}
+          />
+        ))}
+
+        {/* Separador visual */}
+        <div className="my-2" style={{ borderTop: '1px solid var(--border)' }} />
+
+        {/* Sección LEGACY */}
+        <SectionLabel>Legacy</SectionLabel>
+        {legacyNav.map(item => (
           <NavItem
             key={item.href}
             href={item.href}
