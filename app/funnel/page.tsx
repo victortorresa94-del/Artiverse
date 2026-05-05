@@ -1,308 +1,563 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import {
-  leads as initialLeads,
-  platformUsers as initialUsers,
-  FUNNEL_STAGES,
-  INBOUND_STAGES,
-  type Lead,
-  type FunnelStage,
-  type PlatformUser,
-  type InboundStage,
-  type Segment,
-} from '@/data/mock'
+  RefreshCw, Mail, Eye, MousePointer, MessageCircle, ThumbsUp, ThumbsDown,
+  CheckCheck, MailX, Building2, MapPin, X, Send, Loader2, ArrowRight,
+} from 'lucide-react'
 
-type FunnelView = 'outreach' | 'inbound'
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const SEGMENTS: { id: string; label: string }[] = [
-  { id: 'all', label: 'Todos los segmentos' },
-  { id: 'Teatro-Danza',     label: 'Teatro-Danza' },
-  { id: 'Salas Conciertos', label: 'Salas Conciertos' },
-  { id: 'Dance from Spain', label: 'Dance from Spain' },
-  { id: 'Festivales',       label: 'Festivales' },
-  { id: 'Socios ARTE',      label: 'Socios ARTE' },
-  { id: 'Distribuidoras',   label: 'Distribuidoras' },
+type Phase =
+  | 'contactado' | 'abierto' | 'click' | 'respondio'
+  | 'interesado' | 'registrado' | 'no_interesado' | 'mail_erroneo'
+
+interface FunnelContact {
+  email:    string
+  name:     string
+  company:  string
+  job:      string
+  city:     string
+  opens:    number
+  clicks:   number
+  replies:  number
+  updated:  string
+  phase:    Phase
+  source:   'auto' | 'manual' | 'platform'
+}
+
+interface FunnelData {
+  phases:   Record<Phase, FunnelContact[]>
+  counts:   Record<Phase, number>
+  total:    number
+  list_ids: Record<string, number>
+}
+
+// ─── Phase metadata ───────────────────────────────────────────────────────────
+
+const PHASE_ORDER: Phase[] = [
+  'contactado', 'abierto', 'click', 'respondio',
+  'interesado', 'registrado', 'no_interesado', 'mail_erroneo',
 ]
 
-const channelEmoji: Record<string, string> = {
-  email: '✉️', whatsapp: '💬', instagram: '📸', telefono: '📞'
+const PHASE_META: Record<Phase, {
+  label:   string
+  icon:    React.ElementType
+  color:   string  // accent
+  desc:    string
+  manual?: boolean
+}> = {
+  contactado:    { label: 'Contactado',     icon: Mail,          color: '#60A5FA', desc: 'Email enviado, sin actividad' },
+  abierto:       { label: 'Abierto',        icon: Eye,           color: '#A78BFA', desc: 'Abrió el email' },
+  click:         { label: 'Click',          icon: MousePointer,  color: '#F472B6', desc: 'Hizo click en un enlace' },
+  respondio:     { label: 'Respondió',      icon: MessageCircle, color: '#FBBF24', desc: 'Contestó al email' },
+  interesado:    { label: 'Interesado',     icon: ThumbsUp,      color: '#22C55E', desc: 'Marcado manualmente', manual: true },
+  registrado:    { label: 'Registrado',     icon: CheckCheck,    color: '#10B981', desc: 'Usuario en Artiverse' },
+  no_interesado: { label: 'No interesado',  icon: ThumbsDown,    color: '#94A3B8', desc: 'Marcado manualmente', manual: true },
+  mail_erroneo:  { label: 'Mail erróneo',   icon: MailX,         color: '#EF4444', desc: 'Bounce / inválido' },
 }
 
-const sourceEmoji: Record<string, string> = {
-  outreach: '✉️', organic: '🌱', referral: '🔗', unknown: '❓'
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtRel(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const diff = Date.now() - d.getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1)    return 'ahora'
+  if (m < 60)   return `${m}m`
+  const h = Math.floor(m / 60)
+  if (h < 24)   return `${h}h`
+  const days = Math.floor(h / 24)
+  if (days < 30) return `${days}d`
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
 }
 
-function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, stage: FunnelStage) => void }) {
-  const [showMenu, setShowMenu] = useState(false)
+// ─── Contact card ─────────────────────────────────────────────────────────────
+
+function ContactCard({ c, onClick }: { c: FunnelContact; onClick: () => void }) {
+  const initial = (c.name || c.email).charAt(0).toUpperCase()
+
   return (
-    <div className={`bg-white border rounded-xl p-3 text-xs cursor-pointer relative shadow-sm ${
-      lead.priority === 'alta' ? 'border-amber-300' : 'border-gray-200'
-    }`}>
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <p className={`font-semibold leading-tight ${lead.priority === 'alta' ? 'text-amber-800' : 'text-gray-900'}`}>{lead.company}</p>
-        {lead.priority === 'alta' && <span className="text-amber-400 text-[10px] shrink-0">★</span>}
-      </div>
-      {lead.city && <p className="text-gray-400 mb-1.5 text-[10px]">{lead.city}</p>}
-      <div className="flex items-center justify-between">
-        <span className="text-gray-400">{channelEmoji[lead.channel]}</span>
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="text-blue-500 hover:text-blue-700 transition-colors text-[10px] px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 font-medium"
+    <button
+      onClick={onClick}
+      className="w-full text-left p-2.5 rounded-lg transition-all group"
+      style={{
+        background: 'var(--bg-base)',
+        border:     '1px solid var(--border)',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.background  = 'var(--bg-hover)'
+        ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)'
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.background  = 'var(--bg-base)'
+        ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+      }}
+    >
+      <div className="flex items-start gap-2">
+        <div
+          className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-semibold"
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)' }}
         >
-          Mover →
-        </button>
+          {initial}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-medium leading-tight truncate" style={{ color: 'var(--text-1)' }}>
+            {c.name || c.email.split('@')[0]}
+          </p>
+          {c.company && (
+            <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--text-2)' }}>
+              {c.company}
+            </p>
+          )}
+        </div>
       </div>
-      {showMenu && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl py-1.5 w-48 shadow-xl">
-          {FUNNEL_STAGES.filter(s => s.id !== lead.stage).map(s => (
-            <button
-              key={s.id}
-              onClick={() => { onMove(lead.id, s.id); setShowMenu(false) }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 text-gray-600 hover:text-blue-700 transition-colors"
-            >
-              {s.label}
-            </button>
-          ))}
+
+      {(c.opens > 0 || c.clicks > 0 || c.replies > 0) && (
+        <div className="flex items-center gap-2 mt-2 text-[10px]" style={{ color: 'var(--text-3)' }}>
+          {c.opens   > 0 && <span className="flex items-center gap-1"><Eye          size={9} />{c.opens}</span>}
+          {c.clicks  > 0 && <span className="flex items-center gap-1"><MousePointer size={9} />{c.clicks}</span>}
+          {c.replies > 0 && <span className="flex items-center gap-1"><MessageCircle size={9} />{c.replies}</span>}
+          <span className="ml-auto">{fmtRel(c.updated)}</span>
         </div>
       )}
+    </button>
+  )
+}
+
+// ─── Phase column ─────────────────────────────────────────────────────────────
+
+function PhaseColumn({
+  phase, contacts, onSelect,
+}: {
+  phase: Phase; contacts: FunnelContact[]; onSelect: (c: FunnelContact) => void
+}) {
+  const meta = PHASE_META[phase]
+  const Icon = meta.icon
+
+  return (
+    <div className="shrink-0 w-[260px] flex flex-col">
+      {/* Header */}
+      <div
+        className="rounded-t-lg px-3 py-2.5 flex items-center justify-between"
+        style={{
+          background:  'var(--bg-surface)',
+          borderTop:   `2px solid ${meta.color}`,
+          borderLeft:  '1px solid var(--border)',
+          borderRight: '1px solid var(--border)',
+        }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon size={13} style={{ color: meta.color, flexShrink: 0 }} />
+          <span className="text-[11px] font-semibold uppercase tracking-wider truncate" style={{ color: 'var(--text-1)' }}>
+            {meta.label}
+          </span>
+          {meta.manual && (
+            <span
+              className="text-[8px] px-1 py-0.5 rounded uppercase tracking-wider"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}
+            >
+              Manual
+            </span>
+          )}
+        </div>
+        <span
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ml-2"
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)' }}
+        >
+          {contacts.length}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div
+        className="flex-1 rounded-b-lg p-2 space-y-1.5 overflow-y-auto"
+        style={{
+          background:    'var(--bg-surface)',
+          borderLeft:    '1px solid var(--border)',
+          borderRight:   '1px solid var(--border)',
+          borderBottom:  '1px solid var(--border)',
+          minHeight:     '300px',
+          maxHeight:     'calc(100vh - 260px)',
+        }}
+      >
+        {contacts.length === 0 ? (
+          <div
+            className="h-full flex flex-col items-center justify-center text-center py-6"
+            style={{ color: 'var(--text-3)' }}
+          >
+            <p className="text-[10px] italic">Sin contactos</p>
+          </div>
+        ) : (
+          contacts.map(c => (
+            <ContactCard key={c.email} c={c} onClick={() => onSelect(c)} />
+          ))
+        )}
+      </div>
     </div>
   )
 }
 
-function UserCard({ user, onMove }: { user: PlatformUser; onMove: (id: string, stage: InboundStage) => void }) {
-  const [showMenu, setShowMenu] = useState(false)
+// ─── Detail slide-over ────────────────────────────────────────────────────────
+
+function ContactDetailPanel({
+  contact, onClose, onMove, moving,
+}: {
+  contact: FunnelContact
+  onClose: () => void
+  onMove:  (phase: 'interesado' | 'no_interesado' | '__auto__') => void
+  moving:  boolean
+}) {
+  const meta = PHASE_META[contact.phase]
+  const Icon = meta.icon
+
   return (
-    <div className={`bg-white border rounded-xl p-3 text-xs cursor-pointer relative shadow-sm ${
-      !user.emailVerified ? 'border-red-300' : user.hasAgency ? 'border-indigo-200' : 'border-gray-200'
-    }`}>
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <p className="font-semibold leading-tight text-gray-900 truncate">
-          {user.company || user.name || user.email.split('@')[0]}
-        </p>
-        {!user.emailVerified && <span className="text-red-400 text-[10px] shrink-0">!</span>}
-      </div>
-      <p className="text-gray-400 mb-1 text-[10px] truncate">{user.email}</p>
-      {user.hasAgency && (
-        <p className="text-indigo-500 mb-1 text-[10px]">{user.agencyName || 'Agencia'}</p>
-      )}
-      <div className="flex items-center justify-between mt-1.5">
-        <span className="text-gray-400 text-[10px]">{sourceEmoji[user.source]} {user.source}</span>
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="text-indigo-500 hover:text-indigo-700 transition-colors text-[10px] px-2 py-0.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 font-medium"
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40"
+        style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <aside
+        className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[460px] flex flex-col"
+        style={{
+          background: 'var(--bg-surface)',
+          borderLeft: '1px solid var(--border-strong)',
+        }}
+      >
+        {/* Header */}
+        <div
+          className="px-5 py-4 flex items-center justify-between"
+          style={{ borderBottom: '1px solid var(--border)' }}
         >
-          Mover →
-        </button>
-      </div>
-      {showMenu && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl py-1.5 w-48 shadow-xl">
-          {INBOUND_STAGES.filter(s => s.id !== user.inboundStage).map(s => (
-            <button
-              key={s.id}
-              onClick={() => { onMove(user.id, s.id); setShowMenu(false) }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 text-gray-600 hover:text-indigo-700 transition-colors"
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-base font-bold shrink-0"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)' }}
             >
-              {s.label}
-            </button>
-          ))}
+              {(contact.name || contact.email).charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold truncate" style={{ color: 'var(--text-1)' }}>
+                {contact.name || contact.email.split('@')[0]}
+              </h2>
+              <p className="text-xs truncate" style={{ color: 'var(--text-2)' }}>{contact.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md transition-colors"
+            style={{ color: 'var(--text-2)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <X size={16} />
+          </button>
         </div>
-      )}
-    </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Current phase */}
+          <div
+            className="p-3 rounded-lg flex items-center gap-3"
+            style={{
+              background: meta.color + '15',
+              border:     `1px solid ${meta.color}30`,
+            }}
+          >
+            <Icon size={18} style={{ color: meta.color }} />
+            <div className="flex-1">
+              <p className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-2)' }}>
+                Fase actual
+              </p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
+                {meta.label}
+              </p>
+            </div>
+            <span
+              className="text-[9px] px-2 py-1 rounded uppercase tracking-wider"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
+            >
+              {contact.source === 'manual'   ? 'Manual'
+                : contact.source === 'platform' ? 'Plataforma'
+                : 'Auto'}
+            </span>
+          </div>
+
+          {/* Info */}
+          <div className="space-y-2.5">
+            {contact.company && (
+              <div className="flex items-center gap-2.5 text-sm" style={{ color: 'var(--text-1)' }}>
+                <Building2 size={13} style={{ color: 'var(--text-3)' }} />
+                <span>{contact.company}</span>
+              </div>
+            )}
+            {contact.job && (
+              <div className="text-sm pl-6" style={{ color: 'var(--text-2)' }}>{contact.job}</div>
+            )}
+            {contact.city && (
+              <div className="flex items-center gap-2.5 text-sm" style={{ color: 'var(--text-1)' }}>
+                <MapPin size={13} style={{ color: 'var(--text-3)' }} />
+                <span>{contact.city}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Stats */}
+          <div
+            className="grid grid-cols-3 gap-2 p-3 rounded-lg"
+            style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+          >
+            {[
+              { label: 'Aperturas',  value: contact.opens,   icon: Eye },
+              { label: 'Clicks',     value: contact.clicks,  icon: MousePointer },
+              { label: 'Respuestas', value: contact.replies, icon: MessageCircle },
+            ].map(s => {
+              const I = s.icon
+              return (
+                <div key={s.label} className="text-center">
+                  <I size={12} style={{ color: 'var(--text-3)', margin: '0 auto' }} />
+                  <p className="text-lg font-bold mt-1" style={{ color: 'var(--text-1)' }}>{s.value}</p>
+                  <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
+                    {s.label}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Last activity */}
+          {contact.updated && (
+            <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+              Última actividad: {new Date(contact.updated).toLocaleString('es-ES')}
+            </p>
+          )}
+
+          {/* Quick action: respond */}
+          {contact.phase === 'respondio' && (
+            <Link
+              href="/conversaciones"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
+              style={{
+                background: 'var(--blue)',
+                color:      '#fff',
+              }}
+            >
+              <Send size={14} />
+              Responder en Conversaciones
+              <ArrowRight size={13} />
+            </Link>
+          )}
+        </div>
+
+        {/* Footer — move actions */}
+        <div
+          className="p-4 space-y-2"
+          style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+        >
+          <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: 'var(--text-3)' }}>
+            Mover a fase manual
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              disabled={moving || contact.phase === 'interesado'}
+              onClick={() => onMove('interesado')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: contact.phase === 'interesado' ? '#22C55E30' : 'var(--bg-base)',
+                color:      contact.phase === 'interesado' ? '#22C55E' : 'var(--text-1)',
+                border:     '1px solid var(--border)',
+              }}
+            >
+              <ThumbsUp size={12} /> Interesado
+            </button>
+            <button
+              disabled={moving || contact.phase === 'no_interesado'}
+              onClick={() => onMove('no_interesado')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: contact.phase === 'no_interesado' ? '#94A3B830' : 'var(--bg-base)',
+                color:      contact.phase === 'no_interesado' ? '#94A3B8' : 'var(--text-1)',
+                border:     '1px solid var(--border)',
+              }}
+            >
+              <ThumbsDown size={12} /> No
+            </button>
+            <button
+              disabled={moving || contact.source !== 'manual'}
+              onClick={() => onMove('__auto__')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: 'var(--bg-base)',
+                color:      'var(--text-2)',
+                border:     '1px solid var(--border)',
+              }}
+            >
+              {moving ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Auto
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
   )
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FunnelPage() {
-  const [funnelView, setFunnelView] = useState<FunnelView>('outreach')
-  const [leads, setLeads] = useState(initialLeads)
-  const [users, setUsers] = useState(initialUsers)
-  const [segment, setSegment] = useState<string>('all')
+  const [data, setData]         = useState<FunnelData | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState<string | null>(null)
+  const [selected, setSelected] = useState<FunnelContact | null>(null)
+  const [moving, setMoving]     = useState(false)
 
-  const moveCard = (id: string, newStage: FunnelStage) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, stage: newStage } : l))
+  async function load() {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/funnel', { cache: 'no-store' })
+      if (!res.ok) throw new Error(`Error ${res.status}`)
+      const d = await res.json()
+      setData(d)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const moveUser = (id: string, newStage: InboundStage) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, inboundStage: newStage } : u))
+  useEffect(() => { load() }, [])
+
+  async function handleMove(phase: 'interesado' | 'no_interesado' | '__auto__') {
+    if (!selected) return
+    setMoving(true)
+    try {
+      const res = await fetch('/api/funnel/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: selected.email, phase }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || `Error ${res.status}`)
+      }
+      setSelected(null)
+      await load()
+    } catch (e: any) {
+      alert(`Error al mover: ${e.message}`)
+    } finally {
+      setMoving(false)
+    }
   }
 
-  const filteredLeads = useMemo(() =>
-    segment === 'all' ? leads : leads.filter(l => l.segment === segment),
-    [leads, segment]
-  )
-
-  const filteredUsers = useMemo(() => {
-    if (segment === 'all') return users
-    return users.filter(u => u.sourceSegment === segment)
-  }, [users, segment])
-
-  const segCounts = useMemo(() =>
-    SEGMENTS.slice(1).reduce<Record<string, number>>((acc, s) => {
-      acc[s.id] = funnelView === 'outreach'
-        ? leads.filter(l => l.segment === s.id).length
-        : users.filter(u => u.sourceSegment === s.id).length
-      return acc
-    }, {}),
-    [leads, users, funnelView]
-  )
-
-  const totalItems = funnelView === 'outreach' ? filteredLeads.length : filteredUsers.length
+  const totals = useMemo(() => {
+    if (!data) return { total: 0, pct: {} as Record<Phase, number> }
+    const total = data.total || 1
+    const pct: Record<string, number> = {}
+    PHASE_ORDER.forEach(p => {
+      pct[p] = Math.round((data.counts[p] || 0) / total * 1000) / 10
+    })
+    return { total: data.total, pct }
+  }, [data])
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
+    <div className="p-5 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Header */}
-      <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Funnel</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {totalItems} {funnelView === 'outreach' ? 'leads' : 'usuarios'}{segment !== 'all' ? ` en ${segment}` : ' en total'}
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Funnel</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>
+            {data
+              ? `${data.total} contactos clasificados en ${PHASE_ORDER.length} fases`
+              : 'Cargando contactos…'}
           </p>
         </div>
 
-        {/* Funnel view toggle */}
-        <div className="flex bg-gray-100 rounded-lg p-0.5">
-          <button
-            onClick={() => setFunnelView('outreach')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              funnelView === 'outreach'
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Outreach
-          </button>
-          <button
-            onClick={() => setFunnelView('inbound')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              funnelView === 'inbound'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Inbound
-          </button>
-        </div>
+        <button
+          onClick={load}
+          disabled={loading}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
+          style={{
+            background: 'var(--bg-surface)',
+            color:      'var(--text-1)',
+            border:     '1px solid var(--border)',
+          }}
+        >
+          {loading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+          {loading ? 'Cargando…' : 'Refrescar'}
+        </button>
       </div>
 
-      {/* Segment filter pills */}
-      <div className="mb-5 flex gap-2 flex-wrap">
-        {SEGMENTS.map(s => {
-          const count = s.id === 'all'
-            ? (funnelView === 'outreach' ? leads.length : users.length)
-            : (segCounts[s.id] ?? 0)
-          const active = segment === s.id
-          const accent = funnelView === 'outreach' ? 'blue' : 'indigo'
-          return (
-            <button
-              key={s.id}
-              onClick={() => setSegment(s.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
-                active
-                  ? `bg-${accent}-600 text-white border-${accent}-600 shadow-sm`
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'
-              }`}
-              style={active ? { backgroundColor: funnelView === 'outreach' ? '#2563EB' : '#4F46E5', borderColor: funnelView === 'outreach' ? '#2563EB' : '#4F46E5', color: 'white' } : {}}
-            >
-              {s.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                active ? 'text-white' : 'bg-gray-100 text-gray-500'
-              }`} style={active ? { backgroundColor: funnelView === 'outreach' ? '#1D4ED8' : '#4338CA' } : {}}>{count}</span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Kanban — Outreach funnel */}
-      {funnelView === 'outreach' && (
-        <div className="flex gap-3 overflow-x-auto pb-4">
-          {FUNNEL_STAGES.map(stage => {
-            const stageLeads = filteredLeads.filter(l => l.stage === stage.id)
-            const isEmpty = stageLeads.length === 0
+      {/* Funnel summary bar */}
+      {data && (
+        <div className="mb-5 flex flex-wrap gap-1.5">
+          {PHASE_ORDER.map(p => {
+            const meta  = PHASE_META[p]
+            const count = data.counts[p] || 0
+            const Icon  = meta.icon
             return (
-              <div key={stage.id} className={`shrink-0 ${isEmpty ? 'w-32 opacity-40' : 'w-44 sm:w-48'}`}>
-                <div className="flex items-center justify-between mb-2.5 px-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                    <span className="text-xs font-semibold text-gray-700 truncate">{stage.label}</span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-semibold bg-gray-100 rounded-full px-1.5 py-0.5 min-w-[20px] text-center ml-1 shrink-0">
-                    {stageLeads.length}
-                  </span>
-                </div>
-                <div
-                  className="min-h-[80px] rounded-xl p-2 space-y-2 border"
-                  style={{ backgroundColor: stage.color + '0D', borderColor: stage.color + '20' }}
-                >
-                  {stageLeads.map(lead => (
-                    <LeadCard key={lead.id} lead={lead} onMove={moveCard} />
-                  ))}
-                  {isEmpty && (
-                    <div className="h-12 flex items-center justify-center text-[10px] text-gray-300 italic">
-                      vacío
-                    </div>
-                  )}
-                </div>
+              <div
+                key={p}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs"
+                style={{
+                  background: 'var(--bg-surface)',
+                  border:     '1px solid var(--border)',
+                }}
+              >
+                <Icon size={11} style={{ color: meta.color }} />
+                <span className="font-medium" style={{ color: 'var(--text-1)' }}>{meta.label}</span>
+                <span className="font-bold" style={{ color: meta.color }}>{count}</span>
+                <span style={{ color: 'var(--text-3)' }}>· {totals.pct[p]}%</span>
               </div>
             )
           })}
         </div>
       )}
 
-      {/* Kanban — Inbound funnel */}
-      {funnelView === 'inbound' && (
-        <div className="flex gap-3 overflow-x-auto pb-4">
-          {INBOUND_STAGES.map(stage => {
-            const stageUsers = filteredUsers.filter(u => u.inboundStage === stage.id)
-            const isEmpty = stageUsers.length === 0
-            return (
-              <div key={stage.id} className={`shrink-0 ${isEmpty ? 'w-32 opacity-40' : 'w-44 sm:w-52'}`}>
-                <div className="flex items-center justify-between mb-2.5 px-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                    <span className="text-xs font-semibold text-gray-700 truncate">{stage.label}</span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-semibold bg-gray-100 rounded-full px-1.5 py-0.5 min-w-[20px] text-center ml-1 shrink-0">
-                    {stageUsers.length}
-                  </span>
-                </div>
-                <div
-                  className="min-h-[80px] rounded-xl p-2 space-y-2 border"
-                  style={{ backgroundColor: stage.color + '0D', borderColor: stage.color + '20' }}
-                >
-                  {stageUsers.map(user => (
-                    <UserCard key={user.id} user={user} onMove={moveUser} />
-                  ))}
-                  {isEmpty && (
-                    <div className="h-12 flex items-center justify-center text-[10px] text-gray-300 italic">
-                      vacío
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+      {/* Error */}
+      {error && (
+        <div
+          className="p-4 rounded-lg mb-4 text-sm"
+          style={{ background: '#EF444415', border: '1px solid #EF444430', color: '#FCA5A5' }}
+        >
+          {error}
         </div>
       )}
 
-      {/* Legend */}
-      <div className="mt-4 flex items-center gap-4 text-xs text-gray-400 flex-wrap">
-        {funnelView === 'outreach' ? (
-          <>
-            <span className="font-medium">Prioridad:</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" />Alta</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-300" />Media / Baja</span>
-          </>
-        ) : (
-          <>
-            <span className="font-medium">Fuente:</span>
-            <span className="flex items-center gap-1.5">✉️ Outreach</span>
-            <span className="flex items-center gap-1.5">🌱 Orgánico</span>
-            <span className="flex items-center gap-1.5">🔗 Referido</span>
-            <span className="ml-4 font-medium">Estado:</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" />Email no verificado</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-400" />Tiene agencia</span>
-          </>
-        )}
-      </div>
+      {/* Loading */}
+      {loading && !data && (
+        <div className="flex items-center justify-center py-20" style={{ color: 'var(--text-2)' }}>
+          <Loader2 size={20} className="animate-spin mr-2" />
+          <span className="text-sm">Cargando funnel desde Instantly + HubSpot…</span>
+        </div>
+      )}
+
+      {/* Kanban */}
+      {data && (
+        <div className="flex gap-3 overflow-x-auto pb-4">
+          {PHASE_ORDER.map(p => (
+            <PhaseColumn
+              key={p}
+              phase={p}
+              contacts={data.phases[p] || []}
+              onSelect={setSelected}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Detail panel */}
+      {selected && (
+        <ContactDetailPanel
+          contact={selected}
+          onClose={() => setSelected(null)}
+          onMove={handleMove}
+          moving={moving}
+        />
+      )}
     </div>
   )
 }
