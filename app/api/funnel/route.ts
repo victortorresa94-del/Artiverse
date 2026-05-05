@@ -26,7 +26,6 @@ const ARTIVERSE_KEY = process.env.ARTIVERSE_API_KEY || ''
 export const PHASES = [
   'contactado',
   'abierto',
-  'click',
   'respondio',
   'interesado',
   'registrado',
@@ -199,11 +198,9 @@ async function fetchArtiverseEmails(): Promise<Set<string>> {
 function autoPhase(lead: InstantlyLead): Phase {
   // Bounced
   if (lead.status === -1 || lead.verification_status === -1) return 'mail_erroneo'
-  // Replied (Instantly status 3 + reply_count > 0, or just reply_count > 0)
+  // Replied
   if ((lead.email_reply_count ?? 0) > 0) return 'respondio'
-  // Clicked
-  if ((lead.email_click_count ?? 0) > 0) return 'click'
-  // Opened
+  // Opened (descartamos clicks: data poco fiable en muchas campañas)
   if ((lead.email_open_count ?? 0) > 0) return 'abierto'
   // Default: contactado (sent or in sequence)
   return 'contactado'

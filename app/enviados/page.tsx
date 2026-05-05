@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import {
-  RefreshCw, Send, Inbox, Search, ChevronRight, X, Mail,
+  RefreshCw, Send, Inbox, Search, ChevronRight, ChevronDown, X, Mail,
   Building2, Loader2, Zap, Hash,
 } from 'lucide-react'
 
@@ -31,7 +31,7 @@ interface ApiResponse {
   since:     string
 }
 
-type Tab = 'all' | 'instantly' | 'hubspot'
+type Tab = 'instantly' | 'hubspot'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -221,17 +221,21 @@ function InstantlyGrouped({ emails, onSelect }: { emails: SentEmail[]; onSelect:
     return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length)
   }, [emails])
 
+  // Por defecto todos cerrados
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+  const toggle = (k: string) => setOpenGroups(s => ({ ...s, [k]: !s[k] }))
+
   if (emails.length === 0) {
     return (
       <div className="text-center py-16" style={{ color: 'var(--text-3)' }}>
         <Send size={28} style={{ margin: '0 auto', opacity: 0.4 }} />
-        <p className="text-sm mt-3">Sin envíos de Instantly en los últimos 30 días</p>
+        <p className="text-sm mt-3">Sin envíos de Instantly en el periodo</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {groups.map(([campaignName, list]) => {
         const stepCounts = { 1: 0, 2: 0, 3: 0 }
         list.forEach(e => {
@@ -239,24 +243,35 @@ function InstantlyGrouped({ emails, onSelect }: { emails: SentEmail[]; onSelect:
             stepCounts[e.step] = (stepCounts[e.step] || 0) + 1
           }
         })
+        const isOpen = !!openGroups[campaignName]
         return (
-          <div key={campaignName}>
-            <div
-              className="flex items-center gap-3 px-4 py-2.5 sticky top-0 z-10"
-              style={{ background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}
+          <div
+            key={campaignName}
+            className="rounded-lg overflow-hidden"
+            style={{ border: '1px solid var(--border)' }}
+          >
+            <button
+              onClick={() => toggle(campaignName)}
+              className="w-full flex items-center gap-3 px-4 py-3 transition-all"
+              style={{ background: isOpen ? 'var(--bg-elevated)' : 'var(--bg-surface)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.background = isOpen ? 'var(--bg-elevated)' : 'var(--bg-surface)')}
             >
+              {isOpen
+                ? <ChevronDown  size={14} style={{ color: 'var(--text-2)' }} />
+                : <ChevronRight size={14} style={{ color: 'var(--text-2)' }} />}
               <Zap size={13} style={{ color: '#F59E0B' }} />
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-1)' }}>
+              <span className="text-xs font-semibold uppercase tracking-wider truncate" style={{ color: 'var(--text-1)' }}>
                 {campaignName}
               </span>
               <span
-                className="text-[10px] px-1.5 py-0.5 rounded font-bold"
-                style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
+                className="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0"
+                style={{ background: 'var(--bg-base)', color: 'var(--text-2)' }}
               >
                 {list.length}
               </span>
-              <div className="ml-auto flex items-center gap-1.5">
-                {[1, 2, 3].map(s => (
+              <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                {[1, 2, 3].map(s => stepCounts[s as 1|2|3] > 0 && (
                   <span
                     key={s}
                     className="text-[10px] px-1.5 py-0.5 rounded font-medium"
@@ -270,13 +285,12 @@ function InstantlyGrouped({ emails, onSelect }: { emails: SentEmail[]; onSelect:
                   </span>
                 ))}
               </div>
-            </div>
-            <div
-              className="rounded-lg overflow-hidden mt-2"
-              style={{ border: '1px solid var(--border)' }}
-            >
-              {list.map(e => <EmailRow key={e.id} email={e} onClick={() => onSelect(e)} />)}
-            </div>
+            </button>
+            {isOpen && (
+              <div style={{ borderTop: '1px solid var(--border)' }}>
+                {list.map(e => <EmailRow key={e.id} email={e} onClick={() => onSelect(e)} />)}
+              </div>
+            )}
           </div>
         )
       })}
@@ -311,7 +325,7 @@ export default function EnviadosPage() {
   const [data, setData]       = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string | null>(null)
-  const [tab, setTab]         = useState<Tab>('all')
+  const [tab, setTab]         = useState<Tab>('instantly')
   const [search, setSearch]   = useState('')
   const [selected, setSelected] = useState<SentEmail | null>(null)
 
@@ -383,9 +397,8 @@ export default function EnviadosPage() {
           style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
         >
           {[
-            { id: 'all',       label: 'Todos',     icon: Inbox, count: data?.counts.total },
-            { id: 'instantly', label: 'Instantly', icon: Zap,   count: data?.counts.instantly },
-            { id: 'hubspot',   label: 'HubSpot',   icon: Mail,  count: data?.counts.hubspot },
+            { id: 'instantly', label: 'Instantly · Outreach', icon: Zap,  count: data?.counts.instantly },
+            { id: 'hubspot',   label: 'HubSpot · Manuales',   icon: Mail, count: data?.counts.hubspot },
           ].map(t => {
             const Icon = t.icon
             const active = tab === t.id
@@ -455,48 +468,9 @@ export default function EnviadosPage() {
 
       {/* Content */}
       {data && (
-        <div className="space-y-8">
-          {(tab === 'all' || tab === 'instantly') && (
-            <section>
-              {tab === 'all' && (
-                <h2
-                  className="flex items-center gap-2 text-sm font-semibold mb-3"
-                  style={{ color: 'var(--text-1)' }}
-                >
-                  <Zap size={14} style={{ color: '#F59E0B' }} />
-                  Instantly · Outreach automatizado
-                  <span
-                    className="text-[10px] px-1.5 py-0.5 rounded font-bold"
-                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
-                  >
-                    {filtered.instantly.length}
-                  </span>
-                </h2>
-              )}
-              <InstantlyGrouped emails={filtered.instantly} onSelect={setSelected} />
-            </section>
-          )}
-
-          {(tab === 'all' || tab === 'hubspot') && (
-            <section>
-              {tab === 'all' && (
-                <h2
-                  className="flex items-center gap-2 text-sm font-semibold mb-3"
-                  style={{ color: 'var(--text-1)' }}
-                >
-                  <Mail size={14} style={{ color: '#22C55E' }} />
-                  HubSpot · Respuestas manuales
-                  <span
-                    className="text-[10px] px-1.5 py-0.5 rounded font-bold"
-                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
-                  >
-                    {filtered.hubspot.length}
-                  </span>
-                </h2>
-              )}
-              <HubspotList emails={filtered.hubspot} onSelect={setSelected} />
-            </section>
-          )}
+        <div>
+          {tab === 'instantly' && <InstantlyGrouped emails={filtered.instantly} onSelect={setSelected} />}
+          {tab === 'hubspot'   && <HubspotList     emails={filtered.hubspot}   onSelect={setSelected} />}
         </div>
       )}
 

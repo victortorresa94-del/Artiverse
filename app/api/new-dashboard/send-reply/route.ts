@@ -140,19 +140,49 @@ export async function POST(req: NextRequest) {
     tls:    { rejectUnauthorized: false },
   })
 
-  const htmlBody = `<div style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;max-width:640px">
-${bodyText
+  // ── Firma HTML (Artiverse) ────────────────────────────────────────────────
+  const SIGNATURE_HTML = `
+<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a1a1a;border-top:1px solid #e5e5e5;padding-top:14px;margin-top:24px">
+  <tr>
+    <td style="padding-right:14px;vertical-align:top">
+      <img src="https://artiverse-sigma.vercel.app/artiverse-logo.jpg" alt="Artiverse" width="46" height="46" style="display:block;border-radius:8px" />
+    </td>
+    <td style="vertical-align:top;border-left:2px solid #2563EB;padding-left:14px">
+      <div style="font-size:15px;font-weight:700;color:#0a0a0a;line-height:1.2">Víctor Torres</div>
+      <div style="font-size:11px;font-weight:600;color:#2563EB;letter-spacing:1px;text-transform:uppercase;margin-top:2px">Marketing &amp; Growth</div>
+      <div style="font-size:13px;color:#444;margin-top:8px;line-height:1.5">
+        <a href="mailto:victor@artiverse.online" style="color:#444;text-decoration:none">victor@artiverse.online</a><br/>
+        <a href="https://artiverse.es" style="color:#2563EB;font-weight:600;text-decoration:none">artiverse.es</a>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:8px;font-style:italic">El futuro de las artes en vivo está aquí.</div>
+    </td>
+  </tr>
+</table>`.trim()
+
+  // Detectar si el bodyText ya tiene firma textual (para no duplicar)
+  const hasSig = /Víctor Torres[\s\S]*Artiverse/i.test(bodyText)
+  const bodyTextClean = hasSig
+    ? bodyText.replace(/Víctor Torres[\s\S]*$/i, '').trim()
+    : bodyText
+
+  const htmlBody = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;max-width:640px">
+${bodyTextClean
   .split('\n\n')
   .filter(Boolean)
   .map(p => `<p style="margin:0 0 14px">${p.replace(/\n/g, '<br>')}</p>`)
   .join('')}
+${SIGNATURE_HTML}
 </div>`
+
+  // Versión texto: limpia firma vieja y adjunta versión texto de la firma
+  const textSignature = `\n\n--\nVíctor Torres\nMarketing & Growth — Artiverse\nvictor@artiverse.online · artiverse.es`
+  const finalText = bodyTextClean + textSignature
 
   const mailOptions: nodemailer.SendMailOptions = {
     from:    `${FROM_NAME} <${FROM_EMAIL}>`,
     to:      toName ? `${toName} <${to}>` : to,
     subject: subject.startsWith('Re:') ? subject : `Re: ${subject}`,
-    text:    bodyText,
+    text:    finalText,
     html:    htmlBody,
   }
 

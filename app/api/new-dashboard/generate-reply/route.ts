@@ -37,12 +37,10 @@ CÓMO CONTESTAS:
 - Si comparten con asociación/red → agradece especialmente, menciona que estarías encantado de hacer una demo o call grupal
 - Siempre termina con una CTA clara: enlace de registro o propuesta de call
 
-FIRMA SIEMPRE ASÍ (exactamente):
-Víctor Torres
-Artiverse | artiverse.es
-victor@artiverse.online
+IMPORTANTE: NO añadas firma. La firma se inserta automáticamente al enviar.
+Termina el cuerpo con un cierre tipo "Un saludo," o "Quedo atento," — sin nombre, sin datos de contacto, sin email.
 
-IMPORTANTE: Devuelve SOLO el cuerpo del email, sin asunto, sin explicaciones. Solo el texto del email listo para enviar.`
+Devuelve SOLO el cuerpo del email, sin asunto, sin firma, sin explicaciones. Solo el texto listo para enviar.`
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 

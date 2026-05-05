@@ -9,7 +9,7 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Phase =
-  | 'contactado' | 'abierto' | 'click' | 'respondio'
+  | 'contactado' | 'abierto' | 'respondio'
   | 'interesado' | 'registrado' | 'no_interesado' | 'mail_erroneo'
 
 interface FunnelContact {
@@ -36,7 +36,7 @@ interface FunnelData {
 // ─── Phase metadata ───────────────────────────────────────────────────────────
 
 const PHASE_ORDER: Phase[] = [
-  'contactado', 'abierto', 'click', 'respondio',
+  'contactado', 'abierto', 'respondio',
   'interesado', 'registrado', 'no_interesado', 'mail_erroneo',
 ]
 
@@ -49,7 +49,6 @@ const PHASE_META: Record<Phase, {
 }> = {
   contactado:    { label: 'Contactado',     icon: Mail,          color: '#60A5FA', desc: 'Email enviado, sin actividad' },
   abierto:       { label: 'Abierto',        icon: Eye,           color: '#A78BFA', desc: 'Abrió el email' },
-  click:         { label: 'Click',          icon: MousePointer,  color: '#F472B6', desc: 'Hizo click en un enlace' },
   respondio:     { label: 'Respondió',      icon: MessageCircle, color: '#FBBF24', desc: 'Contestó al email' },
   interesado:    { label: 'Interesado',     icon: ThumbsUp,      color: '#22C55E', desc: 'Marcado manualmente', manual: true },
   registrado:    { label: 'Registrado',     icon: CheckCheck,    color: '#10B981', desc: 'Usuario en Artiverse' },

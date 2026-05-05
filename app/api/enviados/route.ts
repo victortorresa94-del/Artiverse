@@ -23,7 +23,7 @@ const OWN_EMAILS = [
   'victor@artiverse.online',
 ]
 
-const DAYS_BACK = 30
+const DAYS_BACK = 90
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -122,7 +122,7 @@ async function fetchInstantlySent(since: string): Promise<InstantlyEmail[]> {
   const all: InstantlyEmail[] = []
   let cursor: string | null = null
 
-  for (let page = 0; page < 5; page++) {
+  for (let page = 0; page < 30; page++) {
     const url = new URL('https://api.instantly.ai/api/v2/emails')
     url.searchParams.set('limit', '100')
     url.searchParams.set('email_type', 'sent')
