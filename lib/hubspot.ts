@@ -1,130 +1,161 @@
-// HubSpot — Service Key authentication (recomendado por HubSpot desde 2025)
-// Ruta en HubSpot: Configuración → Integraciones → Aplicaciones privadas
-//   → clic "Usar las claves de servicio" → generar clave
-// Token format: cualquier Bearer token que HubSpot emita (pat-eu1-..., pat-na1-..., etc.)
-// Pega el token en .env.local como HUBSPOT_API_KEY=<tu_clave>
+// HubSpot — Service Key auth (pat-eu1-...)
+// Lee HUBSPOT_SERVICE_KEY primero (nuevo), HUBSPOT_API_KEY como fallback (legacy)
+// Usa API v1 para contacts (createOrUpdate) — funciona con los scopes actuales
+// API v3 contacts/read requiere scopes extra de privacidad — no lo usamos
 
-// Acepta tanto HUBSPOT_SERVICE_KEY (nuevo, recomendado) como HUBSPOT_API_KEY (legacy)
-const HUBSPOT_TOKEN = process.env.HUBSPOT_SERVICE_KEY || process.env.HUBSPOT_API_KEY || ''
-const HS_BASE = 'https://api.hubapi.com'
+const TOKEN = process.env.HUBSPOT_SERVICE_KEY || process.env.HUBSPOT_API_KEY || ''
+const HS = 'https://api.hubapi.com'
 
-function hsHeaders() {
+function headers() {
   return {
-    Authorization: `Bearer ${HUBSPOT_TOKEN}`,
+    Authorization: `Bearer ${TOKEN}`,
     'Content-Type': 'application/json',
   }
 }
 
-// ─── Contacts ─────────────────────────────────────────────────────────────────
-
-export async function syncContactToHubspot(contact: any) {
-  const payload = {
-    properties: {
-      email:              contact.email          || '',
-      firstname:          contact.firstName       || '',
-      lastname:           contact.lastName        || '',
-      company:            contact.companyName     || '',
-      phone:              contact.phone           || '',
-      city:               contact.city            || '',
-      instantly_status:   contact.status          || '',
-      instantly_campaign: contact.campaign_name   || '',
-      lifecyclestage:     mapStatusToLifecycle(contact.status),
-    },
-  }
-
-  const res = await fetch(`${HS_BASE}/crm/v3/objects/contacts`, {
-    method: 'POST',
-    headers: hsHeaders(),
-    body: JSON.stringify(payload),
-  })
-
-  if (res.status === 409) {
-    // Contact already exists → PATCH update
-    const errData = await res.json()
-    const match = errData?.message?.match(/\d+/)
-    const existingId = match ? match[0] : null
-    if (!existingId) throw new Error('Contact exists but could not extract ID from HubSpot error')
-    return patchContact(existingId, payload.properties)
-  }
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(`HubSpot ${res.status}: ${err?.message || res.statusText}`)
-  }
-
-  return res.json()
-}
-
-export async function patchContact(id: string, properties: Record<string, string>) {
-  const res = await fetch(`${HS_BASE}/crm/v3/objects/contacts/${id}`, {
-    method: 'PATCH',
-    headers: hsHeaders(),
-    body: JSON.stringify({ properties }),
-  })
-  if (!res.ok) throw new Error(`HubSpot PATCH ${res.status}: ${res.statusText}`)
-  return res.json()
-}
-
-// ─── Lists ────────────────────────────────────────────────────────────────────
-
-export async function getHubSpotLists() {
-  const res = await fetch(`${HS_BASE}/contacts/v1/lists?count=100`, {
-    headers: hsHeaders(),
-  })
-  if (!res.ok) throw new Error(`HubSpot lists ${res.status}: ${res.statusText}`)
-  return res.json()
-}
-
-export async function createStaticList(name: string, emails: string[] = []) {
-  // 1. Create list
-  const listRes = await fetch(`${HS_BASE}/contacts/v1/lists`, {
-    method: 'POST',
-    headers: hsHeaders(),
-    body: JSON.stringify({ name, dynamic: false }),
-  })
-  if (!listRes.ok) throw new Error(`HubSpot createList ${listRes.status}: ${listRes.statusText}`)
-  const list = await listRes.json()
-
-  // 2. Add contacts by email (if provided)
-  if (emails.length > 0) {
-    await fetch(`${HS_BASE}/contacts/v1/lists/${list.listId}/add`, {
-      method: 'POST',
-      headers: hsHeaders(),
-      body: JSON.stringify({ emails }),
-    })
-  }
-
-  return { listId: list.listId, name }
-}
-
-// ─── Token validation ─────────────────────────────────────────────────────────
+// ─── Token validation ──────────────────────────────────────────────────────────
 
 export async function validateToken(): Promise<{ valid: boolean; portal?: string; error?: string }> {
-  if (!HUBSPOT_TOKEN) return { valid: false, error: 'Token no configurado en .env.local' }
-
+  if (!TOKEN) return { valid: false, error: 'Token no configurado' }
   try {
-    const res = await fetch(`${HS_BASE}/crm/v3/objects/contacts?limit=1`, {
-      headers: hsHeaders(),
-    })
-
-    if (res.status === 401) return { valid: false, error: 'Token inválido o expirado' }
-    if (res.status === 403) return { valid: false, error: 'Sin permisos — revisa los ámbitos de la clave' }
+    const res = await fetch(`${HS}/account-info/v3/details`, { headers: headers() })
     if (!res.ok) return { valid: false, error: `Error ${res.status}` }
-
-    // Try to get portal info
-    const meRes = await fetch(`${HS_BASE}/integrations/v1/me`, { headers: hsHeaders() })
-    const me = meRes.ok ? await meRes.json() : {}
-
-    return { valid: true, portal: me.hub_id?.toString() || 'portal' }
+    const d = await res.json()
+    return { valid: true, portal: d.portalId?.toString() }
   } catch (e: any) {
     return { valid: false, error: e.message }
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Contacts (v1 createOrUpdate — works with current scopes) ─────────────────
 
-function mapStatusToLifecycle(status: string): string {
+/**
+ * Crea o actualiza un contacto en HubSpot por email.
+ * Usa /contacts/v1/contact/createOrUpdate/email/:email (upsert nativo).
+ */
+export async function upsertContact(contact: {
+  email: string
+  firstName?: string
+  lastName?: string
+  company?: string
+  phone?: string
+  city?: string
+  status?: string
+  campaign?: string
+}) {
+  const properties = [
+    { property: 'email',             value: contact.email      || '' },
+    { property: 'firstname',         value: contact.firstName  || '' },
+    { property: 'lastname',          value: contact.lastName   || '' },
+    { property: 'company',           value: contact.company    || '' },
+    { property: 'phone',             value: contact.phone      || '' },
+    { property: 'city',              value: contact.city       || '' },
+    { property: 'instantly_status',  value: contact.status     || '' },
+    { property: 'instantly_campaign',value: contact.campaign   || '' },
+    { property: 'lifecyclestage',    value: mapLifecycle(contact.status) },
+  ].filter(p => p.value)
+
+  const res = await fetch(
+    `${HS}/contacts/v1/contact/createOrUpdate/email/${encodeURIComponent(contact.email)}`,
+    { method: 'POST', headers: headers(), body: JSON.stringify({ properties }) }
+  )
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`HubSpot upsert ${res.status}: ${err?.message || res.statusText}`)
+  }
+
+  const data = await res.json()
+  return { vid: data.vid, isNew: data.isNew }
+}
+
+// Alias para compatibilidad con código existente que llama a syncContactToHubspot
+export async function syncContactToHubspot(contact: any) {
+  return upsertContact({
+    email:     contact.email,
+    firstName: contact.firstName,
+    lastName:  contact.lastName,
+    company:   contact.companyName,
+    phone:     contact.phone,
+    city:      contact.city,
+    status:    contact.status,
+    campaign:  contact.campaign_name,
+  })
+}
+
+// ─── Lists ─────────────────────────────────────────────────────────────────────
+
+export async function getLists(): Promise<Array<{ id: string; name: string; count: number }>> {
+  const res = await fetch(`${HS}/contacts/v1/lists?count=250`, { headers: headers() })
+  if (!res.ok) throw new Error(`HubSpot getLists ${res.status}`)
+  const d = await res.json()
+  return (d.lists || []).map((l: any) => ({
+    id:    String(l.listId),
+    name:  l.name,
+    count: l.metaData?.size || 0,
+  }))
+}
+
+export async function createList(name: string, emails: string[] = []) {
+  // 1. Create static list
+  const res = await fetch(`${HS}/contacts/v1/lists`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ name, dynamic: false }),
+  })
+  if (!res.ok) throw new Error(`HubSpot createList ${res.status}: ${res.statusText}`)
+  const list = await res.json()
+  const listId = list.listId
+
+  // 2. Upsert each email as contact, then add to list
+  if (emails.length > 0) {
+    const vids: number[] = []
+    for (const email of emails) {
+      try {
+        const c = await upsertContact({ email })
+        vids.push(c.vid)
+      } catch { /* skip invalid emails */ }
+    }
+    if (vids.length > 0) {
+      await fetch(`${HS}/contacts/v1/lists/${listId}/add`, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ vids }),
+      })
+    }
+  }
+
+  return { listId: String(listId), name }
+}
+
+export async function addContactsToList(listId: string, emails: string[]) {
+  const vids: number[] = []
+  for (const email of emails) {
+    try {
+      const c = await upsertContact({ email })
+      vids.push(c.vid)
+    } catch { /* skip */ }
+  }
+  if (vids.length === 0) return { updated: 0 }
+
+  const res = await fetch(`${HS}/contacts/v1/lists/${listId}/add`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ vids }),
+  })
+  if (!res.ok) throw new Error(`HubSpot addToList ${res.status}`)
+  const d = await res.json()
+  return { updated: d.updated?.length || 0 }
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function mapLifecycle(status?: string): string {
   const s = (status || '').toLowerCase()
-  if (s.includes('replied')) return 'lead'
+  if (s.includes('replied'))  return 'lead'
+  if (s.includes('opened') || s.includes('clicked')) return 'subscriber'
   return 'subscriber'
 }
+
+// Legacy export for backwards compatibility
+export { getLists as getHubSpotLists }

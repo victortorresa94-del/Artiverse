@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { validateToken, getHubSpotLists, createStaticList } from '@/lib/hubspot'
+import { validateToken, getLists, createList, addContactsToList } from '@/lib/hubspot'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/hubspot — test connection + fetch lists
+// GET /api/hubspot — status + lists
 export async function GET() {
   const status = await validateToken()
   if (!status.valid) {
@@ -12,15 +12,9 @@ export async function GET() {
 
   let lists: any[] = []
   try {
-    const data = await getHubSpotLists()
-    lists = (data.lists || []).map((l: any) => ({
-      id: String(l.listId),
-      name: l.name,
-      count: l.metaData?.size || 0,
-      type: l.dynamic ? 'smart' : 'static',
-    }))
+    lists = await getLists()
   } catch {
-    // Non-critical — scopes may not include list read
+    // Non-critical
   }
 
   return NextResponse.json({
@@ -30,15 +24,22 @@ export async function GET() {
   })
 }
 
-// POST /api/hubspot — create a list
+// POST /api/hubspot
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}))
-  const { name, emails } = body
+  const { action, name, emails, listId } = body
 
-  if (!name) {
-    return NextResponse.json({ error: 'name is required' }, { status: 400 })
+  if (action === 'create-list') {
+    if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
+    const result = await createList(name, emails || [])
+    return NextResponse.json(result)
   }
 
-  const result = await createStaticList(name, emails || [])
-  return NextResponse.json(result)
+  if (action === 'add-to-list') {
+    if (!listId || !emails?.length) return NextResponse.json({ error: 'listId and emails required' }, { status: 400 })
+    const result = await addContactsToList(listId, emails)
+    return NextResponse.json(result)
+  }
+
+  return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
 }
