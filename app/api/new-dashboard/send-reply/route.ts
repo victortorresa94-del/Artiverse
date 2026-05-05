@@ -217,6 +217,21 @@ ${SIGNATURE_HTML}
     }
   }
 
+  // ── 3. Auto-marcar conversación como "esperando respuesta" ────────────────
+  try {
+    const proto = req.headers.get('x-forwarded-proto') || 'http'
+    const host  = req.headers.get('host')
+    if (host) {
+      await fetch(`${proto}://${host}/api/conversaciones/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: to, status: 'esperando' }),
+      })
+    }
+  } catch {
+    // no bloquear el envío si la marca falla
+  }
+
   return NextResponse.json({
     ok:        true,
     messageId,
