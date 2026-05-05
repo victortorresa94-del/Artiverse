@@ -61,30 +61,51 @@ async function logEmailToHubSpot(params: {
   toName?: string
   subject: string
   bodyText: string
-}) {
+}): Promise<{ ok: boolean; error?: string; emailId?: string }> {
+  // Usa la API v3 de emails (endpoint moderno) y crea la asociacion al contacto.
+  // associationTypeId 198 = "Email to Contact" (HubSpot definido).
   try {
-    await fetch(`${HS}/engagements/v1/engagements`, {
+    const html = `<div style="white-space:pre-wrap;font-family:sans-serif">${
+      params.bodyText.replace(/\n/g, '<br>')
+    }</div>`
+
+    const res = await fetch(`${HS}/crm/v3/objects/emails`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${HS_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        engagement: {
-          active:    true,
-          type:      'EMAIL',
-          timestamp: Date.now(),
+        properties: {
+          hs_timestamp:        new Date().toISOString(),
+          hs_email_direction:  'EMAIL',         // outbound desde HubSpot
+          hs_email_status:     'SENT',
+          hs_email_subject:    params.subject,
+          hs_email_text:       params.bodyText,
+          hs_email_html:       html,
+          hs_email_headers:    JSON.stringify({
+            from: { email: FROM_EMAIL, firstName: 'Víctor', lastName: 'Torres' },
+            to:   [{ email: params.toEmail, firstName: params.toName || '' }],
+            cc:   [],
+            bcc:  [],
+          }),
         },
-        associations: { contactIds: [params.contactVid] },
-        metadata: {
-          from: { email: FROM_EMAIL, firstName: 'Víctor', lastName: 'Torres' },
-          to:   [{ email: params.toEmail, firstName: params.toName || '' }],
-          subject: params.subject,
-          html:    `<p style="white-space:pre-wrap">${params.bodyText.replace(/\n/g, '<br>')}</p>`,
-          text:    params.bodyText,
-          status:  'SENT',
-        },
+        associations: [
+          {
+            to: { id: String(params.contactVid) },
+            types: [
+              { associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 198 },
+            ],
+          },
+        ],
       }),
     })
-  } catch {
-    // Non-critical — don't fail the send
+
+    if (!res.ok) {
+      const err = await res.text()
+      return { ok: false, error: `${res.status} ${err.slice(0, 200)}` }
+    }
+    const data = await res.json()
+    return { ok: true, emailId: data.id }
+  } catch (e: any) {
+    return { ok: false, error: e.message }
   }
 }
 
@@ -149,16 +170,20 @@ ${bodyText
   }
 
   // ── 2. Loguear en HubSpot CRM (no bloquea si falla) ────────────────────────
+  let hsResult: { ok: boolean; vid?: number; emailId?: string; error?: string } = { ok: false }
   if (HS_TOKEN) {
     const vid = await getOrCreateContact(to, toName)
-    if (vid) {
-      await logEmailToHubSpot({
+    if (!vid) {
+      hsResult = { ok: false, error: 'No se pudo crear/obtener contacto en HubSpot' }
+    } else {
+      const log = await logEmailToHubSpot({
         contactVid: vid,
         toEmail:    to,
         toName,
         subject:    mailOptions.subject as string,
         bodyText,
       })
+      hsResult = { ok: log.ok, vid, emailId: log.emailId, error: log.error }
     }
   }
 
@@ -167,6 +192,6 @@ ${bodyText
     messageId,
     to,
     subject:   mailOptions.subject,
-    logged_hs: !!HS_TOKEN,
+    hubspot:   hsResult,
   })
 }
