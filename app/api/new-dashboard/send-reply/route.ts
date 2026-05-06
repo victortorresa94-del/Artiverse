@@ -142,19 +142,19 @@ export async function POST(req: NextRequest) {
 
   // ── Firma HTML (Artiverse) ────────────────────────────────────────────────
   const SIGNATURE_HTML = `
-<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a1a1a;border-top:1px solid #e5e5e5;padding-top:14px;margin-top:24px">
+<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;border-top:1px solid #e5e5e5;padding-top:12px;margin-top:22px">
   <tr>
-    <td style="padding-right:14px;vertical-align:top">
-      <img src="https://artiverse-sigma.vercel.app/artiverse-logo.jpg" alt="Artiverse" width="46" height="46" style="display:block;border-radius:8px" />
+    <td style="padding-right:14px;vertical-align:middle">
+      <img src="https://artiverse-sigma.vercel.app/artiverse-logo.jpg" alt="Artiverse" width="44" height="44" style="display:block;border-radius:8px" />
     </td>
-    <td style="vertical-align:top;border-left:2px solid #2563EB;padding-left:14px">
-      <div style="font-size:15px;font-weight:700;color:#0a0a0a;line-height:1.2">Víctor Torres</div>
-      <div style="font-size:11px;font-weight:600;color:#2563EB;letter-spacing:1px;text-transform:uppercase;margin-top:2px">Marketing &amp; Growth</div>
-      <div style="font-size:13px;color:#444;margin-top:8px;line-height:1.5">
-        <a href="mailto:victor@artiverse.online" style="color:#444;text-decoration:none">victor@artiverse.online</a><br/>
+    <td style="vertical-align:middle">
+      <div style="font-size:14px;font-weight:700;color:#0a0a0a;line-height:1.3">Víctor Torres <span style="color:#888;font-weight:400">·</span> <span style="color:#2563EB;font-weight:600">Artiverse</span></div>
+      <div style="font-size:10px;font-weight:600;color:#2563EB;letter-spacing:1px;text-transform:uppercase;margin-top:2px">Marketing &amp; Growth</div>
+      <div style="font-size:12px;color:#444;margin-top:6px;line-height:1.4">
+        <a href="mailto:victor@artiverse.online" style="color:#444;text-decoration:none">victor@artiverse.online</a>
+        <span style="color:#bbb"> · </span>
         <a href="https://artiverse.es" style="color:#2563EB;font-weight:600;text-decoration:none">artiverse.es</a>
       </div>
-      <div style="font-size:11px;color:#888;margin-top:8px;font-style:italic">El futuro de las artes en vivo está aquí.</div>
     </td>
   </tr>
 </table>`.trim()

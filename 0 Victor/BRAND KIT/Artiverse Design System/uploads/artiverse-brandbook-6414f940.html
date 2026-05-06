@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artiverse — Brand Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --blue: #2563EB;
+  --blue-light: #3B82F6;
+  --blue-dark: #1D4ED8;
+  --lime: #CCFF00;
+  --lime-dark: #B5E000;
+  --black: #0A0A0A;
+  --gray-900: #111827;
+  --gray-600: #4B5563;
+  --gray-400: #9CA3AF;
+  --gray-100: #F3F4F6;
+  --gray-50: #F9FAFB;
+  --white: #FFFFFF;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--white);
+  color: var(--gray-900);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* LAYOUT */
+.page { max-width: 900px; margin: 0 auto; padding: 0 32px 80px; }
+
+/* TOP COVER */
+.cover {
+  background: var(--black);
+  min-height: 340px;
+  display: flex;
+  align-items: flex-end;
+  padding: 48px 32px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.cover-accent {
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 300px;
+  height: 300px;
+  background: var(--lime);
+  border-radius: 60px;
+  transform: rotate(15deg);
+  opacity: 0.9;
+}
+
+.cover-accent2 {
+  position: absolute;
+  top: 40px;
+  right: 160px;
+  width: 180px;
+  height: 180px;
+  background: var(--blue);
+  border-radius: 40px;
+  transform: rotate(-10deg);
+  opacity: 0.8;
+}
+
+.cover-content { position: relative; z-index: 1; }
+
+.cover-label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 12px;
+}
+
+.cover h1 {
+  font-size: 52px;
+  font-weight: 900;
+  color: var(--white);
+  line-height: 1.0;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.cover h1 span { color: var(--lime); }
+
+.cover p {
+  color: rgba(255,255,255,0.6);
+  font-size: 15px;
+}
+
+/* LOGO MARK */
+.logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  position: relative;
+}
+
+/* SECTIONS */
+.section {
+  padding: 56px 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.section:last-child { border-bottom: none; }
+
+.section-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--blue);
+  background: rgba(37,99,235,0.08);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.section h2 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--gray-900);
+  margin-bottom: 8px;
+}
+
+.section > p {
+  color: var(--gray-600);
+  font-size: 15px;
+  max-width: 600px;
+  margin-bottom: 32px;
+}
+
+/* COLORS */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.color-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.color-card { }
+
+.color-swatch {
+  height: 100px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.color-swatch.bordered { border: 1px solid #E5E7EB; }
+
+.color-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 2px;
+}
+
+.color-hex {
+  font-size: 12px;
+  color: var(--gray-400);
+  font-family: 'Courier New', monospace;
+  margin-bottom: 2px;
+}
+
+.color-use {
+  font-size: 11px;
+  color: var(--gray-400);
+}
+
+/* TYPOGRAPHY */
+.type-sample {
+  margin-bottom: 28px;
+  padding: 24px;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+}
+
+.type-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 12px;
+}
+
+.type-hero {
+  font-size: 52px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.0;
+  color: var(--gray-900);
+}
+
+.type-h1 {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.type-h2 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.type-h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.type-body {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.type-small {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+.type-meta {
+  display: flex;
+  gap: 24px;
+  margin-top: 10px;
+}
+
+.type-meta span {
+  font-size: 11px;
+  color: var(--gray-400);
+}
+
+.type-meta span strong {
+  color: var(--gray-600);
+  font-weight: 600;
+}
+
+/* LOGO SECTION */
+.logo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.logo-box {
+  border-radius: 12px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.logo-box.light { background: var(--gray-50); border: 1px solid #E5E7EB; }
+.logo-box.dark { background: var(--black); }
+.logo-box.blue { background: var(--blue); }
+.logo-box.lime { background: var(--lime); }
+
+.logo-box .box-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-top: 12px;
+}
+
+.logo-box.dark .box-label,
+.logo-box.blue .box-label { color: rgba(255,255,255,0.4); }
+.logo-box.lime .box-label { color: rgba(0,0,0,0.4); }
+
+/* LOGO SVG */
+.artiverse-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.artiverse-logo .wordmark {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--gray-900);
+}
+
+.artiverse-logo.on-dark .wordmark { color: var(--white); }
+.artiverse-logo.on-blue .wordmark { color: var(--white); }
+.artiverse-logo.on-lime .wordmark { color: var(--black); }
+
+/* ICON LOGO */
+.a-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SPACING */
+.spacing-grid {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.spacing-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.spacing-block {
+  background: var(--blue);
+  border-radius: 4px;
+  opacity: 0.15;
+  width: 100%;
+}
+
+.spacing-label {
+  font-size: 10px;
+  color: var(--gray-400);
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+/* COMPONENTS */
+.comp-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: var(--white);
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: var(--white);
+  color: var(--gray-900);
+  border: 1.5px solid #D1D5DB;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+.btn-lime {
+  background: var(--lime);
+  color: var(--black);
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+.btn-pill {
+  background: var(--blue);
+  color: var(--white);
+  border: none;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+/* TAGS/BADGES */
+.badge-blue {
+  display: inline-block;
+  background: var(--blue);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.badge-outline {
+  display: inline-block;
+  border: 1px solid #D1D5DB;
+  color: var(--gray-600);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* CARDS */
+.card-sample {
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 20px;
+  background: var(--white);
+  max-width: 260px;
+}
+
+.card-img {
+  width: 100%;
+  height: 120px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.card-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* VOICE EXAMPLES */
+.voice-box {
+  border-left: 4px solid var(--blue);
+  padding: 16px 20px;
+  background: var(--gray-50);
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 12px;
+}
+
+.voice-box.no {
+  border-left-color: #EF4444;
+  background: #FEF2F2;
+}
+
+.voice-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 6px;
+}
+
+.voice-box.no .voice-label { color: #EF4444; }
+
+.voice-text {
+  font-size: 14px;
+  color: var(--gray-700);
+  font-style: italic;
+}
+
+/* ICONOGRAPHY */
+.icon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.icon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 64px;
+}
+
+.icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.icon-name {
+  font-size: 10px;
+  color: var(--gray-400);
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+
+/* DONT BOX */
+.donts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dont-box {
+  border: 1px solid #FCA5A5;
+  border-radius: 10px;
+  padding: 16px;
+  background: #FFF5F5;
+}
+
+.do-box {
+  border: 1px solid #86EFAC;
+  border-radius: 10px;
+  padding: 16px;
+  background: #F0FFF4;
+}
+
+.dont-box h4 { color: #DC2626; font-size: 13px; margin-bottom: 8px; }
+.do-box h4 { color: #16A34A; font-size: 13px; margin-bottom: 8px; }
+.dont-box ul, .do-box ul { padding-left: 16px; }
+.dont-box li, .do-box li { font-size: 13px; color: var(--gray-600); margin-bottom: 4px; }
+
+/* FOOTER */
+.doc-footer {
+  border-top: 2px solid var(--black);
+  padding-top: 24px;
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.doc-footer .brand { font-size: 14px; font-weight: 700; }
+.doc-footer span { font-size: 12px; color: var(--gray-400); }
+
+/* MOTION TAG */
+.coming-soon {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  border: 1px solid #E5E7EB;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  .color-grid { grid-template-columns: 1fr 1fr; }
+  .color-row { grid-template-columns: 1fr 1fr; }
+  .logo-grid { grid-template-columns: 1fr; }
+  .donts-grid { grid-template-columns: 1fr; }
+  .cover h1 { font-size: 36px; }
+  .type-hero { font-size: 36px; }
+}
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-accent"></div>
+  <div class="cover-accent2"></div>
+  <div class="cover-content">
+    <div class="cover-label">Brand Guidelines — v1.0 — 2025</div>
+    <h1>artiverse<br><span>brand book</span></h1>
+    <p>Guía de identidad visual y comunicación de marca</p>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- INTRO -->
+  <div class="section">
+    <div class="section-tag">Sobre Artiverse</div>
+    <h2>¿Qué es Artiverse?</h2>
+    <p>Artiverse es la plataforma B2B que conecta el mundo de las artes escénicas y musicales. Managers, agencias de booking, promotores de festivales e instituciones culturales encuentran, contratan y gestionan talento artístico desde un solo lugar.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:8px;">
+      <div style="padding:20px; background:var(--gray-50); border-radius:12px; border:1px solid #E5E7EB;">
+        <div style="font-size:22px; margin-bottom:8px;">🎯</div>
+        <div style="font-size:13px; font-weight:700; margin-bottom:4px;">Misión</div>
+        <div style="font-size:13px; color:var(--gray-600);">Digitalizar y centralizar la industria de las artes en vivo para profesionales.</div>
+      </div>
+      <div style="padding:20px; background:var(--gray-50); border-radius:12px; border:1px solid #E5E7EB;">
+        <div style="font-size:22px; margin-bottom:8px;">👥</div>
+        <div style="font-size:13px; font-weight:700; margin-bottom:4px;">Audiencia</div>
+        <div style="font-size:13px; color:var(--gray-600);">Agencias, managers, promotores, festivales, ayuntamientos e instituciones culturales.</div>
+      </div>
+      <div style="padding:20px; background:var(--gray-50); border-radius:12px; border:1px solid #E5E7EB;">
+        <div style="font-size:22px; margin-bottom:8px;">⚡</div>
+        <div style="font-size:13px; font-weight:700; margin-bottom:4px;">Propuesta</div>
+        <div style="font-size:13px; color:var(--gray-600);">Conecta artistas y profesionales. Promociona talento. Gestiona con un solo clic.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- LOGO -->
+  <div class="section">
+    <div class="section-tag">Identidad</div>
+    <h2>Logo y marca</h2>
+    <p>El logo de Artiverse combina un isotipo geométrico en forma de "A" estilizada (azul y amarillo) con el wordmark en minúsculas. La combinación de ambos elementos es la forma principal de representación.</p>
+
+    <div class="logo-grid">
+      <div class="logo-box light">
+        <div class="artiverse-logo">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#2563EB"/>
+            <path d="M18 8L28 26H8L18 8Z" fill="#CCFF00"/>
+            <path d="M18 8L23 18H18V8Z" fill="#1D4ED8"/>
+          </svg>
+          <span class="wordmark">artiverse</span>
+        </div>
+        <div class="box-label">Sobre fondo claro — Uso principal</div>
+      </div>
+
+      <div class="logo-box dark">
+        <div class="artiverse-logo on-dark">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#2563EB"/>
+            <path d="M18 8L28 26H8L18 8Z" fill="#CCFF00"/>
+            <path d="M18 8L23 18H18V8Z" fill="#1D4ED8"/>
+          </svg>
+          <span class="wordmark">artiverse</span>
+        </div>
+        <div class="box-label">Sobre fondo oscuro</div>
+      </div>
+
+      <div class="logo-box blue">
+        <div class="artiverse-logo on-blue">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="rgba(255,255,255,0.2)"/>
+            <path d="M18 8L28 26H8L18 8Z" fill="#CCFF00"/>
+            <path d="M18 8L23 18H18V8Z" fill="rgba(255,255,255,0.3)"/>
+          </svg>
+          <span class="wordmark">artiverse</span>
+        </div>
+        <div class="box-label">Sobre fondo azul</div>
+      </div>
+
+      <div class="logo-box lime">
+        <div class="artiverse-logo on-lime">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#0A0A0A"/>
+            <path d="M18 8L28 26H8L18 8Z" fill="#2563EB"/>
+            <path d="M18 8L23 18H18V8Z" fill="#1D4ED8"/>
+          </svg>
+          <span class="wordmark">artiverse</span>
+        </div>
+        <div class="box-label">Sobre fondo lima</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px; padding:20px; background:#FFF5F5; border:1px solid #FCA5A5; border-radius:10px;">
+      <div style="font-size:11px; font-weight:700; color:#DC2626; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px;">⚠️ Usos incorrectos del logo</div>
+      <ul style="padding-left:16px; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+        <li style="font-size:13px; color:var(--gray-600);">No deformar ni estirar el isotipo</li>
+        <li style="font-size:13px; color:var(--gray-600);">No cambiar los colores del logo</li>
+        <li style="font-size:13px; color:var(--gray-600);">No usar el wordmark sin el isotipo en comunicaciones oficiales</li>
+        <li style="font-size:13px; color:var(--gray-600);">No añadir sombras ni efectos al logo</li>
+        <li style="font-size:13px; color:var(--gray-600);">No escribir "Artiverse" con mayúscula inicial en el logo</li>
+        <li style="font-size:13px; color:var(--gray-600);">No rotar ni inclinar el isotipo</li>
+      </ul>
+    </div>
+  </div>
+
+
+  <!-- COLORS -->
+  <div class="section">
+    <div class="section-tag">Colores</div>
+    <h2>Paleta de colores</h2>
+    <p>La identidad de Artiverse se construye sobre un sistema de dos colores principales — azul eléctrico y lima — sobre fondos blancos y negros. El azul es el color de acción, el lima es el color de energía y diferenciación.</p>
+
+    <div style="margin-bottom:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-400);">Colores primarios</div>
+    <div class="color-grid" style="margin-bottom:28px;">
+      <div class="color-card">
+        <div class="color-swatch" style="background:#2563EB;"></div>
+        <div class="color-name">Artiverse Blue</div>
+        <div class="color-hex">#2563EB</div>
+        <div class="color-use">CTAs, acciones primarias, botones, links, tags principales</div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#CCFF00;"></div>
+        <div class="color-name">Artiverse Lime</div>
+        <div class="color-hex">#CCFF00</div>
+        <div class="color-use">Elemento diferenciador, gráficos de impacto, acentos sobre negro</div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#0A0A0A;"></div>
+        <div class="color-name">Artiverse Black</div>
+        <div class="color-hex">#0A0A0A</div>
+        <div class="color-use">Tipografía principal, fondos impactantes, headers</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-400);">Colores neutros y de soporte</div>
+    <div class="color-row">
+      <div class="color-card">
+        <div class="color-swatch bordered" style="background:#FFFFFF;"></div>
+        <div class="color-name">White</div>
+        <div class="color-hex">#FFFFFF</div>
+        <div class="color-use">Fondos principales de la app</div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#F3F4F6;"></div>
+        <div class="color-name">Gray 100</div>
+        <div class="color-hex">#F3F4F6</div>
+        <div class="color-use">Fondos de sección, cards</div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#4B5563;"></div>
+        <div class="color-name">Gray 600</div>
+        <div class="color-hex">#4B5563</div>
+        <div class="color-use">Texto secundario, descripciones</div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#9CA3AF;"></div>
+        <div class="color-name">Gray 400</div>
+        <div class="color-hex">#9CA3AF</div>
+        <div class="color-use">Placeholders, metadatos, labels</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px; padding:20px; border-radius:12px; background:linear-gradient(135deg, #0A0A0A 60%, #111827); display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:6px;">Combinación de impacto</div>
+        <div style="font-size:24px; font-weight:900; color:#CCFF00; letter-spacing:-0.02em;">Negro + Lima</div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.5); margin-top:4px;">Para secciones de alto impacto visual, gráficos y materiales de campaña</div>
+      </div>
+      <div style="padding:14px 24px; background:#CCFF00; border-radius:8px;">
+        <div style="font-size:14px; font-weight:800; color:#0A0A0A;">Contrasta perfectamente ✓</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- TYPOGRAPHY -->
+  <div class="section">
+    <div class="section-tag">Tipografía</div>
+    <h2>Sistema tipográfico</h2>
+    <p>Artiverse utiliza Inter como tipografía principal. Es moderna, altamente legible en pantalla y disponible en todos los pesos necesarios. La jerarquía tipográfica es clara y consistente.</p>
+
+    <div style="padding:20px; border:1px solid #E5E7EB; border-radius:12px; margin-bottom:16px; background:var(--gray-50);">
+      <div class="type-label">Tipografía principal</div>
+      <div style="font-size:42px; font-weight:900; letter-spacing:-0.02em; color:var(--gray-900);">Inter</div>
+      <div style="font-size:14px; color:var(--gray-400); margin-top:4px;">Google Fonts · Pesos usados: 400 / 500 / 600 / 700 / 800 / 900</div>
+    </div>
+
+    <div class="type-sample">
+      <div class="type-label">Hero / Headline principal</div>
+      <div class="type-hero">El futuro de las artes en vivo está aquí.</div>
+      <div class="type-meta">
+        <span><strong>Tamaño:</strong> 52–64px</span>
+        <span><strong>Peso:</strong> 900 (Black)</span>
+        <span><strong>Tracking:</strong> -0.03em</span>
+        <span><strong>Uso:</strong> Hero de landing</span>
+      </div>
+    </div>
+
+    <div class="type-sample">
+      <div class="type-label">H1 — Título de sección</div>
+      <div class="type-h1">Conecta con los mejores artistas del sector</div>
+      <div class="type-meta">
+        <span><strong>Tamaño:</strong> 32–40px</span>
+        <span><strong>Peso:</strong> 800 (ExtraBold)</span>
+        <span><strong>Tracking:</strong> -0.02em</span>
+      </div>
+    </div>
+
+    <div class="type-sample">
+      <div class="type-label">H2 — Subtítulo</div>
+      <div class="type-h2">Estadísticas para agencias</div>
+      <div class="type-meta">
+        <span><strong>Tamaño:</strong> 22–26px</span>
+        <span><strong>Peso:</strong> 700 (Bold)</span>
+        <span><strong>Tracking:</strong> -0.01em</span>
+      </div>
+    </div>
+
+    <div class="type-sample">
+      <div class="type-label">Body — Texto de cuerpo</div>
+      <div class="type-body">Visualiza y entiende con claridad qué artistas son más buscados por promotores. Haz match entre agencia y promotor para poder chatear y negociar dentro de la app.</div>
+      <div class="type-meta">
+        <span><strong>Tamaño:</strong> 14–16px</span>
+        <span><strong>Peso:</strong> 400 (Regular)</span>
+        <span><strong>Line-height:</strong> 1.6</span>
+      </div>
+    </div>
+
+    <div class="type-sample">
+      <div class="type-label">Label / Caption</div>
+      <div class="type-small">Descubre más · 12px · Gray 400 · Uppercase tracked</div>
+      <div class="type-meta">
+        <span><strong>Tamaño:</strong> 10–12px</span>
+        <span><strong>Peso:</strong> 500–700</span>
+        <span><strong>Tracking:</strong> 0.1–0.2em</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- COMPONENTS -->
+  <div class="section">
+    <div class="section-tag">Componentes UI</div>
+    <h2>Botones y acciones</h2>
+    <p>Los botones siguen un sistema consistente. El azul es la acción principal. El lima se reserva para momentos de máximo impacto o contraste sobre fondos oscuros.</p>
+
+    <div style="margin-bottom:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-400);">Variantes de botón</div>
+    <div class="comp-row" style="margin-bottom:24px;">
+      <button class="btn-primary">Entra a la plataforma</button>
+      <button class="btn-ghost">Ver más</button>
+      <button class="btn-secondary">Cancelar</button>
+      <button class="btn-lime">Únete ahora</button>
+      <button class="btn-pill">Descubre el artista</button>
+    </div>
+
+    <div style="margin-bottom:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-400);">Tags y badges</div>
+    <div class="comp-row" style="margin-bottom:24px;">
+      <span class="badge-blue">Música</span>
+      <span class="badge-outline">Indie</span>
+      <span class="badge-outline">Pop</span>
+      <span class="badge-outline">Urban</span>
+      <span class="badge-blue">Destacado</span>
+    </div>
+
+    <div style="margin-bottom:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-400);">Card de artista</div>
+    <div class="comp-row" style="align-items:flex-start;">
+      <div class="card-sample">
+        <div class="card-img" style="background:linear-gradient(135deg, #1a1a2e, #16213e);"></div>
+        <div style="font-size:11px; color:var(--gray-400); margin-bottom:4px;">Subterfuge Events</div>
+        <div class="card-title">NIÑA POLACA</div>
+        <div class="card-badges">
+          <span class="badge-blue">Música</span>
+          <span class="badge-outline">Indie</span>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn-pill" style="font-size:12px; padding:6px 16px; width:100%;">Descubre el artista</button>
+        </div>
+      </div>
+
+      <div style="flex:1; min-width:200px;">
+        <div style="font-size:13px; font-weight:700; color:var(--gray-900); margin-bottom:8px;">Anatomía de la card</div>
+        <ul style="padding-left:16px; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:13px; color:var(--gray-600);">Imagen del artista con border-radius 10px</li>
+          <li style="font-size:13px; color:var(--gray-600);">Agencia en gris pequeño (fuente 11px)</li>
+          <li style="font-size:13px; color:var(--gray-600);">Nombre en negrita 700</li>
+          <li style="font-size:13px; color:var(--gray-600);">Badges: categoría en azul + género en outline</li>
+          <li style="font-size:13px; color:var(--gray-600);">CTA en pill azul al final</li>
+          <li style="font-size:13px; color:var(--gray-600);">Border-radius general: 16px</li>
+          <li style="font-size:13px; color:var(--gray-600);">Sombra: muy sutil, 1px border</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ICONOGRAPHY -->
+  <div class="section">
+    <div class="section-tag">Iconografía</div>
+    <h2>Sistema de iconos</h2>
+    <p>Artiverse usa iconos de línea con estilo redondeado (estilo Phosphor Icons o similar). Tamaño estándar 20px en la app, 24px en landing. Color: gris o azul según contexto.</p>
+
+    <div class="icon-grid" style="margin-bottom:24px;">
+      <div class="icon-item"><div class="icon-circle">🎵</div><div class="icon-name">Música</div></div>
+      <div class="icon-item"><div class="icon-circle">🎭</div><div class="icon-name">Espectáculo</div></div>
+      <div class="icon-item"><div class="icon-circle">📊</div><div class="icon-name">Stats</div></div>
+      <div class="icon-item"><div class="icon-circle">💬</div><div class="icon-name">Chat</div></div>
+      <div class="icon-item"><div class="icon-circle">🔔</div><div class="icon-name">Notif.</div></div>
+      <div class="icon-item"><div class="icon-circle">🔍</div><div class="icon-name">Buscar</div></div>
+      <div class="icon-item"><div class="icon-circle">❤️</div><div class="icon-name">Favorito</div></div>
+      <div class="icon-item"><div class="icon-circle">🏆</div><div class="icon-name">Destacado</div></div>
+      <div class="icon-item"><div class="icon-circle">📋</div><div class="icon-name">Roster</div></div>
+      <div class="icon-item"><div class="icon-circle">🌍</div><div class="icon-name">Global</div></div>
+      <div class="icon-item"><div class="icon-circle">⚡</div><div class="icon-name">Tendencia</div></div>
+      <div class="icon-item"><div class="icon-circle">📅</div><div class="icon-name">Licitación</div></div>
+    </div>
+  </div>
+
+
+  <!-- VOICE & TONE -->
+  <div class="section">
+    <div class="section-tag">Voz y tono</div>
+    <h2>Comunicación de marca</h2>
+    <p>Artiverse habla con claridad y seguridad. Es una plataforma profesional pero accesible — sin tecnicismos innecesarios ni lenguaje corporativo frío. El tono es directo, moderno y orientado a la acción.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:28px;">
+      <div style="padding:16px; background:var(--gray-50); border-radius:10px; border:1px solid #E5E7EB;">
+        <div style="font-size:20px; margin-bottom:6px;">🎯</div>
+        <div style="font-size:13px; font-weight:700; margin-bottom:4px;">Directo</div>
+        <div style="font-size:12px; color:var(--gray-600);">Va al grano. No da rodeos. Cada frase tiene un propósito claro.</div>
+      </div>
+      <div style="padding:16px; background:var(--gray-50); border-radius:10px; border:1px solid #E5E7EB;">
+        <div style="font-size:20px; margin-bottom:6px;">💡</div>
+        <div style="font-size:13px; font-weight:700; margin-bottom:4px;">Claro</div>
+        <div style="font-size:12px; color:var(--gray-600);">Cualquier profesional del sector entiende el mensaje a primera lectura.</div>
+      </div>
+      <div style="padding:16px; background:var(--gray-50); border-radius:10px; border:1px solid #E5E7EB;">
+        <div style="font-size:20px; margin-bottom:6px;">⚡</div>
+        <div style="font-size:13px; font-weight:700; margin-bottom:4px;">Dinámico</div>
+        <div style="font-size:12px; color:var(--gray-600);">Transmite energía y movimiento. La industria musical tiene ritmo — la marca también.</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-400);">Ejemplos de tono correcto ✓</div>
+    <div class="voice-box">
+      <div class="voice-label">Tagline principal</div>
+      <div class="voice-text">"El futuro de las artes en vivo está aquí."</div>
+    </div>
+    <div class="voice-box">
+      <div class="voice-label">Descripción del producto</div>
+      <div class="voice-text">"Conecta artistas y profesionales. Promociona talento. Gestiona con un solo clic."</div>
+    </div>
+    <div class="voice-box">
+      <div class="voice-label">CTA</div>
+      <div class="voice-text">"Entra a la plataforma" · "Descubre el artista" · "Únete a Artiverse"</div>
+    </div>
+
+    <div style="margin-top:20px; margin-bottom:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#DC2626;">Ejemplos de tono incorrecto ✗</div>
+    <div class="voice-box no">
+      <div class="voice-label">Demasiado corporativo</div>
+      <div class="voice-text">"Somos una solución integral para la gestión de recursos artísticos en el mercado del espectáculo en vivo."</div>
+    </div>
+    <div class="voice-box no">
+      <div class="voice-label">Demasiado informal</div>
+      <div class="voice-text">"¡Oye! ¿Buscas artistas mañana? ¡Estamos aquí para ayudarte!"</div>
+    </div>
+  </div>
+
+
+  <!-- PHOTOGRAPHY -->
+  <div class="section">
+    <div class="section-tag">Fotografía e imagen</div>
+    <h2>Estilo visual</h2>
+    <p>Las imágenes de Artiverse son reales — fotografías de artistas auténticos, con carácter. Se evita el stock genérico. El estilo fotográfico es contemporáneo, con fondos de color plano o escenarios reales del sector.</p>
+
+    <div class="donts-grid">
+      <div class="do-box">
+        <h4>✓ Usar</h4>
+        <ul>
+          <li>Fotos de artistas reales del roster</li>
+          <li>Fondos de color sólido o escenarios del sector</li>
+          <li>Imágenes con personalidad y carácter</li>
+          <li>Fotografías en alta resolución</li>
+          <li>Ratio 1:1 o 3:4 para cards de artistas</li>
+          <li>Colores contrastantes que resalten al artista</li>
+        </ul>
+      </div>
+      <div class="dont-box">
+        <h4>✗ Evitar</h4>
+        <ul>
+          <li>Stock photos genéricas</li>
+          <li>Imágenes con filtros muy saturados o vintage</li>
+          <li>Fondos complejos que compitan con el artista</li>
+          <li>Imágenes de baja resolución</li>
+          <li>Fotos corporativas estándar (hombres de traje estrechando manos)</li>
+          <li>Imágenes de AI genéricas para representar artistas</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- GRAPHIC ELEMENTS -->
+  <div class="section">
+    <div class="section-tag">Elementos gráficos</div>
+    <h2>Recursos visuales de marca</h2>
+    <p>Artiverse tiene un lenguaje gráfico propio basado en formas geométricas, el contraste negro/lima y elementos que comunican conexión y movimiento.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+      <!-- PUZZLE GRAPHIC -->
+      <div style="background:var(--black); border-radius:16px; padding:32px; display:flex; align-items:center; justify-content:center; min-height:160px; position:relative; overflow:hidden;">
+        <div style="position:absolute; right:-20px; top:-20px; width:140px; height:140px; background:var(--lime); border-radius:28px;"></div>
+        <div style="position:relative; z-index:1; font-size:32px; font-weight:900; color:var(--lime); letter-spacing:-0.02em;">negro<br>+ lima</div>
+      </div>
+      <div style="border:1px solid #E5E7EB; border-radius:16px; padding:20px;">
+        <div style="font-size:13px; font-weight:700; margin-bottom:10px;">Elementos geométricos</div>
+        <ul style="padding-left:16px; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:13px; color:var(--gray-600);">Rectángulos con bordes muy redondeados</li>
+          <li style="font-size:13px; color:var(--gray-600);">El contraste negro+lima como sello de impacto</li>
+          <li style="font-size:13px; color:var(--gray-600);">Franjas diagonales en azul para dinamismo</li>
+          <li style="font-size:13px; color:var(--gray-600);">Piezas que encajan — metáfora de conexión</li>
+          <li style="font-size:13px; color:var(--gray-600);">Figuras superpuestas con transparencia</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STRIPE ELEMENT -->
+    <div style="background:var(--blue); border-radius:16px; padding:32px; display:flex; align-items:center; justify-content:space-between; gap:20px; overflow:hidden; position:relative;">
+      <div style="position:absolute; left:-30px; top:-30px; width:120px; height:120px; background:rgba(255,255,255,0.08); border-radius:24px; transform:rotate(20deg);"></div>
+      <div style="position:relative; z-index:1;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.5); margin-bottom:6px;">Elemento de acento</div>
+        <div style="font-size:20px; font-weight:800; color:var(--white);">Franja diagonal azul</div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.6); margin-top:4px;">Para CTAs de comunidad y newsletter</div>
+      </div>
+      <div style="background:var(--lime); border-radius:8px; padding:12px 20px;">
+        <span style="font-size:14px; font-weight:800; color:var(--black);">Únete a Artiverse</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SPACING -->
+  <div class="section">
+    <div class="section-tag">Espaciado</div>
+    <h2>Sistema de espaciado</h2>
+    <p>Artiverse usa un sistema de espaciado basado en múltiplos de 4px. Los espacios más usados son 8, 12, 16, 24, 32 y 48px.</p>
+
+    <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <div style="width:8px; height:8px; background:var(--blue); opacity:0.3; border-radius:2px;"></div>
+        <div style="font-size:10px; color:var(--gray-400); font-family:monospace;">4px</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <div style="width:16px; height:16px; background:var(--blue); opacity:0.3; border-radius:3px;"></div>
+        <div style="font-size:10px; color:var(--gray-400); font-family:monospace;">8px</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <div style="width:24px; height:24px; background:var(--blue); opacity:0.4; border-radius:4px;"></div>
+        <div style="font-size:10px; color:var(--gray-400); font-family:monospace;">12px</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <div style="width:32px; height:32px; background:var(--blue); opacity:0.5; border-radius:4px;"></div>
+        <div style="font-size:10px; color:var(--gray-400); font-family:monospace;">16px</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <div style="width:48px; height:48px; background:var(--blue); opacity:0.6; border-radius:6px;"></div>
+        <div style="font-size:10px; color:var(--gray-400); font-family:monospace;">24px</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <div style="width:64px; height:64px; background:var(--blue); opacity:0.7; border-radius:8px;"></div>
+        <div style="font-size:10px; color:var(--gray-400); font-family:monospace;">32px</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <div style="width:96px; height:96px; background:var(--blue); opacity:0.8; border-radius:12px;"></div>
+        <div style="font-size:10px; color:var(--gray-400); font-family:monospace;">48px</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div style="padding:16px; background:var(--gray-50); border-radius:10px; border:1px solid #E5E7EB;">
+        <div style="font-size:12px; font-weight:700; margin-bottom:8px;">Border radius</div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <div style="width:32px; height:32px; background:var(--blue); border-radius:4px; opacity:0.6;"></div>
+          <div style="width:32px; height:32px; background:var(--blue); border-radius:8px; opacity:0.7;"></div>
+          <div style="width:32px; height:32px; background:var(--blue); border-radius:12px; opacity:0.8;"></div>
+          <div style="width:32px; height:32px; background:var(--blue); border-radius:16px; opacity:0.9;"></div>
+          <div style="width:32px; height:32px; background:var(--blue); border-radius:999px;"></div>
+        </div>
+        <div style="font-size:11px; color:var(--gray-400); margin-top:8px;">4 / 8 / 12 / 16 / pill</div>
+      </div>
+      <div style="padding:16px; background:var(--gray-50); border-radius:10px; border:1px solid #E5E7EB;">
+        <div style="font-size:12px; font-weight:700; margin-bottom:8px;">Sombras</div>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <div style="width:48px; height:48px; background:white; border-radius:8px; border:1px solid #E5E7EB;"></div>
+          <div style="width:48px; height:48px; background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1);"></div>
+          <div style="width:48px; height:48px; background:white; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+        </div>
+        <div style="font-size:11px; color:var(--gray-400); margin-top:8px;">Border / Sutil / Elevada</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- QUICK REF -->
+  <div class="section" style="border-bottom:none;">
+    <div class="section-tag">Referencia rápida</div>
+    <h2>Cheat sheet</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div style="padding:20px; border:1px solid #E5E7EB; border-radius:12px;">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--gray-400); margin-bottom:12px;">Colores</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; align-items:center; gap:10px;"><div style="width:20px; height:20px; border-radius:4px; background:#2563EB;"></div><code style="font-size:12px;">#2563EB</code><span style="font-size:12px; color:var(--gray-400);">Blue (primary)</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><div style="width:20px; height:20px; border-radius:4px; background:#CCFF00; border:1px solid #eee;"></div><code style="font-size:12px;">#CCFF00</code><span style="font-size:12px; color:var(--gray-400);">Lime (accent)</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><div style="width:20px; height:20px; border-radius:4px; background:#0A0A0A;"></div><code style="font-size:12px;">#0A0A0A</code><span style="font-size:12px; color:var(--gray-400);">Black</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><div style="width:20px; height:20px; border-radius:4px; background:#F3F4F6; border:1px solid #eee;"></div><code style="font-size:12px;">#F3F4F6</code><span style="font-size:12px; color:var(--gray-400);">Background</span></div>
+          <div style="display:flex; align-items:center; gap:10px;"><div style="width:20px; height:20px; border-radius:4px; background:#4B5563;"></div><code style="font-size:12px;">#4B5563</code><span style="font-size:12px; color:var(--gray-400);">Body text</span></div>
+        </div>
+      </div>
+      <div style="padding:20px; border:1px solid #E5E7EB; border-radius:12px;">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--gray-400); margin-bottom:12px;">Tipografía</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="font-weight:900;">Inter 900</span><span style="color:var(--gray-400);">Hero / Impacto</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="font-weight:800;">Inter 800</span><span style="color:var(--gray-400);">Títulos H1</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="font-weight:700;">Inter 700</span><span style="color:var(--gray-400);">H2, Cards, Botones</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="font-weight:600;">Inter 600</span><span style="color:var(--gray-400);">Subtítulos, UI</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="font-weight:400;">Inter 400</span><span style="color:var(--gray-400);">Cuerpo de texto</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="doc-footer">
+    <div class="brand">Artiverse — Brand Book v1.0</div>
+    <span>Producido por Aether Labs · aetherlabs.es · 2025</span>
+  </div>
+
+</div>
+</body>
+</html>

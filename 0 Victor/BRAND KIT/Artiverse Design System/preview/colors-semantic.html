@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Artiverse · Semantic colors</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .pairs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .pair {
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid var(--av-border);
+    background: #fff;
+  }
+  .p-dot { width: 40px; height: 40px; border-radius: 12px; margin-bottom: 16px; }
+  .p-title { font-weight: 700; font-size: 15px; margin: 0 0 2px; }
+  .p-caption { font-size: 12px; color: var(--av-fg-muted); margin: 0 0 16px; }
+  .p-row { display: flex; gap: 8px; align-items: center; font-family: var(--av-font-mono); font-size: 11px; }
+  .p-chip { padding: 4px 8px; border-radius: 4px; }
+  .p-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; font-family: var(--av-font-sans); margin-top: 14px; }
+</style>
+</head>
+<body>
+  <div class="card-eyebrow">Colors / Semantic</div>
+  <h1 class="card-title">Estados y feedback</h1>
+  <p class="card-subtitle">Colores reservados para señalización. El azul info comparte hue con la marca — se puede usar el primario directamente.</p>
+
+  <div class="pairs">
+    <div class="pair">
+      <div class="p-dot" style="background: #059669;"></div>
+      <p class="p-title">Success</p>
+      <p class="p-caption">Confirmaciones, estados activos</p>
+      <div class="p-row"><span class="p-chip" style="background:#059669;color:#fff;">#059669</span><span class="p-chip" style="background:#ECFDF5;color:#059669;">#ECFDF5</span></div>
+      <span class="p-badge" style="background:#ECFDF5;color:#059669;">● Confirmado</span>
+    </div>
+    <div class="pair">
+      <div class="p-dot" style="background: #D97706;"></div>
+      <p class="p-title">Warning</p>
+      <p class="p-caption">Avisos, pendientes</p>
+      <div class="p-row"><span class="p-chip" style="background:#D97706;color:#fff;">#D97706</span><span class="p-chip" style="background:#FFFBEB;color:#D97706;">#FFFBEB</span></div>
+      <span class="p-badge" style="background:#FFFBEB;color:#D97706;">● Pendiente</span>
+    </div>
+    <div class="pair">
+      <div class="p-dot" style="background: #DC2626;"></div>
+      <p class="p-title">Danger</p>
+      <p class="p-caption">Errores, acciones destructivas</p>
+      <div class="p-row"><span class="p-chip" style="background:#DC2626;color:#fff;">#DC2626</span><span class="p-chip" style="background:#FEF2F2;color:#DC2626;">#FEF2F2</span></div>
+      <span class="p-badge" style="background:#FEF2F2;color:#DC2626;">● Rechazado</span>
+    </div>
+    <div class="pair">
+      <div class="p-dot" style="background: #2563EB;"></div>
+      <p class="p-title">Info</p>
+      <p class="p-caption">Notificaciones, novedades</p>
+      <div class="p-row"><span class="p-chip" style="background:#2563EB;color:#fff;">#2563EB</span><span class="p-chip" style="background:#EFF6FF;color:#2563EB;">#EFF6FF</span></div>
+      <span class="p-badge" style="background:#EFF6FF;color:#2563EB;">● Nueva licitación</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="https://unpkg.com/lucide@latest/font/lucide.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fff; padding: 32px; font-family: var(--av-font-body); }
+
+  section { margin-bottom: 28px; }
+  .section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--av-gray-400);
+    margin-bottom: 14px;
+    display: block;
+  }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  /* ── Buttons ──────────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--av-font-body);
+    font-weight: 600; border: none; cursor: pointer;
+    transition: background 150ms, box-shadow 150ms, transform 80ms;
+    outline: none; text-decoration: none;
+  }
+  .btn:active { transform: scale(.98); }
+
+  .btn-primary {
+    background: var(--av-blue); color: #fff;
+    border-radius: var(--av-radius-pill);
+    padding: 11px 22px; font-size: 14px;
+  }
+  .btn-primary:hover { background: #013bd4; }
+
+  .btn-secondary {
+    background: #fff; color: var(--av-fg);
+    border: 1px solid var(--av-border);
+    border-radius: var(--av-radius-pill);
+    padding: 10px 20px; font-size: 14px;
+  }
+  .btn-secondary:hover { background: var(--av-bg); border-color: #d1d5db; }
+
+  .btn-ghost {
+    background: transparent; color: var(--av-blue);
+    border-radius: var(--av-radius-sm);
+    padding: 8px 16px; font-size: 14px;
+    border: 1px solid transparent;
+  }
+  .btn-ghost:hover { background: var(--av-blue-tint); }
+
+  .btn-sm {
+    padding: 7px 14px; font-size: 12px; font-weight: 600;
+    border-radius: var(--av-radius-pill);
+    background: var(--av-blue); color: #fff; border: none; cursor: pointer;
+  }
+  .btn-dark {
+    background: var(--av-black); color: #fff;
+    border-radius: var(--av-radius-pill);
+    padding: 11px 22px; font-size: 14px; font-weight: 600;
+    border: none; cursor: pointer;
+  }
+  .btn-dark:hover { background: #1a1a1a; }
+
+  /* ── Badges ───────────────────────────────────────────── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: var(--av-radius-pill);
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+  }
+  .badge-blue     { background: var(--av-blue); color: #fff; }
+  .badge-outline  { background: transparent; border: 1px solid var(--av-border); color: var(--av-gray-600); }
+  .badge-tint     { background: var(--av-blue-tint); color: var(--av-blue); }
+  .badge-danger   { background: var(--av-danger-light); color: var(--av-danger); }
+  .badge-lime     { background: #ccff00; color: #000; font-weight: 700; }
+
+  /* ── Input ────────────────────────────────────────────── */
+  .input {
+    height: 40px; border: 1px solid var(--av-border);
+    border-radius: var(--av-radius-md);
+    padding: 0 14px; font-family: var(--av-font-body);
+    font-size: 14px; color: var(--av-fg); background: #fff;
+    outline: none; width: 220px;
+    transition: border-color 150ms, box-shadow 150ms;
+  }
+  .input:focus { border-color: var(--av-blue); box-shadow: var(--av-shadow-focus); }
+  .input::placeholder { color: var(--av-gray-400); }
+
+  /* ── Nav header ───────────────────────────────────────── */
+  .nav-demo {
+    background: #fff;
+    border: 1px solid var(--av-border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: var(--av-shadow-nav);
+    width: 100%;
+  }
+  .nav-logo { font-family: var(--av-font-display); font-weight: 900; font-size: 17px; color: var(--av-fg); letter-spacing: -0.02em; }
+  .nav-logo span { color: var(--av-blue); }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { font-size: 13px; font-weight: 500; color: var(--av-gray-600); text-decoration: none; }
+  .nav-links a:hover { color: var(--av-fg); }
+  .nav-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ── Artist card ──────────────────────────────────────── */
+  .card {
+    background: #fff;
+    border: 1px solid var(--av-border);
+    border-radius: var(--av-radius-md);
+    overflow: hidden;
+    width: 190px;
+    flex-shrink: 0;
+  }
+  .card-img {
+    height: 160px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; color: rgba(255,255,255,.2);
+  }
+  .card-body { padding: 14px 14px 12px; }
+  .card-agency { font-size: 11px; color: var(--av-gray-400); margin-bottom: 4px; }
+  .card-title { font-family: var(--av-font-display); font-size: 14px; font-weight: 700; color: var(--av-fg); margin-bottom: 8px; letter-spacing: -0.01em; }
+  .card-tags { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .card-cta {
+    width: 100%; background: var(--av-blue); color: #fff;
+    border: none; border-radius: var(--av-radius-pill);
+    padding: 8px 0; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: var(--av-font-body);
+    text-align: center;
+  }
+
+  hr { border: none; border-top: 1px solid var(--av-border); margin: 4px 0 24px; }
+</style>
+</head>
+<body>
+
+<section>
+  <span class="section-label">Nav · Header</span>
+  <div class="nav-demo">
+    <div class="nav-logo"><span>arti</span>verse</div>
+    <div class="nav-links">
+      <a href="#">Para artistas</a>
+      <a href="#">Para promotores</a>
+      <a href="#">Precios</a>
+    </div>
+    <div class="nav-actions">
+      <button class="btn btn-secondary" style="padding:7px 16px;font-size:13px;border-radius:6px;">Entrar</button>
+      <button class="btn btn-primary" style="padding:7px 16px;font-size:13px;">Solicita acceso</button>
+    </div>
+  </div>
+</section>
+<hr>
+
+<section>
+  <span class="section-label">Botones</span>
+  <div class="row">
+    <button class="btn btn-primary">Entra a la plataforma</button>
+    <button class="btn btn-secondary">Saber más</button>
+    <button class="btn btn-dark">Únete ahora</button>
+    <button class="btn btn-ghost">Ver más</button>
+    <button class="btn-sm">Descubre</button>
+  </div>
+</section>
+<hr>
+
+<section>
+  <span class="section-label">Badges · Tags</span>
+  <div class="row">
+    <span class="badge badge-blue">Música</span>
+    <span class="badge badge-tint">Indie</span>
+    <span class="badge badge-outline">Madrid</span>
+    <span class="badge badge-outline">Festival</span>
+    <span class="badge badge-danger">Nuevo</span>
+    <span class="badge badge-lime">+500 artistas</span>
+    <span class="badge" style="background:#f3f4f6;color:#374151;">Rock</span>
+  </div>
+</section>
+<hr>
+
+<section>
+  <span class="section-label">Input · Búsqueda</span>
+  <div class="row">
+    <input class="input" placeholder="Busca artistas, géneros…" type="text">
+    <input class="input" placeholder="correo@ejemplo.com" type="email">
+  </div>
+</section>
+<hr>
+
+<section>
+  <span class="section-label">Artist Card</span>
+  <div class="row">
+    <div class="card">
+      <div class="card-img">♫</div>
+      <div class="card-body">
+        <div class="card-agency">Subterfuge Events</div>
+        <div class="card-title">NIÑA POLACA</div>
+        <div class="card-tags">
+          <span class="badge badge-blue" style="font-size:10px;padding:2px 8px;">Música</span>
+          <span class="badge badge-outline" style="font-size:10px;padding:2px 8px;">Indie</span>
+        </div>
+        <button class="card-cta">Descubre el artista</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-img" style="background:linear-gradient(135deg,#2a1a3e,#4a0e6e);">♫</div>
+      <div class="card-body">
+        <div class="card-agency">Elrow Management</div>
+        <div class="card-title">LENA BRAVA</div>
+        <div class="card-tags">
+          <span class="badge badge-blue" style="font-size:10px;padding:2px 8px;">Electrónica</span>
+          <span class="badge badge-outline" style="font-size:10px;padding:2px 8px;">DJ</span>
+        </div>
+        <button class="card-cta">Descubre el artista</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-img" style="background:linear-gradient(135deg,#1a2e1a,#0a3d0a);">♫</div>
+      <div class="card-body">
+        <div class="card-agency">Ibermúsica</div>
+        <div class="card-title">OQUES GRASSES</div>
+        <div class="card-tags">
+          <span class="badge badge-blue" style="font-size:10px;padding:2px 8px;">Pop</span>
+          <span class="badge badge-outline" style="font-size:10px;padding:2px 8px;">Catalán</span>
+        </div>
+        <button class="card-cta">Descubre el artista</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
