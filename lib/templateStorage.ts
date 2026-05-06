@@ -10,14 +10,15 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-// Soporta ambos: Vercel KV legacy y Upstash Redis (vía Marketplace)
-const KV_URL =
-  process.env.KV_REST_API_URL ||
-  process.env.UPSTASH_REDIS_REST_URL ||
-  process.env.KV_URL
-const KV_TOKEN =
-  process.env.KV_REST_API_TOKEN ||
-  process.env.UPSTASH_REDIS_REST_TOKEN
+// Soporta múltiples backends:
+// - Vercel KV REST (KV_REST_API_URL/TOKEN)
+// - Upstash REST (UPSTASH_REDIS_REST_URL/TOKEN)
+// - Redis TCP (REDIS_URL) — Vercel Redis nuevo o cualquier Redis estándar
+const KV_REST_URL   = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || ''
+const KV_REST_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || ''
+const REDIS_TCP_URL = process.env.REDIS_URL || process.env.KV_URL || ''
+
+const HAS_STORAGE = !!(KV_REST_URL && KV_REST_TOKEN) || !!REDIS_TCP_URL
 
 // Templates predefinidos en el repo
 export const TEMPLATES: Record<string, string> = {
@@ -44,24 +45,62 @@ const BUILTIN_META: TemplateMeta[] = [
   },
 ]
 
-async function getKv() {
-  if (!KV_URL || !KV_TOKEN) return null
-  try {
-    // Si las vars son UPSTASH_*, instanciamos un cliente Redis directo desde Upstash
-    // Si son KV_*, usamos @vercel/kv (que usa REST tras bambalinas)
-    if (process.env.UPSTASH_REDIS_REST_URL && !process.env.KV_REST_API_URL) {
+// Wrapper unificado de Redis. Devuelve null si no hay backend disponible.
+let _ioRedis: any = null
+async function getRedis(): Promise<{
+  get<T = any>(key: string): Promise<T | null>
+  set(key: string, value: any): Promise<any>
+  del(key: string): Promise<any>
+} | null> {
+  if (!HAS_STORAGE) return null
+
+  // Preferir REST (más rápido en serverless, sin cold-start)
+  if (KV_REST_URL && KV_REST_TOKEN) {
+    try {
       const { Redis } = await import('@upstash/redis')
-      return new Redis({
-        url:   process.env.UPSTASH_REDIS_REST_URL!,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-      }) as any
-    }
-    const { kv } = await import('@vercel/kv')
-    return kv
-  } catch {
-    return null
+      const redis = new Redis({ url: KV_REST_URL, token: KV_REST_TOKEN })
+      return {
+        async get(k) { return await redis.get(k) as any },
+        async set(k, v) {
+          // upstash espera string para valores no-JSON, pero acepta objetos también
+          return await redis.set(k, typeof v === 'string' ? v : JSON.stringify(v))
+        },
+        async del(k) { return await redis.del(k) },
+      }
+    } catch {}
   }
+
+  // Fallback: TCP via ioredis
+  if (REDIS_TCP_URL) {
+    try {
+      if (!_ioRedis) {
+        const { default: IORedis } = await import('ioredis')
+        _ioRedis = new IORedis(REDIS_TCP_URL, {
+          lazyConnect: false,
+          maxRetriesPerRequest: 2,
+          enableReadyCheck: false,
+        })
+      }
+      return {
+        async get<T>(k: string) {
+          const v = await _ioRedis.get(k)
+          if (v == null) return null
+          try { return JSON.parse(v) as T } catch { return v as any }
+        },
+        async set(k: string, v: any) {
+          const str = typeof v === 'string' ? v : JSON.stringify(v)
+          return await _ioRedis.set(k, str)
+        },
+        async del(k: string) { return await _ioRedis.del(k) },
+      }
+    } catch {}
+  }
+
+  return null
 }
+
+// Mantenemos el nombre antiguo para compatibilidad
+const getKv = getRedis
 
 export async function listTemplates(): Promise<TemplateMeta[]> {
   const kv = await getKv()
