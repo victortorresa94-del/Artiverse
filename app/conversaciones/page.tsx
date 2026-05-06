@@ -201,15 +201,38 @@ export default function ConversacionesPage() {
 
   async function changeStatus(newStatus: ConvStatus) {
     if (!currentConv) return
+    const prevStatus = currentConv.status
+    setFeedback(null)
+
+    // Optimistic update local
+    setData(prev => prev ? {
+      ...prev,
+      conversations: prev.conversations.map(c =>
+        c.thread_id === currentConv.thread_id ? { ...c, status: newStatus } : c
+      ),
+    } : prev)
+
     try {
-      await fetch('/api/conversaciones/status', {
+      const res = await fetch('/api/conversaciones/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: currentConv.contact_email, status: newStatus }),
       })
-      await load()
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || `Error ${res.status}`)
+      setFeedback({
+        type: 'ok',
+        msg: `Estado actualizado a "${newStatus}". HubSpot puede tardar unos segundos en reflejarlo en próximas cargas.`,
+      })
     } catch (e: any) {
-      setFeedback({ type: 'err', msg: e.message })
+      // Revert
+      setData(prev => prev ? {
+        ...prev,
+        conversations: prev.conversations.map(c =>
+          c.thread_id === currentConv.thread_id ? { ...c, status: prevStatus } : c
+        ),
+      } : prev)
+      setFeedback({ type: 'err', msg: `Error al cambiar estado: ${e.message}` })
     }
   }
 

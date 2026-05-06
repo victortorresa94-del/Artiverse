@@ -28,14 +28,29 @@ function hsHeaders() {
   return { Authorization: `Bearer ${HS_TOKEN}`, 'Content-Type': 'application/json' }
 }
 
-async function getListIds(): Promise<Record<string, number>> {
+async function ensureListIds(): Promise<Record<string, number>> {
   const res = await fetch(`${HS}/contacts/v1/lists?count=250`, { headers: hsHeaders() })
   if (!res.ok) return {}
   const d = await res.json()
+  const existing: Array<{ listId: number; name: string }> = (d.lists || []).map((l: any) => ({ listId: l.listId, name: l.name }))
   const result: Record<string, number> = {}
+
   for (const [phase, name] of Object.entries(CONV_LIST_NAMES)) {
-    const found = (d.lists || []).find((l: any) => l.name === name)
-    if (found) result[phase] = found.listId
+    const found = existing.find(l => l.name === name)
+    if (found) {
+      result[phase] = found.listId
+    } else {
+      // Crear si no existe
+      const cr = await fetch(`${HS}/contacts/v1/lists`, {
+        method: 'POST',
+        headers: hsHeaders(),
+        body: JSON.stringify({ name, dynamic: false }),
+      })
+      if (cr.ok) {
+        const cd = await cr.json()
+        result[phase] = cd.listId
+      }
+    }
   }
   return result
 }
@@ -64,7 +79,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { vid } = await upsertContact({ email })
-    const listIds = await getListIds()
+    const listIds = await ensureListIds()
 
     // Quitar de todas las listas
     for (const id of Object.values(listIds)) {
