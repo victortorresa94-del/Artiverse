@@ -412,6 +412,34 @@ export default function MaquetadorPage() {
           ) : (
             <textarea
               value={html} onChange={e => setHtml(e.target.value)} spellCheck={false}
+              onDragOver={e => e.preventDefault()}
+              onDrop={async e => {
+                e.preventDefault()
+                const file = e.dataTransfer.files?.[0]
+                if (!file) return
+                if (file.type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+                  // HTML arrastrado → cargar al editor
+                  const text = await file.text()
+                  setHtml(text)
+                  setFeedback({ type:'ok', msg: `HTML cargado de ${file.name}. Guarda para persistir.` })
+                } else if (file.type.startsWith('image/')) {
+                  // Imagen arrastrada → subir vía endpoint
+                  setUploading(true); setFeedback(null)
+                  try {
+                    const fd = new FormData(); fd.append('file', file)
+                    const r = await fetch('/api/files', { method: 'POST', body: fd })
+                    const d = await r.json()
+                    if (!r.ok) throw new Error(d.error)
+                    await loadFiles()
+                    navigator.clipboard?.writeText(d.url)
+                    setFeedback({ type:'ok', msg: `Imagen subida. URL copiada: ${d.url}` })
+                    setRightPanel('files')
+                  } catch (err: any) { setFeedback({ type:'err', msg: err.message }) }
+                  finally { setUploading(false) }
+                } else {
+                  setFeedback({ type:'err', msg: `Tipo no soportado: ${file.type || file.name}` })
+                }
+              }}
               className="flex-1 p-4 font-mono text-xs outline-none resize-none"
               style={{ background:'var(--bg-surface)', color:'var(--text-1)', border:'none', lineHeight:1.5 }}
             />
