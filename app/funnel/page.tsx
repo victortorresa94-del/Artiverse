@@ -463,12 +463,12 @@ export default function FunnelPage() {
   }, [data])
 
   return (
-    <div className="p-5 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'var(--bg-base)' }}>
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Header */}
-      <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="mb-4 sm:mb-5 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Funnel</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Funnel</h1>
+          <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>
             {data
               ? `${data.total} contactos clasificados en ${PHASE_ORDER.length} fases`
               : 'Cargando contactos…'}

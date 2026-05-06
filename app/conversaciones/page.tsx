@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import {
-  RefreshCw, Sparkles, Send, X, Loader2,
+  RefreshCw, Sparkles, Send, X, Loader2, ArrowLeft,
   Inbox as InboxIcon, Clock, CheckCircle2, ThumbsDown, MailX,
   ArrowRight, GitBranch, MessageCircle,
 } from 'lucide-react'
@@ -106,9 +106,12 @@ export default function ConversacionesPage() {
       if (!res.ok) throw new Error(`Error ${res.status}`)
       const d = await res.json()
       setData(d)
-      // Si no hay seleccionada o la actual ya no existe, abrir la primera del filtro
-      const next = d.conversations.find((c: Conversation) => c.status === 'pendiente') || d.conversations[0]
-      if (!selected && next) setSelected(next.thread_id)
+      // Auto-seleccionar primera (solo desktop — mobile usa el listado primero)
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+      if (!selected && !isMobile) {
+        const next = d.conversations.find((c: Conversation) => c.status === 'pendiente') || d.conversations[0]
+        if (next) setSelected(next.thread_id)
+      }
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -226,11 +229,15 @@ export default function ConversacionesPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  // En mobile: si hay seleccionada, mostrar solo el thread; si no, solo la lista
+  const showListMobile   = !selected
+  const showThreadMobile = !!selected
+
   return (
-    <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
+    <div className="flex h-[calc(100vh-3.5rem)] md:h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Left sidebar — list */}
       <div
-        className="w-[360px] flex flex-col shrink-0"
+        className={`${showListMobile ? 'flex' : 'hidden'} md:flex w-full md:w-[360px] flex-col shrink-0`}
         style={{ borderRight: '1px solid var(--border)', background: 'var(--bg-surface)' }}
       >
         {/* Header */}
@@ -312,7 +319,7 @@ export default function ConversacionesPage() {
       </div>
 
       {/* Right — thread view */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={`${showThreadMobile ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-w-0`}>
         {!currentConv ? (
           <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-3)' }}>
             <div className="text-center">
@@ -324,17 +331,26 @@ export default function ConversacionesPage() {
           <>
             {/* Header */}
             <div
-              className="px-6 py-4 flex items-start justify-between gap-4"
+              className="px-4 sm:px-6 py-3 sm:py-4 flex items-start justify-between gap-3"
               style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)' }}
             >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-lg font-bold truncate" style={{ color: 'var(--text-1)' }}>
+              {/* Back button on mobile */}
+              <button
+                onClick={() => setSelected(null)}
+                className="md:hidden p-1.5 rounded-md shrink-0"
+                style={{ color: 'var(--text-2)' }}
+              >
+                <ArrowLeft size={18} />
+              </button>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h2 className="text-base sm:text-lg font-bold truncate" style={{ color: 'var(--text-1)' }}>
                     {currentConv.contact_name || currentConv.contact_email.split('@')[0]}
                   </h2>
                   <StatusBadge status={currentConv.status} />
                 </div>
-                <p className="text-xs truncate" style={{ color: 'var(--text-2)' }}>
+                <p className="text-[11px] sm:text-xs truncate" style={{ color: 'var(--text-2)' }}>
                   {currentConv.contact_email}
                   {currentConv.company && <span> · {currentConv.company}</span>}
                 </p>
@@ -380,7 +396,7 @@ export default function ConversacionesPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4">
               {currentConv.messages.map(m => (
                 <MessageBubble key={m.id} msg={m} contactName={currentConv.contact_name} />
               ))}
@@ -388,7 +404,7 @@ export default function ConversacionesPage() {
 
             {/* Reply box */}
             <div
-              className="p-4 space-y-2"
+              className="p-3 sm:p-4 space-y-2"
               style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-surface)' }}
             >
               {feedback && (
