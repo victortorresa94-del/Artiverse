@@ -232,7 +232,14 @@ export default function MaquetadorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html, instruction }),
       })
-      const d = await r.json()
+      // Parsear respuesta: si no es JSON (timeout Vercel), mostrar texto
+      const text = await r.text()
+      let d: any
+      try { d = JSON.parse(text) } catch {
+        throw new Error(r.status === 504 || text.includes('timed out')
+          ? 'La IA tardó demasiado (>60s). Intenta una instrucción más pequeña o más concreta.'
+          : `Error ${r.status}: ${text.slice(0, 200)}`)
+      }
       if (!r.ok) throw new Error(d.error)
       setHtml(d.html)
       setMessages(m => [...m, { role:'assistant', text:'✓ Cambio aplicado. Revisa el preview. Si te gusta, guarda.', ts: Date.now() }])

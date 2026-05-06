@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY || ''
-const CLAUDE_MODEL   = 'claude-opus-4-5'
+// Sonnet es 3-5x más rápido que Opus para tareas de edición de HTML
+const CLAUDE_MODEL   = 'claude-sonnet-4-5'
 
 const SYSTEM_PROMPT = `Eres un editor experto en HTML de emails para Artiverse. Recibes el HTML actual de una plantilla y una instrucción del usuario, y devuelves SOLO el HTML modificado.
 
@@ -62,10 +63,12 @@ Devuelve el HTML completo modificado:`
       },
       body: JSON.stringify({
         model:      CLAUDE_MODEL,
-        max_tokens: 16000,
+        max_tokens: 8192,
         system:     SYSTEM_PROMPT,
         messages: [{ role: 'user', content: userPrompt }],
       }),
+      // 55s para no chocar con el 60s de Vercel
+      signal: AbortSignal.timeout(55000),
     })
 
     if (!res.ok) {
