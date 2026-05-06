@@ -14,54 +14,18 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY || ''
-const CLAUDE_MODEL   = 'claude-sonnet-4-5'
+const CLAUDE_MODEL   = 'claude-haiku-4-5'
 
-const SYSTEM_PROMPT = `Eres un editor de HTML emails de Artiverse. Recibes el HTML actual y una instrucción, y devuelves un JSON con los cambios concretos a aplicar.
+const SYSTEM_PROMPT = `Editor de HTML emails. Devuelve SOLO este JSON (sin markdown, sin texto extra):
 
-DEVUELVE EXACTAMENTE ESTE FORMATO JSON (nada más, sin markdown fences, sin explicaciones):
-{
-  "patches": [
-    { "find": "texto exacto literal a buscar en el HTML", "replace": "texto nuevo" }
-  ],
-  "summary": "Una frase corta describiendo el cambio"
-}
+{"patches":[{"find":"texto literal exacto","replace":"texto nuevo"}],"summary":"frase corta"}
 
 REGLAS:
-1. Cada "find" debe aparecer EXACTAMENTE UNA VEZ en el HTML. Si el texto a cambiar aparece varias veces, incluye más contexto antes/después en el find/replace para hacerlo único.
-2. El "find" debe ser una cadena literal (sin regex, sin escapes especiales).
-3. Mantén intactos los placeholders {{ contact.firstname }}, {{ contact.email }}, {{ unsubscribe_link }}, {{firstName}}, {{email}}.
-4. Mantén estructura table-based de email.
-5. Mantén styles inline.
-6. NO inventes <script> ni <iframe>.
-7. Si la instrucción es ambigua, aplica la interpretación más razonable.
-8. Para añadir negritas: envuelve en <strong>...</strong>.
-9. Para cambiar colores en spans: añade/modifica el style="color:#XXXXXX".
-10. Para cambiar tamaños: ajusta font-size: en style.
-
-EJEMPLOS:
-
-Instrucción: "Pon 'aquí y ahora' en negrita"
-HTML contiene: <span style="color:#CCFF00;">aquí y ahora.</span>
-Respuesta:
-{
-  "patches": [{
-    "find": "<span style=\\"color:#CCFF00;\\">aquí y ahora.</span>",
-    "replace": "<span style=\\"color:#CCFF00;font-weight:700;\\">aquí y ahora.</span>"
-  }],
-  "summary": "Aplicada negrita a 'aquí y ahora'"
-}
-
-Instrucción: "Cambia el texto 'Ya estás dentro' por 'Bienvenido a la familia'"
-Respuesta:
-{
-  "patches": [{
-    "find": "Ya estás dentro.",
-    "replace": "Bienvenido a la familia."
-  }],
-  "summary": "Texto principal del cuerpo cambiado"
-}
-
-Si necesitas múltiples cambios, devuelve múltiples patches en el array.`
+- "find" debe ser literal y único (incluye contexto si hace falta)
+- Mantén styles inline, estructura table, placeholders {{...}}
+- Negrita: añade font-weight:700 al style del elemento (NO uses <strong>)
+- Color: modifica style="color:#XXX" del span/elemento
+- Si cambias texto visible, cambia también style si hace falta`
 
 export async function POST(req: NextRequest, _ctx: { params: { id: string } }) {
   if (!CLAUDE_API_KEY) {
