@@ -83,15 +83,34 @@ export default function MaquetadorPage() {
   async function loadTpl(id: string) {
     setLoading(true); setFeedback(null); setActiveId(id)
     try {
-      const r = await fetch(`/api/maquetador/${id}`, { cache: 'no-store' })
+      const [r, rChat] = await Promise.all([
+        fetch(`/api/maquetador/${id}`, { cache: 'no-store' }),
+        fetch(`/api/maquetador/${id}/chat`, { cache: 'no-store' }),
+      ])
       const d = await r.json()
       if (!r.ok) throw new Error(d.error)
       setHtml(d.html); setOriginal(d.html)
+      // Cargar chat persistido del template
+      try {
+        const cd = await rChat.json()
+        setMessages(Array.isArray(cd.messages) ? cd.messages : [])
+      } catch { setMessages([]) }
     } catch (e: any) {
       setFeedback({ type:'err', msg: e.message })
     } finally {
       setLoading(false)
     }
+  }
+
+  // Helper: persiste chat en Redis (no bloquea UI)
+  async function persistChat(msgs: ChatMsg[]) {
+    try {
+      await fetch(`/api/maquetador/${activeId}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: msgs }),
+      })
+    } catch {}
   }
 
   // ── Load files
@@ -224,31 +243,54 @@ export default function MaquetadorPage() {
   async function sendChat() {
     if (!input.trim()) return
     const userMsg: ChatMsg = { role:'user', text: input.trim(), ts: Date.now() }
-    setMessages(m => [...m, userMsg])
+    const newMessages = [...messages, userMsg]
+    setMessages(newMessages)
     const instruction = input.trim(); setInput(''); setAiLoading(true)
     try {
       const r = await fetch(`/api/maquetador/${activeId}/ai`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html, instruction }),
+        body: JSON.stringify({
+          html,
+          instruction,
+          history: messages.map(m => ({ role: m.role, text: m.text })),  // historial previo (sin el actual)
+        }),
       })
-      // Parsear respuesta: si no es JSON (timeout Vercel), mostrar texto
       const text = await r.text()
       let d: any
       try { d = JSON.parse(text) } catch {
         throw new Error(r.status === 504 || text.includes('timed out')
-          ? 'La IA tardó demasiado (>60s). Intenta una instrucción más pequeña o más concreta.'
+          ? 'La IA tardó demasiado (>60s). Intenta una instrucción más concreta.'
           : `Error ${r.status}: ${text.slice(0, 200)}`)
       }
       if (!r.ok) throw new Error(d.error)
       setHtml(d.html)
+
+      // Construir mensaje detallado para que la IA tenga contexto en próxima vuelta
       const summary = d.summary || 'Cambio aplicado'
-      const failed = (d.patches || []).filter((p: any) => !p.ok).length
-      const note   = failed > 0 ? ` (${failed} cambio${failed===1?'':'s'} no aplicado${failed===1?'':'s'} por ambigüedad)` : ''
-      setMessages(m => [...m, { role:'assistant', text:`✓ ${summary}${note}. Revisa el preview.`, ts: Date.now() }])
+      const okCount = (d.patches || []).filter((p: any) => p.ok).length
+      const failed  = (d.patches || []).filter((p: any) => !p.ok).length
+      const failedDetail = failed > 0
+        ? ` (${failed} no aplicado: ${(d.patches || []).filter((p:any) => !p.ok).map((p:any) => p.reason).join('; ')})`
+        : ''
+      const modelTag = d.model?.includes('sonnet') ? ' [sonnet]' : ''
+      // Texto rico para que la IA entienda en próximo turno qué se cambió
+      const richText = `✓ ${summary}${failedDetail}.${modelTag}`
+      const finalMsgs = [...newMessages, { role:'assistant' as const, text: richText, ts: Date.now() }]
+      setMessages(finalMsgs)
+      persistChat(finalMsgs)
     } catch (e: any) {
-      setMessages(m => [...m, { role:'assistant', text:`❌ ${e.message}`, ts: Date.now() }])
+      const errMsgs = [...newMessages, { role:'assistant' as const, text:`❌ ${e.message}`, ts: Date.now() }]
+      setMessages(errMsgs)
+      persistChat(errMsgs)
     } finally { setAiLoading(false) }
+  }
+
+  async function clearChat() {
+    if (messages.length === 0) return
+    if (!confirm('¿Borrar el historial del chat? La IA olvidará el contexto de este template.')) return
+    setMessages([])
+    try { await fetch(`/api/maquetador/${activeId}/chat`, { method: 'DELETE' }) } catch {}
   }
 
   // ── Test send
@@ -462,6 +504,7 @@ export default function MaquetadorPage() {
             messages={messages} input={input} setInput={setInput}
             aiLoading={aiLoading} sendChat={sendChat}
             onClose={() => setRightPanel(null)}
+            onClear={clearChat}
           />
         )}
         {rightPanel === 'files' && (
@@ -585,18 +628,27 @@ function IconBtn({ icon: Icon, onClick, disabled, loading, title, color }: any) 
   )
 }
 
-function ChatPanel({ messages, input, setInput, aiLoading, sendChat, onClose }: any) {
+function ChatPanel({ messages, input, setInput, aiLoading, sendChat, onClose, onClear }: any) {
   return (
     <div
       className="hidden md:flex w-[360px] flex-col shrink-0"
       style={{ background:'var(--bg-surface)', borderLeft:'1px solid var(--border)' }}
     >
       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom:'1px solid var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <Sparkles size={14} style={{ color:'#A78BFA' }} />
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color:'var(--text-1)' }}>Editar con IA</h2>
+        <div className="flex items-center gap-2 min-w-0">
+          <Sparkles size={14} style={{ color:'#A78BFA', flexShrink: 0 }} />
+          <h2 className="text-xs font-semibold uppercase tracking-wider truncate" style={{ color:'var(--text-1)' }}>
+            Editar con IA · {messages.length}
+          </h2>
         </div>
-        <button onClick={onClose} className="p-1" style={{ color:'var(--text-3)' }}><X size={13} /></button>
+        <div className="flex items-center gap-1 shrink-0">
+          {messages.length > 0 && (
+            <button onClick={onClear} className="p-1" style={{ color:'var(--text-3)' }} title="Borrar historial">
+              <Trash2 size={11} />
+            </button>
+          )}
+          <button onClick={onClose} className="p-1" style={{ color:'var(--text-3)' }}><X size={13} /></button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
         {messages.length === 0 && (
