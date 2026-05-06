@@ -5,8 +5,7 @@
  * Útil para preview en navegador antes de enviar.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { loadTemplate } from '@/lib/templateStorage'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,10 +15,8 @@ export async function GET(req: NextRequest) {
   const email     = searchParams.get('email')     || 'tu@email.com'
 
   try {
-    const html = readFileSync(
-      join(process.cwd(), 'MAILS', 'email-bienvenida-v2.html'),
-      'utf-8'
-    )
+    const raw = await loadTemplate('welcome')
+    const html = raw
       .replace(/\{\{firstName\}\}/g, firstName)
       .replace(/\{\{email\}\}/g,     email)
 

@@ -8,8 +8,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { loadTemplate } from '@/lib/templateStorage'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,10 +29,8 @@ export async function POST(req: NextRequest) {
 
   let html: string
   try {
-    html = readFileSync(
-      join(process.cwd(), 'MAILS', 'email-bienvenida-v2.html'),
-      'utf-8'
-    )
+    const raw = await loadTemplate('welcome')
+    html = raw
       .replace(/\{\{firstName\}\}/g, firstName || to.split('@')[0])
       .replace(/\{\{email\}\}/g, to)
       .replace(/\{\{unsubscribe_url\}\}/g, `https://artiverse.es/unsubscribe?email=${encodeURIComponent(to)}`)
