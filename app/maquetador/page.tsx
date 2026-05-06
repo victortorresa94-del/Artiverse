@@ -1,749 +1,246 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import Link from 'next/link'
 import {
-  Save, RotateCcw, Send, Sparkles, Loader2, Code2, Eye,
-  Download, Smartphone, Monitor, Mail, Image as ImageIcon, Plus,
-  FolderOpen, Upload, Wand2, Trash2, Copy, X, ChevronDown,
+  Mail, FileText, Plus, Wand2, Sparkles, Loader2, Eye,
+  Calendar, Tag, ChevronRight, Trash2, Copy, X, Send,
 } from 'lucide-react'
 
-interface ChatMsg { role: 'user'|'assistant'; text: string; ts: number }
-
 interface TemplateMeta {
-  id:          string
-  name:        string
-  description?:string
-  createdAt:   string
-  updatedAt:   string
-  builtin?:    boolean
+  id: string; name: string; description?: string; builtin?: boolean
+}
+interface MailMeta {
+  id: string; name: string; description?: string
+  basedOnTemplate?: string; newsletterId?: string
+  createdAt: string; updatedAt: string; size?: number
 }
 
-interface BlobFile {
-  url:        string
-  pathname:   string
-  size:       number
-  uploadedAt: string
-  contentType?: string
-}
+const NEWSLETTERS = [
+  { id: 'bienvenida',    name: 'Bienvenida nuevos usuarios' },
+  { id: 'licitaciones',  name: 'Licitaciones de la semana' },
+  { id: 'talento_mes',   name: 'Talento del mes' },
+  { id: 'insights',      name: 'Insights del sector' },
+  { id: 'convocatorias', name: 'Convocatorias y festivales' },
+]
 
 export default function MaquetadorPage() {
-  // Templates
-  const [templates, setTemplates]       = useState<TemplateMeta[]>([])
-  const [activeId, setActiveId]         = useState<string>('welcome')
-  const [showTplPicker, setShowTplPicker] = useState(false)
+  const [templates, setTemplates] = useState<TemplateMeta[]>([])
+  const [mails, setMails]         = useState<MailMeta[]>([])
+  const [loading, setLoading]     = useState(true)
 
-  // HTML
-  const [html, setHtml]               = useState<string>('')
-  const [originalHtml, setOriginal]   = useState<string>('')
-  const [loading, setLoading]         = useState(true)
-  const [saving, setSaving]           = useState(false)
+  // Modal: crear desde template
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createBase, setCreateBase] = useState<string>('')
+  const [newName, setNewName]       = useState('')
+  const [newDesc, setNewDesc]       = useState('')
+  const [newNewsletter, setNewNl]   = useState('')
 
-  // UI
-  const [view, setView]               = useState<'desktop'|'mobile'>('desktop')
-  const [tab, setTab]                 = useState<'preview'|'code'>('preview')
-  const [feedback, setFeedback]       = useState<{ type:'ok'|'err'; msg: string } | null>(null)
-
-  // AI chat
-  const [messages, setMessages]   = useState<ChatMsg[]>([])
-  const [input, setInput]         = useState('')
-  const [aiLoading, setAiLoading] = useState(false)
-  const [rightPanel, setRightPanel] = useState<'chat'|'files'|null>('chat')
-
-  // Files
-  const [files, setFiles]                 = useState<BlobFile[]>([])
-  const [filesLoading, setFilesLoading]   = useState(false)
-  const [uploading, setUploading]         = useState(false)
-  const fileInputRef                      = useRef<HTMLInputElement>(null)
-  const htmlInputRef                      = useRef<HTMLInputElement>(null)
-
-  // Image generator
-  const [genOpen, setGenOpen]   = useState(false)
-  const [genPrompt, setGenPrompt] = useState('')
-  const [genAspect, setGenAspect] = useState<'16:9'|'1:1'|'4:3'|'9:16'>('16:9')
-  const [generating, setGenerating] = useState(false)
-
-  // New template modal
-  const [newOpen, setNewOpen] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newDesc, setNewDesc] = useState('')
-
-  // Test send
-  const [testEmail, setTestEmail]     = useState('victor@aetherlabs.es')
-  const [sendingTest, setSendingTest] = useState(false)
-
-  // ── Load templates list
-  async function loadTemplates() {
+  async function load() {
+    setLoading(true)
     try {
-      const r = await fetch('/api/maquetador', { cache: 'no-store' })
-      const d = await r.json()
-      if (r.ok) setTemplates(d.templates || [])
-    } catch {}
-  }
-
-  // ── Load template HTML
-  async function loadTpl(id: string) {
-    setLoading(true); setFeedback(null); setActiveId(id)
-    try {
-      const [r, rChat] = await Promise.all([
-        fetch(`/api/maquetador/${id}`, { cache: 'no-store' }),
-        fetch(`/api/maquetador/${id}/chat`, { cache: 'no-store' }),
+      const [rt, rm] = await Promise.all([
+        fetch('/api/maquetador', { cache: 'no-store' }),
+        fetch('/api/drafts',     { cache: 'no-store' }),
       ])
-      const d = await r.json()
-      if (!r.ok) throw new Error(d.error)
-      setHtml(d.html); setOriginal(d.html)
-      // Cargar chat persistido del template
-      try {
-        const cd = await rChat.json()
-        setMessages(Array.isArray(cd.messages) ? cd.messages : [])
-      } catch { setMessages([]) }
-    } catch (e: any) {
-      setFeedback({ type:'err', msg: e.message })
-    } finally {
-      setLoading(false)
-    }
+      const dt = await rt.json()
+      const dm = await rm.json()
+      setTemplates(dt.templates || [])
+      setMails(dm.mails || [])
+    } finally { setLoading(false) }
+  }
+  useEffect(() => { load() }, [])
+
+  function startCreate(templateId: string) {
+    setCreateBase(templateId)
+    const tpl = templates.find(t => t.id === templateId)
+    setNewName(tpl ? `Copia de ${tpl.name}` : 'Nuevo mail')
+    setNewDesc('')
+    setNewNl('')
+    setCreateOpen(true)
   }
 
-  // Helper: persiste chat en Redis (no bloquea UI)
-  async function persistChat(msgs: ChatMsg[]) {
-    try {
-      await fetch(`/api/maquetador/${activeId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: msgs }),
-      })
-    } catch {}
-  }
-
-  // ── Load files
-  async function loadFiles() {
-    setFilesLoading(true)
-    try {
-      const r = await fetch('/api/files', { cache: 'no-store' })
-      const d = await r.json()
-      setFiles(d.files || [])
-    } catch {} finally { setFilesLoading(false) }
-  }
-
-  useEffect(() => { loadTemplates(); loadTpl('welcome'); loadFiles() }, [])
-
-  const dirty = html !== originalHtml
-  const activeTpl = templates.find(t => t.id === activeId)
-
-  // ── Save template
-  async function save() {
-    setSaving(true); setFeedback(null)
-    try {
-      const r = await fetch(`/api/maquetador/${activeId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html }),
-      })
-      const d = await r.json()
-      if (!r.ok) throw new Error(d.error)
-      setOriginal(html)
-      setFeedback({ type:'ok', msg: 'Guardado' })
-    } catch (e: any) { setFeedback({ type:'err', msg: e.message }) }
-    finally { setSaving(false) }
-  }
-
-  // ── Restore default
-  async function restoreDefault() {
-    if (!confirm('¿Restaurar al HTML original? Cambios guardados se pierden.')) return
-    await fetch(`/api/maquetador/${activeId}`, { method: 'DELETE' })
-    await loadTpl(activeId)
-    setFeedback({ type:'ok', msg: 'Restaurado' })
-  }
-
-  // ── New template
-  async function createNew() {
+  async function doCreate() {
     if (!newName.trim()) return
     try {
-      const r = await fetch('/api/maquetador', {
+      const r = await fetch('/api/drafts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name:        newName.trim(),
-          description: newDesc.trim() || undefined,
-          html:        html || '<!DOCTYPE html><html><body><h1>Nuevo template</h1></body></html>',
+          name: newName,
+          description: newDesc || undefined,
+          basedOnTemplate: createBase,
+          newsletterId: newNewsletter || undefined,
         }),
       })
       const d = await r.json()
-      if (!r.ok) throw new Error(d.error)
-      await loadTemplates()
-      await loadTpl(d.template.id)
-      setNewOpen(false); setNewName(''); setNewDesc('')
-      setFeedback({ type:'ok', msg: `Creado: ${d.template.name}` })
-    } catch (e: any) { setFeedback({ type:'err', msg: e.message }) }
+      if (!r.ok) { alert(d.error); return }
+      window.location.href = `/maquetador/editar/${d.mail.id}`
+    } catch (e: any) { alert(e.message) }
   }
 
-  // ── Upload HTML
-  async function handleHtmlUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const text = await file.text()
-    if (!text.includes('<')) { setFeedback({ type:'err', msg: 'No parece HTML válido' }); return }
-    setHtml(text)
-    setFeedback({ type:'ok', msg: `HTML cargado de ${file.name}. Guarda para persistir.` })
-    if (htmlInputRef.current) htmlInputRef.current.value = ''
+  async function deleteMail(id: string, name: string) {
+    if (!confirm(`¿Borrar "${name}"? No se puede deshacer.`)) return
+    await fetch(`/api/drafts/${id}`, { method: 'DELETE' })
+    await load()
   }
 
-  // ── Upload image
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true); setFeedback(null)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const r = await fetch('/api/files', { method: 'POST', body: fd })
-      const d = await r.json()
-      if (!r.ok) throw new Error(d.error)
-      await loadFiles()
-      navigator.clipboard?.writeText(d.url)
-      setFeedback({ type:'ok', msg: `Subido. URL copiada: ${d.url}` })
-      setRightPanel('files')
-    } catch (err: any) { setFeedback({ type:'err', msg: err.message }) }
-    finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = '' }
-  }
-
-  // ── Generate image
-  async function generateImage() {
-    if (!genPrompt.trim()) return
-    setGenerating(true); setFeedback(null)
-    try {
-      const r = await fetch('/api/files/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: genPrompt.trim(), aspect: genAspect }),
-      })
-      const d = await r.json()
-      if (!r.ok) throw new Error(d.error)
-      navigator.clipboard?.writeText(d.url)
-      setFeedback({ type:'ok', msg: `Imagen generada. URL copiada: ${d.url}${d.warning ? ' · ⚠ ' + d.warning : ''}` })
-      await loadFiles()
-      setGenOpen(false); setGenPrompt('')
-      setRightPanel('files')
-    } catch (e: any) { setFeedback({ type:'err', msg: e.message }) }
-    finally { setGenerating(false) }
-  }
-
-  // ── Delete file
-  async function deleteFile(url: string) {
-    if (!confirm('¿Borrar esta imagen?')) return
-    try {
-      await fetch('/api/files/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      })
-      await loadFiles()
-    } catch {}
-  }
-
-  // ── AI chat
-  async function sendChat() {
-    if (!input.trim()) return
-    const userMsg: ChatMsg = { role:'user', text: input.trim(), ts: Date.now() }
-    const newMessages = [...messages, userMsg]
-    setMessages(newMessages)
-    const instruction = input.trim(); setInput(''); setAiLoading(true)
-    try {
-      const r = await fetch(`/api/maquetador/${activeId}/ai`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          html,
-          instruction,
-          history: messages.map(m => ({ role: m.role, text: m.text })),  // historial previo (sin el actual)
-        }),
-      })
-      const text = await r.text()
-      let d: any
-      try { d = JSON.parse(text) } catch {
-        throw new Error(r.status === 504 || text.includes('timed out')
-          ? 'La IA tardó demasiado (>60s). Intenta una instrucción más concreta.'
-          : `Error ${r.status}: ${text.slice(0, 200)}`)
-      }
-      if (!r.ok) throw new Error(d.error)
-      setHtml(d.html)
-
-      // Construir mensaje detallado para que la IA tenga contexto en próxima vuelta
-      const summary = d.summary || 'Cambio aplicado'
-      const okCount = (d.patches || []).filter((p: any) => p.ok).length
-      const failed  = (d.patches || []).filter((p: any) => !p.ok).length
-      const failedDetail = failed > 0
-        ? ` (${failed} no aplicado: ${(d.patches || []).filter((p:any) => !p.ok).map((p:any) => p.reason).join('; ')})`
-        : ''
-      const modelTag = d.model?.includes('sonnet') ? ' [sonnet]' : ''
-      // Texto rico para que la IA entienda en próximo turno qué se cambió
-      const richText = `✓ ${summary}${failedDetail}.${modelTag}`
-      const finalMsgs = [...newMessages, { role:'assistant' as const, text: richText, ts: Date.now() }]
-      setMessages(finalMsgs)
-      persistChat(finalMsgs)
-    } catch (e: any) {
-      const errMsgs = [...newMessages, { role:'assistant' as const, text:`❌ ${e.message}`, ts: Date.now() }]
-      setMessages(errMsgs)
-      persistChat(errMsgs)
-    } finally { setAiLoading(false) }
-  }
-
-  async function clearChat() {
-    if (messages.length === 0) return
-    if (!confirm('¿Borrar el historial del chat? La IA olvidará el contexto de este template.')) return
-    setMessages([])
-    try { await fetch(`/api/maquetador/${activeId}/chat`, { method: 'DELETE' }) } catch {}
-  }
-
-  // ── Test send
-  async function sendTest() {
-    if (!testEmail.trim()) return
-    setSendingTest(true); setFeedback(null)
-    try {
-      if (dirty && !confirm('¿Guardar cambios antes de enviar test?')) {
-        setSendingTest(false); return
-      }
-      if (dirty) await save()
-      const r = await fetch('/api/welcome/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: testEmail.trim(), firstName: 'Test', test: true }),
-      })
-      const d = await r.json()
-      if (!r.ok) throw new Error(d.error)
-      setFeedback({ type:'ok', msg: `Test enviado a ${testEmail}` })
-    } catch (e: any) { setFeedback({ type:'err', msg: e.message }) }
-    finally { setSendingTest(false) }
-  }
-
-  function copyUrl(url: string) {
-    navigator.clipboard?.writeText(url)
-    setFeedback({ type:'ok', msg: `URL copiada: ${url.slice(0, 60)}…` })
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] md:h-screen flex-col" style={{ background: 'var(--bg-base)' }}>
-      {/* Header */}
-      <div
-        className="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap"
-        style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-2 min-w-0 relative">
-          <Mail size={16} style={{ color: '#CCFF00' }} />
-          <button
-            onClick={() => setShowTplPicker(o => !o)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold transition-all"
-            style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)', border: '1px solid var(--border)' }}
-          >
-            <span className="truncate max-w-[180px]">{activeTpl?.name || activeId}</span>
-            <ChevronDown size={11} />
-          </button>
-          {dirty && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0"
-                  style={{ background:'#F59E0B25', color:'#F59E0B' }}>•</span>
-          )}
-
-          {/* Template picker dropdown */}
-          {showTplPicker && (
-            <div
-              className="absolute top-full left-0 mt-1 z-30 rounded-lg shadow-2xl py-1 min-w-[280px]"
-              style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-strong)' }}
-            >
-              {templates.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => { loadTpl(t.id); setShowTplPicker(false) }}
-                  className="w-full text-left px-3 py-2 hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium" style={{ color:'var(--text-1)' }}>{t.name}</span>
-                    {t.builtin && <span className="text-[9px] px-1 rounded" style={{ background:'var(--bg-base)', color:'var(--text-3)' }}>builtin</span>}
-                  </div>
-                  {t.description && <p className="text-[10px] mt-0.5" style={{ color:'var(--text-3)' }}>{t.description}</p>}
-                </button>
-              ))}
-              <div style={{ borderTop:'1px solid var(--border)' }} className="mt-1 pt-1">
-                <button
-                  onClick={() => { setShowTplPicker(false); setNewOpen(true) }}
-                  className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-white/5"
-                  style={{ color:'#A78BFA' }}
-                >
-                  <Plus size={11} /> <span className="text-xs">Nuevo template</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <input
-            type="email" value={testEmail} onChange={e => setTestEmail(e.target.value)}
-            placeholder="email test"
-            className="px-2 py-1 rounded text-xs outline-none w-40 sm:w-48"
-            style={{ background:'var(--bg-base)', color:'var(--text-1)', border:'1px solid var(--border)' }}
-          />
-          <IconBtn icon={Send}      onClick={sendTest}    disabled={sendingTest} loading={sendingTest} title="Enviar test" />
-          <IconBtn icon={Upload}    onClick={() => htmlInputRef.current?.click()} title="Subir HTML" />
-          <IconBtn icon={ImageIcon} onClick={() => fileInputRef.current?.click()} disabled={uploading} loading={uploading} title="Subir imagen" />
-          <IconBtn icon={Wand2}     onClick={() => setGenOpen(true)} title="Generar imagen IA" color="#A78BFA" />
-          <IconBtn icon={Download}  onClick={() => {
-            const blob = new Blob([html], { type:'text/html' })
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${activeId}.html`; a.click()
-          }} title="Descargar HTML" />
-          <IconBtn icon={RotateCcw} onClick={restoreDefault} title="Restaurar" />
-          <button
-            onClick={save} disabled={saving || !dirty}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all disabled:opacity-40"
-            style={{ background:'var(--blue)', color:'#fff' }}
-          >
-            {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />} Guardar
-          </button>
-        </div>
-
-        {/* Hidden inputs */}
-        <input ref={htmlInputRef} type="file" accept=".html,.htm,text/html" onChange={handleHtmlUpload} className="hidden" />
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-      </div>
-
-      {feedback && (
-        <div
-          className="px-4 py-2 text-xs flex items-center justify-between"
-          style={{
-            background: feedback.type === 'ok' ? '#22C55E20' : '#EF444420',
-            color:      feedback.type === 'ok' ? '#22C55E' : '#FCA5A5',
-            borderBottom: '1px solid var(--border)',
-          }}
-        >
-          <span className="truncate">{feedback.msg}</span>
-          <button onClick={() => setFeedback(null)} className="shrink-0 ml-2 opacity-60 hover:opacity-100"><X size={12} /></button>
-        </div>
-      )}
-
-      {/* Toolbar */}
-      <div
-        className="px-4 py-2 flex items-center gap-2 justify-between"
-        style={{ background:'var(--bg-surface)', borderBottom:'1px solid var(--border)' }}
-      >
-        <div className="flex p-0.5 rounded gap-0.5" style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)' }}>
-          <ToggleBtn active={tab === 'preview'} icon={Eye}   label="Preview" onClick={() => setTab('preview')} />
-          <ToggleBtn active={tab === 'code'}    icon={Code2} label="Código"  onClick={() => setTab('code')} />
-        </div>
-        <div className="flex gap-1.5">
-          {tab === 'preview' && (
-            <div className="flex p-0.5 rounded gap-0.5" style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)' }}>
-              <ToggleBtn active={view === 'desktop'} icon={Monitor}    label="Desktop" onClick={() => setView('desktop')} />
-              <ToggleBtn active={view === 'mobile'}  icon={Smartphone} label="Mobile"  onClick={() => setView('mobile')} />
-            </div>
-          )}
-          <div className="hidden md:flex p-0.5 rounded gap-0.5" style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)' }}>
-            <ToggleBtn active={rightPanel === 'chat'}  icon={Sparkles}   label="IA"        onClick={() => setRightPanel(p => p === 'chat'  ? null : 'chat')} />
-            <ToggleBtn active={rightPanel === 'files'} icon={FolderOpen} label="Archivos"  onClick={() => setRightPanel(p => p === 'files' ? null : 'files')} />
-          </div>
-        </div>
-      </div>
-
-      {/* Main */}
-      <div className="flex-1 flex min-h-0">
-        {/* Editor / preview */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-2)' }}>
-              <Loader2 size={20} className="animate-spin mr-2" /> Cargando…
-            </div>
-          ) : tab === 'preview' ? (
-            <div className="flex-1 p-4 overflow-y-auto" style={{ background: '#EBEBEB' }}>
-              <div className="mx-auto" style={{ maxWidth: view === 'mobile' ? '375px' : '100%' }}>
-                <iframe
-                  srcDoc={html} title="preview"
-                  style={{
-                    width: '100%', minHeight: 'calc(100vh - 240px)', border: 'none',
-                    background: '#fff', borderRadius: '12px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-                  }}
-                />
-              </div>
-            </div>
-          ) : (
-            <textarea
-              value={html} onChange={e => setHtml(e.target.value)} spellCheck={false}
-              onDragOver={e => e.preventDefault()}
-              onDrop={async e => {
-                e.preventDefault()
-                const file = e.dataTransfer.files?.[0]
-                if (!file) return
-                if (file.type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm')) {
-                  // HTML arrastrado → cargar al editor
-                  const text = await file.text()
-                  setHtml(text)
-                  setFeedback({ type:'ok', msg: `HTML cargado de ${file.name}. Guarda para persistir.` })
-                } else if (file.type.startsWith('image/')) {
-                  // Imagen arrastrada → subir vía endpoint
-                  setUploading(true); setFeedback(null)
-                  try {
-                    const fd = new FormData(); fd.append('file', file)
-                    const r = await fetch('/api/files', { method: 'POST', body: fd })
-                    const d = await r.json()
-                    if (!r.ok) throw new Error(d.error)
-                    await loadFiles()
-                    navigator.clipboard?.writeText(d.url)
-                    setFeedback({ type:'ok', msg: `Imagen subida. URL copiada: ${d.url}` })
-                    setRightPanel('files')
-                  } catch (err: any) { setFeedback({ type:'err', msg: err.message }) }
-                  finally { setUploading(false) }
-                } else {
-                  setFeedback({ type:'err', msg: `Tipo no soportado: ${file.type || file.name}` })
-                }
-              }}
-              className="flex-1 p-4 font-mono text-xs outline-none resize-none"
-              style={{ background:'var(--bg-surface)', color:'var(--text-1)', border:'none', lineHeight:1.5 }}
-            />
-          )}
-        </div>
-
-        {/* Right panel */}
-        {rightPanel === 'chat' && (
-          <ChatPanel
-            messages={messages} input={input} setInput={setInput}
-            aiLoading={aiLoading} sendChat={sendChat}
-            onClose={() => setRightPanel(null)}
-            onClear={clearChat}
-          />
-        )}
-        {rightPanel === 'files' && (
-          <FilesPanel
-            files={files} loading={filesLoading}
-            onCopy={copyUrl} onDelete={deleteFile}
-            onClose={() => setRightPanel(null)}
-            onReload={loadFiles}
-          />
-        )}
-
-        {/* Mobile floating button */}
-        {!rightPanel && (
-          <button
-            onClick={() => setRightPanel('chat')}
-            className="md:hidden fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold shadow-2xl"
-            style={{ background:'#A78BFA', color:'#fff' }}
-          >
-            <Sparkles size={14} /> IA
-          </button>
-        )}
-      </div>
-
-      {/* Generate image modal */}
-      {genOpen && (
-        <Modal title="Generar imagen con IA" onClose={() => setGenOpen(false)}>
-          <textarea
-            value={genPrompt} onChange={e => setGenPrompt(e.target.value)}
-            placeholder="Describe la imagen en inglés (ej: cinematic photo of dancers on stage with dramatic lighting)"
-            rows={3}
-            className="w-full px-3 py-2 rounded-md text-sm outline-none resize-none mb-3"
-            style={{ background:'var(--bg-base)', color:'var(--text-1)', border:'1px solid var(--border)' }}
-          />
-          <div className="flex gap-2 mb-3 flex-wrap">
-            {(['16:9','4:3','1:1','9:16'] as const).map(a => (
-              <button
-                key={a}
-                onClick={() => setGenAspect(a)}
-                className="px-2.5 py-1 rounded text-[11px] font-medium"
-                style={{
-                  background: genAspect === a ? 'var(--blue)' : 'var(--bg-base)',
-                  color:      genAspect === a ? '#fff' : 'var(--text-2)',
-                  border:     '1px solid var(--border)',
-                }}
-              >
-                {a}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={generateImage} disabled={generating || !genPrompt.trim()}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold disabled:opacity-50"
-            style={{ background:'#A78BFA', color:'#fff' }}
-          >
-            {generating ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
-            {generating ? 'Generando…' : 'Generar (Flux Schnell)'}
-          </button>
-          <p className="text-[10px] mt-3" style={{ color:'var(--text-3)' }}>
-            La imagen se guarda en Vercel Blob (URL permanente) y se copia al clipboard.
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'var(--bg-base)' }}>
+      <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
+            <Mail size={20} style={{ color: '#CCFF00' }} /> Maquetador
+          </h1>
+          <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>
+            Templates base + tus mails editables · {mails.length} mail{mails.length===1?'':'s'} guardado{mails.length===1?'':'s'}
           </p>
-        </Modal>
-      )}
+        </div>
+        <Link
+          href="/maquetador/desde-cero"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+          style={{ background: '#A78BFA', color: '#fff' }}
+        >
+          <Wand2 size={14} /> Crear desde cero (IA)
+        </Link>
+      </div>
 
-      {/* New template modal */}
-      {newOpen && (
-        <Modal title="Nuevo template" onClose={() => setNewOpen(false)}>
+      {/* ── MIS MAILS ── */}
+      <section className="mb-8">
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: 'var(--text-2)' }}>
+          <FileText size={13} /> Mis mails ({mails.length})
+        </h2>
+        {loading ? (
+          <p className="text-xs" style={{ color: 'var(--text-3)' }}>Cargando…</p>
+        ) : mails.length === 0 ? (
+          <div
+            className="p-8 rounded-lg text-center"
+            style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border)', color: 'var(--text-3)' }}
+          >
+            <p className="text-sm">No tienes mails todavía.</p>
+            <p className="text-xs mt-1">Elige un template abajo y crea el primero.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {mails.map(m => {
+              const nl = NEWSLETTERS.find(n => n.id === m.newsletterId)
+              return (
+                <div
+                  key={m.id}
+                  className="rounded-lg p-4 transition-all relative group"
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+                >
+                  <Link href={`/maquetador/editar/${m.id}`} className="block">
+                    <h3 className="text-sm font-semibold mb-1 truncate pr-6" style={{ color: 'var(--text-1)' }}>{m.name}</h3>
+                    {m.description && (
+                      <p className="text-[11px] mb-2 line-clamp-2" style={{ color: 'var(--text-3)' }}>{m.description}</p>
+                    )}
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {m.basedOnTemplate && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider"
+                              style={{ background:'var(--bg-elevated)', color:'var(--text-2)' }}>
+                          {m.basedOnTemplate}
+                        </span>
+                      )}
+                      {nl && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider flex items-center gap-1"
+                              style={{ background:'#22C55E25', color:'#22C55E' }}>
+                          <Tag size={8} /> {nl.name}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+                      Editado {new Date(m.updatedAt).toLocaleDateString('es-ES', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}
+                    </p>
+                  </Link>
+                  <button
+                    onClick={() => deleteMail(m.id, m.name)}
+                    className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: '#EF4444' }}
+                    title="Borrar"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ── TEMPLATES BASE ── */}
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: 'var(--text-2)' }}>
+          <Sparkles size={13} /> Templates base · solo lectura
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {templates.filter(t => t.builtin).map(t => (
+            <div key={t.id}
+                 className="rounded-lg p-4 group transition-all"
+                 style={{ background:'var(--bg-surface)', border:'1px solid var(--border)' }}>
+              <h3 className="text-sm font-semibold mb-1" style={{ color:'var(--text-1)' }}>{t.name}</h3>
+              <p className="text-[11px] mb-3 line-clamp-2" style={{ color:'var(--text-3)' }}>{t.description}</p>
+              <div className="flex gap-1.5">
+                <a
+                  href={`/api/welcome/preview?firstName=Test`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="hidden"
+                />
+                <Link
+                  href={`/maquetador/preview/${t.id}`}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all"
+                  style={{ background:'var(--bg-elevated)', color:'var(--text-2)', border:'1px solid var(--border)' }}
+                >
+                  <Eye size={11} /> Preview
+                </Link>
+                <button
+                  onClick={() => startCreate(t.id)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ml-auto"
+                  style={{ background:'var(--blue)', color:'#fff' }}
+                >
+                  <Plus size={11} /> Usar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Modal crear */}
+      {createOpen && (
+        <Modal title="Crear nuevo mail" onClose={() => setCreateOpen(false)}>
           <input
             value={newName} onChange={e => setNewName(e.target.value)}
-            placeholder="Nombre (ej: Licitaciones semanales)"
+            placeholder="Nombre (ej: Bienvenida v2 — Mayo)"
+            autoFocus
             className="w-full px-3 py-2 rounded-md text-sm outline-none mb-2"
             style={{ background:'var(--bg-base)', color:'var(--text-1)', border:'1px solid var(--border)' }}
           />
           <input
             value={newDesc} onChange={e => setNewDesc(e.target.value)}
             placeholder="Descripción (opcional)"
-            className="w-full px-3 py-2 rounded-md text-sm outline-none mb-3"
+            className="w-full px-3 py-2 rounded-md text-sm outline-none mb-2"
             style={{ background:'var(--bg-base)', color:'var(--text-1)', border:'1px solid var(--border)' }}
           />
+          <select
+            value={newNewsletter} onChange={e => setNewNl(e.target.value)}
+            className="w-full px-3 py-2 rounded-md text-sm outline-none mb-3 cursor-pointer"
+            style={{ background:'var(--bg-base)', color:'var(--text-1)', border:'1px solid var(--border)' }}
+          >
+            <option value="">Sin vincular a newsletter</option>
+            {NEWSLETTERS.map(n => <option key={n.id} value={n.id}>Vincular a: {n.name}</option>)}
+          </select>
           <p className="text-[10px] mb-3" style={{ color:'var(--text-3)' }}>
-            Se creará usando el HTML actual del editor como base.
+            Base: <strong style={{ color:'var(--text-2)' }}>{templates.find(t => t.id === createBase)?.name}</strong>
           </p>
           <button
-            onClick={createNew} disabled={!newName.trim()}
+            onClick={doCreate} disabled={!newName.trim()}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold disabled:opacity-50"
             style={{ background:'var(--blue)', color:'#fff' }}
           >
-            <Plus size={14} /> Crear template
+            <Plus size={14} /> Crear y editar
           </button>
         </Modal>
       )}
-    </div>
-  )
-}
-
-// ─── Subcomponents ────────────────────────────────────────────────────────────
-
-function ToggleBtn({ active, icon: Icon, label, onClick }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-all"
-      style={{
-        background: active ? 'var(--bg-active)' : 'transparent',
-        color:      active ? 'var(--text-1)' : 'var(--text-2)',
-      }}
-    >
-      <Icon size={11} /> {label}
-    </button>
-  )
-}
-
-function IconBtn({ icon: Icon, onClick, disabled, loading, title, color }: any) {
-  return (
-    <button
-      onClick={onClick} disabled={disabled} title={title}
-      className="p-1.5 rounded-md transition-all disabled:opacity-50"
-      style={{ background:'var(--bg-elevated)', color: color || 'var(--text-2)', border:'1px solid var(--border)' }}
-    >
-      {loading ? <Loader2 size={12} className="animate-spin" /> : <Icon size={12} />}
-    </button>
-  )
-}
-
-function ChatPanel({ messages, input, setInput, aiLoading, sendChat, onClose, onClear }: any) {
-  return (
-    <div
-      className="hidden md:flex w-[360px] flex-col shrink-0"
-      style={{ background:'var(--bg-surface)', borderLeft:'1px solid var(--border)' }}
-    >
-      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom:'1px solid var(--border)' }}>
-        <div className="flex items-center gap-2 min-w-0">
-          <Sparkles size={14} style={{ color:'#A78BFA', flexShrink: 0 }} />
-          <h2 className="text-xs font-semibold uppercase tracking-wider truncate" style={{ color:'var(--text-1)' }}>
-            Editar con IA · {messages.length}
-          </h2>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {messages.length > 0 && (
-            <button onClick={onClear} className="p-1" style={{ color:'var(--text-3)' }} title="Borrar historial">
-              <Trash2 size={11} />
-            </button>
-          )}
-          <button onClick={onClose} className="p-1" style={{ color:'var(--text-3)' }}><X size={13} /></button>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
-        {messages.length === 0 && (
-          <div className="text-xs space-y-2" style={{ color:'var(--text-3)' }}>
-            <p>Ejemplos:</p>
-            <ul className="space-y-1 pl-3">
-              <li>• "Pon el título en negrita"</li>
-              <li>• "Cambia el color del botón a azul"</li>
-              <li>• "Quita el bloque del mockup"</li>
-              <li>• "Reemplaza la imagen del hero por https://..."</li>
-            </ul>
-          </div>
-        )}
-        {messages.map((m: ChatMsg, i: number) => (
-          <div key={i} className="px-3 py-2 rounded-lg text-xs"
-               style={{
-                 background: m.role === 'user' ? 'var(--bg-active)' : 'var(--bg-base)',
-                 color:'var(--text-1)', border:'1px solid var(--border)',
-               }}>
-            <p className="text-[9px] uppercase tracking-wider mb-1 font-semibold" style={{ color:'var(--text-3)' }}>
-              {m.role === 'user' ? 'Tú' : 'Claude'}
-            </p>
-            <p style={{ whiteSpace:'pre-wrap' }}>{m.text}</p>
-          </div>
-        ))}
-        {aiLoading && (
-          <div className="flex items-center gap-2 text-xs px-3 py-2" style={{ color:'var(--text-2)' }}>
-            <Loader2 size={12} className="animate-spin" /> Modificando HTML…
-          </div>
-        )}
-      </div>
-      <div className="p-3 space-y-2" style={{ borderTop:'1px solid var(--border)' }}>
-        <textarea
-          value={input} onChange={e => setInput(e.target.value)} placeholder="¿Qué cambias?" rows={3}
-          onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendChat() } }}
-          className="w-full px-2.5 py-2 rounded text-xs outline-none resize-none"
-          style={{ background:'var(--bg-base)', color:'var(--text-1)', border:'1px solid var(--border)' }}
-        />
-        <button
-          onClick={sendChat} disabled={aiLoading || !input.trim()}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-semibold disabled:opacity-40"
-          style={{ background:'#A78BFA', color:'#fff' }}
-        >
-          {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Aplicar
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function FilesPanel({ files, loading, onCopy, onDelete, onClose, onReload }: any) {
-  return (
-    <div
-      className="hidden md:flex w-[360px] flex-col shrink-0"
-      style={{ background:'var(--bg-surface)', borderLeft:'1px solid var(--border)' }}
-    >
-      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom:'1px solid var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <FolderOpen size={14} style={{ color:'#60A5FA' }} />
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color:'var(--text-1)' }}>Archivos · {files.length}</h2>
-        </div>
-        <div className="flex gap-1">
-          <button onClick={onReload} className="p-1" style={{ color:'var(--text-3)' }} title="Recargar">↻</button>
-          <button onClick={onClose} className="p-1" style={{ color:'var(--text-3)' }}><X size={13} /></button>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {loading && <p className="text-xs" style={{ color:'var(--text-3)' }}>Cargando…</p>}
-        {!loading && files.length === 0 && (
-          <p className="text-xs text-center py-8" style={{ color:'var(--text-3)' }}>
-            Sin archivos. Usa los botones del header para subir o generar.
-          </p>
-        )}
-        {files.map((f: BlobFile) => (
-          <div key={f.url} className="rounded-md p-2" style={{ background:'var(--bg-base)', border:'1px solid var(--border)' }}>
-            {f.contentType?.startsWith('image/') && (
-              <img src={f.url} alt={f.pathname} className="w-full h-24 object-cover rounded mb-2" />
-            )}
-            <p className="text-[10px] truncate" style={{ color:'var(--text-1)' }}>{f.pathname}</p>
-            <p className="text-[9px] mb-2" style={{ color:'var(--text-3)' }}>
-              {(f.size/1024).toFixed(0)}KB · {new Date(f.uploadedAt).toLocaleDateString('es-ES')}
-            </p>
-            <div className="flex gap-1">
-              <button onClick={() => onCopy(f.url)} className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1 rounded"
-                      style={{ background:'var(--bg-elevated)', color:'var(--text-1)' }}>
-                <Copy size={10} /> URL
-              </button>
-              <button onClick={() => onDelete(f.url)} className="px-2 text-[10px] py-1 rounded"
-                      style={{ background:'#EF444420', color:'#EF4444' }}>
-                <Trash2 size={10} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

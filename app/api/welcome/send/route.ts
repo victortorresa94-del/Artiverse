@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { loadTemplate } from '@/lib/templateStorage'
+import { loadMailForNewsletter } from '@/lib/mailStorage'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,7 +30,9 @@ export async function POST(req: NextRequest) {
 
   let html: string
   try {
-    const raw = await loadTemplate('welcome')
+    // Prioridad: mail vinculado a newsletter "bienvenida" → fallback al template welcome
+    const linkedHtml = await loadMailForNewsletter('bienvenida')
+    const raw = linkedHtml || await loadTemplate('welcome')
     html = raw
       .replace(/\{\{firstName\}\}/g, firstName || to.split('@')[0])
       .replace(/\{\{email\}\}/g, to)
