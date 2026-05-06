@@ -1,10 +1,11 @@
 /**
  * GET /api/newsletters/[id]/sent
+ * POST /api/newsletters/[id]/sent  → backfill manual { records: [{email, name?, sentAt?, messageId?}] }
  *
  * Devuelve la lista de envíos de una newsletter con stats de aperturas.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getNewsletterSent } from '@/lib/newsletterSent'
+import { getNewsletterSent, logNewsletterSent } from '@/lib/newsletterSent'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,4 +18,19 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     records: records.sort((a, b) => b.sentAt.localeCompare(a.sentAt)),
     stats: { total, opened, openRate, notOpened: total - opened },
   })
+}
+
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const { records } = await req.json()
+  if (!Array.isArray(records)) return NextResponse.json({ error: 'records array requerido' }, { status: 400 })
+  for (const r of records) {
+    if (!r.email) continue
+    await logNewsletterSent(params.id, {
+      email:     r.email,
+      name:      r.name,
+      sentAt:    r.sentAt || new Date().toISOString(),
+      messageId: r.messageId,
+    })
+  }
+  return NextResponse.json({ ok: true, added: records.length })
 }
