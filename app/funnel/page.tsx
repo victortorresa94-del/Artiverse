@@ -1,16 +1,18 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import Link from 'next/link'
 import {
   RefreshCw, Mail, Eye, MousePointer, MessageCircle, ThumbsUp, ThumbsDown,
-  CheckCheck, MailX, Building2, MapPin, X, Send, Loader2, ArrowRight,
+  CheckCheck, MailX, Loader2, Send, ArrowRight, UserPlus, Crown, Sparkles,
+  Building2, ImageIcon, FileText, Activity, Clock, AlertCircle,
 } from 'lucide-react'
+import ContactSheet from '@/components/ContactSheet'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Phase =
-  | 'contactado' | 'abierto' | 'respondio'
-  | 'interesado' | 'registrado' | 'no_interesado' | 'mail_erroneo'
+type ConvStatus = 'pendiente' | 'esperando' | 'cerrada' | 'no_interesado' | 'mail_obsoleto'
+
+type OutPhase = 'contactado' | 'abierto' | 'respondio' | 'interesado' | 'registrado' | 'no_interesado' | 'mail_erroneo'
+type InPhase  = 'registrado' | 'perfil_basico' | 'perfil_completo' | 'pro' | 'agencia'
 
 interface FunnelContact {
   email:    string
@@ -22,69 +24,77 @@ interface FunnelContact {
   clicks:   number
   replies:  number
   updated:  string
-  phase:    Phase
+  phase:    string
   source:   'auto' | 'manual' | 'platform'
+  conv_status?: ConvStatus
+}
+
+interface FunnelGroup {
+  phases: Record<string, FunnelContact[]>
+  counts: Record<string, number>
+  total:  number
 }
 
 interface FunnelData {
-  phases:   Record<Phase, FunnelContact[]>
-  counts:   Record<Phase, number>
-  total:    number
-  list_ids: Record<string, number>
+  outbound: FunnelGroup
+  inbound:  FunnelGroup
 }
 
 // ─── Phase metadata ───────────────────────────────────────────────────────────
 
-const PHASE_ORDER: Phase[] = [
-  'contactado', 'abierto', 'respondio',
-  'interesado', 'registrado', 'no_interesado', 'mail_erroneo',
-]
+const OUT_ORDER: OutPhase[] = ['contactado', 'abierto', 'respondio', 'interesado', 'registrado', 'no_interesado', 'mail_erroneo']
+const IN_ORDER:  InPhase[]  = ['registrado', 'perfil_basico', 'perfil_completo', 'pro', 'agencia']
 
-const PHASE_META: Record<Phase, {
-  label:   string
-  icon:    React.ElementType
-  color:   string  // accent
-  desc:    string
-  manual?: boolean
-}> = {
-  contactado:    { label: 'Contactado',     icon: Mail,          color: '#60A5FA', desc: 'Email enviado, sin actividad' },
-  abierto:       { label: 'Abierto',        icon: Eye,           color: '#A78BFA', desc: 'Abrió el email' },
-  respondio:     { label: 'Respondió',      icon: MessageCircle, color: '#FBBF24', desc: 'Contestó al email' },
-  interesado:    { label: 'Interesado',     icon: ThumbsUp,      color: '#22C55E', desc: 'Marcado manualmente', manual: true },
-  registrado:    { label: 'Registrado',     icon: CheckCheck,    color: '#10B981', desc: 'Usuario en Artiverse' },
-  no_interesado: { label: 'No interesado',  icon: ThumbsDown,    color: '#94A3B8', desc: 'Marcado manualmente', manual: true },
-  mail_erroneo:  { label: 'Mail erróneo',   icon: MailX,         color: '#EF4444', desc: 'Bounce / inválido' },
+const PHASE_META: Record<string, { label: string; icon: React.ElementType; color: string; manual?: boolean }> = {
+  // Outbound
+  contactado:      { label: 'Contactado',     icon: Mail,          color: '#60A5FA' },
+  abierto:         { label: 'Abierto',        icon: Eye,           color: '#A78BFA' },
+  respondio:       { label: 'Respondió',      icon: MessageCircle, color: '#FBBF24' },
+  interesado:      { label: 'Interesado',     icon: ThumbsUp,      color: '#22C55E', manual: true },
+  no_interesado:   { label: 'No interesado',  icon: ThumbsDown,    color: '#94A3B8', manual: true },
+  mail_erroneo:    { label: 'Mail erróneo',   icon: MailX,         color: '#EF4444' },
+  // Inbound
+  registrado:      { label: 'Registrado',     icon: UserPlus,      color: '#10B981' },
+  perfil_basico:   { label: 'Perfil básico',  icon: FileText,      color: '#60A5FA' },
+  perfil_completo: { label: 'Perfil completo',icon: ImageIcon,     color: '#A78BFA' },
+  pro:             { label: 'Pro',            icon: Crown,         color: '#FFD700' },
+  agencia:         { label: 'Agencia',        icon: Sparkles,      color: '#F472B6' },
+}
+
+const CONV_META: Record<ConvStatus, { label: string; color: string; icon: React.ElementType }> = {
+  pendiente:     { label: 'Pendiente',     color: '#F59E0B', icon: AlertCircle },
+  esperando:     { label: 'Esperando',     color: '#60A5FA', icon: Clock },
+  cerrada:       { label: 'Cerrada',       color: '#22C55E', icon: CheckCheck },
+  no_interesado: { label: 'No interesado', color: '#94A3B8', icon: ThumbsDown },
+  mail_obsoleto: { label: 'Obsoleto',      color: '#EF4444', icon: MailX },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtRel(iso: string): string {
   if (!iso) return ''
-  const d = new Date(iso)
-  const diff = Date.now() - d.getTime()
+  const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1)    return 'ahora'
-  if (m < 60)   return `${m}m`
+  if (m < 1) return 'ahora'
+  if (m < 60) return `${m}m`
   const h = Math.floor(m / 60)
-  if (h < 24)   return `${h}h`
+  if (h < 24) return `${h}h`
   const days = Math.floor(h / 24)
   if (days < 30) return `${days}d`
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+  return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
 }
 
 // ─── Contact card ─────────────────────────────────────────────────────────────
 
 function ContactCard({ c, onClick }: { c: FunnelContact; onClick: () => void }) {
   const initial = (c.name || c.email).charAt(0).toUpperCase()
+  const conv = c.conv_status ? CONV_META[c.conv_status] : null
 
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-2.5 rounded-lg transition-all group"
-      style={{
-        background: 'var(--bg-base)',
-        border:     '1px solid var(--border)',
-      }}
+      className="w-full text-left p-2.5 rounded-lg transition-all"
+      style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.background  = 'var(--bg-hover)'
         ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)'
@@ -113,10 +123,21 @@ function ContactCard({ c, onClick }: { c: FunnelContact; onClick: () => void }) 
         </div>
       </div>
 
-      {(c.opens > 0 || c.clicks > 0 || c.replies > 0) && (
-        <div className="flex items-center gap-2 mt-2 text-[10px]" style={{ color: 'var(--text-3)' }}>
-          {c.opens   > 0 && <span className="flex items-center gap-1"><Eye          size={9} />{c.opens}</span>}
-          {c.clicks  > 0 && <span className="flex items-center gap-1"><MousePointer size={9} />{c.clicks}</span>}
+      {/* Conv status badge */}
+      {conv && (
+        <div className="mt-2">
+          <span
+            className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-semibold"
+            style={{ background: conv.color + '25', color: conv.color }}
+          >
+            <conv.icon size={8} /> {conv.label}
+          </span>
+        </div>
+      )}
+
+      {(c.opens > 0 || c.replies > 0) && (
+        <div className="flex items-center gap-2 mt-1.5 text-[10px]" style={{ color: 'var(--text-3)' }}>
+          {c.opens   > 0 && <span className="flex items-center gap-1"><Eye size={9} />{c.opens}</span>}
           {c.replies > 0 && <span className="flex items-center gap-1"><MessageCircle size={9} />{c.replies}</span>}
           <span className="ml-auto">{fmtRel(c.updated)}</span>
         </div>
@@ -130,14 +151,14 @@ function ContactCard({ c, onClick }: { c: FunnelContact; onClick: () => void }) 
 function PhaseColumn({
   phase, contacts, onSelect,
 }: {
-  phase: Phase; contacts: FunnelContact[]; onSelect: (c: FunnelContact) => void
+  phase: string; contacts: FunnelContact[]; onSelect: (email: string, name: string, company: string) => void
 }) {
   const meta = PHASE_META[phase]
+  if (!meta) return null
   const Icon = meta.icon
 
   return (
     <div className="shrink-0 w-[260px] flex flex-col">
-      {/* Header */}
       <div
         className="rounded-t-lg px-3 py-2.5 flex items-center justify-between"
         style={{
@@ -157,7 +178,7 @@ function PhaseColumn({
               className="text-[8px] px-1 py-0.5 rounded uppercase tracking-wider"
               style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}
             >
-              Manual
+              M
             </span>
           )}
         </div>
@@ -169,7 +190,6 @@ function PhaseColumn({
         </span>
       </div>
 
-      {/* Body */}
       <div
         className="flex-1 rounded-b-lg p-2 space-y-1.5 overflow-y-auto"
         style={{
@@ -178,19 +198,16 @@ function PhaseColumn({
           borderRight:   '1px solid var(--border)',
           borderBottom:  '1px solid var(--border)',
           minHeight:     '300px',
-          maxHeight:     'calc(100vh - 260px)',
+          maxHeight:     'calc(100vh - 280px)',
         }}
       >
         {contacts.length === 0 ? (
-          <div
-            className="h-full flex flex-col items-center justify-center text-center py-6"
-            style={{ color: 'var(--text-3)' }}
-          >
-            <p className="text-[10px] italic">Sin contactos</p>
+          <div className="h-full flex items-center justify-center" style={{ color: 'var(--text-3)' }}>
+            <p className="text-[10px] italic">Vacío</p>
           </div>
         ) : (
           contacts.map(c => (
-            <ContactCard key={c.email} c={c} onClick={() => onSelect(c)} />
+            <ContactCard key={c.email} c={c} onClick={() => onSelect(c.email, c.name, c.company)} />
           ))
         )}
       </div>
@@ -198,313 +215,90 @@ function PhaseColumn({
   )
 }
 
-// ─── Detail slide-over ────────────────────────────────────────────────────────
-
-function ContactDetailPanel({
-  contact, onClose, onMove, moving,
-}: {
-  contact: FunnelContact
-  onClose: () => void
-  onMove:  (phase: 'interesado' | 'no_interesado' | '__auto__') => void
-  moving:  boolean
-}) {
-  const meta = PHASE_META[contact.phase]
-  const Icon = meta.icon
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
-        onClick={onClose}
-      />
-      {/* Panel */}
-      <aside
-        className="fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[460px] flex flex-col"
-        style={{
-          background: 'var(--bg-surface)',
-          borderLeft: '1px solid var(--border-strong)',
-        }}
-      >
-        {/* Header */}
-        <div
-          className="px-5 py-4 flex items-center justify-between"
-          style={{ borderBottom: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-base font-bold shrink-0"
-              style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)' }}
-            >
-              {(contact.name || contact.email).charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold truncate" style={{ color: 'var(--text-1)' }}>
-                {contact.name || contact.email.split('@')[0]}
-              </h2>
-              <p className="text-xs truncate" style={{ color: 'var(--text-2)' }}>{contact.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-md transition-colors"
-            style={{ color: 'var(--text-2)' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* Current phase */}
-          <div
-            className="p-3 rounded-lg flex items-center gap-3"
-            style={{
-              background: meta.color + '15',
-              border:     `1px solid ${meta.color}30`,
-            }}
-          >
-            <Icon size={18} style={{ color: meta.color }} />
-            <div className="flex-1">
-              <p className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-2)' }}>
-                Fase actual
-              </p>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
-                {meta.label}
-              </p>
-            </div>
-            <span
-              className="text-[9px] px-2 py-1 rounded uppercase tracking-wider"
-              style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
-            >
-              {contact.source === 'manual'   ? 'Manual'
-                : contact.source === 'platform' ? 'Plataforma'
-                : 'Auto'}
-            </span>
-          </div>
-
-          {/* Info */}
-          <div className="space-y-2.5">
-            {contact.company && (
-              <div className="flex items-center gap-2.5 text-sm" style={{ color: 'var(--text-1)' }}>
-                <Building2 size={13} style={{ color: 'var(--text-3)' }} />
-                <span>{contact.company}</span>
-              </div>
-            )}
-            {contact.job && (
-              <div className="text-sm pl-6" style={{ color: 'var(--text-2)' }}>{contact.job}</div>
-            )}
-            {contact.city && (
-              <div className="flex items-center gap-2.5 text-sm" style={{ color: 'var(--text-1)' }}>
-                <MapPin size={13} style={{ color: 'var(--text-3)' }} />
-                <span>{contact.city}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Stats */}
-          <div
-            className="grid grid-cols-3 gap-2 p-3 rounded-lg"
-            style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
-          >
-            {[
-              { label: 'Aperturas',  value: contact.opens,   icon: Eye },
-              { label: 'Clicks',     value: contact.clicks,  icon: MousePointer },
-              { label: 'Respuestas', value: contact.replies, icon: MessageCircle },
-            ].map(s => {
-              const I = s.icon
-              return (
-                <div key={s.label} className="text-center">
-                  <I size={12} style={{ color: 'var(--text-3)', margin: '0 auto' }} />
-                  <p className="text-lg font-bold mt-1" style={{ color: 'var(--text-1)' }}>{s.value}</p>
-                  <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>
-                    {s.label}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Last activity */}
-          {contact.updated && (
-            <p className="text-xs" style={{ color: 'var(--text-3)' }}>
-              Última actividad: {new Date(contact.updated).toLocaleString('es-ES')}
-            </p>
-          )}
-
-          {/* Quick action: respond */}
-          {contact.phase === 'respondio' && (
-            <Link
-              href="/conversaciones"
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
-              style={{
-                background: 'var(--blue)',
-                color:      '#fff',
-              }}
-            >
-              <Send size={14} />
-              Responder en Conversaciones
-              <ArrowRight size={13} />
-            </Link>
-          )}
-        </div>
-
-        {/* Footer — move actions */}
-        <div
-          className="p-4 space-y-2"
-          style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
-        >
-          <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: 'var(--text-3)' }}>
-            Mover a fase manual
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              disabled={moving || contact.phase === 'interesado'}
-              onClick={() => onMove('interesado')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: contact.phase === 'interesado' ? '#22C55E30' : 'var(--bg-base)',
-                color:      contact.phase === 'interesado' ? '#22C55E' : 'var(--text-1)',
-                border:     '1px solid var(--border)',
-              }}
-            >
-              <ThumbsUp size={12} /> Interesado
-            </button>
-            <button
-              disabled={moving || contact.phase === 'no_interesado'}
-              onClick={() => onMove('no_interesado')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: contact.phase === 'no_interesado' ? '#94A3B830' : 'var(--bg-base)',
-                color:      contact.phase === 'no_interesado' ? '#94A3B8' : 'var(--text-1)',
-                border:     '1px solid var(--border)',
-              }}
-            >
-              <ThumbsDown size={12} /> No
-            </button>
-            <button
-              disabled={moving || contact.source !== 'manual'}
-              onClick={() => onMove('__auto__')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: 'var(--bg-base)',
-                color:      'var(--text-2)',
-                border:     '1px solid var(--border)',
-              }}
-            >
-              {moving ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Auto
-            </button>
-          </div>
-        </div>
-      </aside>
-    </>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+type ViewMode = 'outbound' | 'inbound'
+
 export default function FunnelPage() {
-  const [data, setData]         = useState<FunnelData | null>(null)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState<string | null>(null)
-  const [selected, setSelected] = useState<FunnelContact | null>(null)
-  const [moving, setMoving]     = useState(false)
+  const [data, setData]       = useState<FunnelData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState<string | null>(null)
+  const [view, setView]       = useState<ViewMode>('outbound')
+  const [selectedContact, setSelectedContact] = useState<{ email: string; name: string; company: string } | null>(null)
 
   async function load() {
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const res = await fetch('/api/funnel', { cache: 'no-store' })
       if (!res.ok) throw new Error(`Error ${res.status}`)
-      const d = await res.json()
-      setData(d)
+      setData(await res.json())
     } catch (e: any) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
   }
-
   useEffect(() => { load() }, [])
 
-  async function handleMove(phase: 'interesado' | 'no_interesado' | '__auto__') {
-    if (!selected) return
-    setMoving(true)
-    try {
-      const res = await fetch('/api/funnel/move', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: selected.email, phase }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || `Error ${res.status}`)
-      }
-      setSelected(null)
-      await load()
-    } catch (e: any) {
-      alert(`Error al mover: ${e.message}`)
-    } finally {
-      setMoving(false)
-    }
-  }
+  const current = data ? (view === 'outbound' ? data.outbound : data.inbound) : null
+  const order   = view === 'outbound' ? OUT_ORDER : IN_ORDER
 
   const totals = useMemo(() => {
-    if (!data) return { total: 0, pct: {} as Record<Phase, number> }
-    const total = data.total || 1
+    if (!current) return { total: 0, pct: {} as Record<string, number> }
+    const total = current.total || 1
     const pct: Record<string, number> = {}
-    PHASE_ORDER.forEach(p => {
-      pct[p] = Math.round((data.counts[p] || 0) / total * 1000) / 10
+    order.forEach(p => {
+      pct[p] = Math.round((current.counts[p] || 0) / total * 1000) / 10
     })
-    return { total: data.total, pct }
-  }, [data])
+    return { total: current.total, pct }
+  }, [current, order])
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Header */}
-      <div className="mb-4 sm:mb-5 flex items-start justify-between gap-3">
+      <div className="mb-4 flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Funnel</h1>
           <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>
             {data
-              ? `${data.total} contactos clasificados en ${PHASE_ORDER.length} fases`
-              : 'Cargando contactos…'}
+              ? `${current?.total ?? 0} contactos en ${order.length} fases · ${view === 'outbound' ? 'outreach' : 'inbound'}`
+              : 'Cargando…'}
           </p>
         </div>
 
-        <button
-          onClick={load}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
-          style={{
-            background: 'var(--bg-surface)',
-            color:      'var(--text-1)',
-            border:     '1px solid var(--border)',
-          }}
-        >
-          {loading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-          {loading ? 'Cargando…' : 'Refrescar'}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Toggle Outbound/Inbound */}
+          <div
+            className="flex p-1 rounded-lg gap-1"
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+          >
+            <ToggleBtn active={view === 'outbound'} label="Outbound" sub={data ? `${data.outbound.total}` : ''} onClick={() => setView('outbound')} />
+            <ToggleBtn active={view === 'inbound'}  label="Inbound"  sub={data ? `${data.inbound.total}`  : ''} onClick={() => setView('inbound')} />
+          </div>
+
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
+            style={{ background: 'var(--bg-surface)', color: 'var(--text-1)', border: '1px solid var(--border)' }}
+          >
+            {loading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+          </button>
+        </div>
       </div>
 
       {/* Funnel summary bar */}
-      {data && (
-        <div className="mb-5 flex flex-wrap gap-1.5">
-          {PHASE_ORDER.map(p => {
+      {current && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {order.map(p => {
             const meta  = PHASE_META[p]
-            const count = data.counts[p] || 0
+            const count = current.counts[p] || 0
             const Icon  = meta.icon
             return (
               <div
                 key={p}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs"
-                style={{
-                  background: 'var(--bg-surface)',
-                  border:     '1px solid var(--border)',
-                }}
+                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
               >
                 <Icon size={11} style={{ color: meta.color }} />
                 <span className="font-medium" style={{ color: 'var(--text-1)' }}>{meta.label}</span>
@@ -516,7 +310,6 @@ export default function FunnelPage() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div
           className="p-4 rounded-lg mb-4 text-sm"
@@ -526,37 +319,61 @@ export default function FunnelPage() {
         </div>
       )}
 
-      {/* Loading */}
       {loading && !data && (
         <div className="flex items-center justify-center py-20" style={{ color: 'var(--text-2)' }}>
           <Loader2 size={20} className="animate-spin mr-2" />
-          <span className="text-sm">Cargando funnel desde Instantly + HubSpot…</span>
+          <span className="text-sm">Cargando funnel…</span>
         </div>
       )}
 
       {/* Kanban */}
-      {data && (
+      {current && (
         <div className="flex gap-3 overflow-x-auto pb-4">
-          {PHASE_ORDER.map(p => (
+          {order.map(p => (
             <PhaseColumn
               key={p}
               phase={p}
-              contacts={data.phases[p] || []}
-              onSelect={setSelected}
+              contacts={current.phases[p] || []}
+              onSelect={(email, name, company) => setSelectedContact({ email, name, company })}
             />
           ))}
         </div>
       )}
 
-      {/* Detail panel */}
-      {selected && (
-        <ContactDetailPanel
-          contact={selected}
-          onClose={() => setSelected(null)}
-          onMove={handleMove}
-          moving={moving}
-        />
-      )}
+      {/* Ficha de contacto */}
+      <ContactSheet
+        email={selectedContact?.email || null}
+        initialName={selectedContact?.name}
+        initialCompany={selectedContact?.company}
+        onClose={() => { setSelectedContact(null); load() }}
+      />
     </div>
+  )
+}
+
+// ─── Toggle button ────────────────────────────────────────────────────────────
+
+function ToggleBtn({
+  active, label, sub, onClick,
+}: { active: boolean; label: string; sub: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+      style={{
+        background: active ? 'var(--bg-active)' : 'transparent',
+        color:      active ? 'var(--text-1)'    : 'var(--text-2)',
+      }}
+    >
+      {label}
+      {sub && (
+        <span
+          className="text-[10px] px-1 py-0.5 rounded font-bold"
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
+        >
+          {sub}
+        </span>
+      )}
+    </button>
   )
 }
