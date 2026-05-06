@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { upsertContact, addContactsToList } from '@/lib/hubspot'
 import { sendWelcomeEmail } from '@/lib/email'
+import { logNewsletterSent } from '@/lib/newsletterSent'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,7 @@ const ARTIVERSE_API    = 'https://api.artiverse.es'
 const ARTIVERSE_KEY    = process.env.ARTIVERSE_API_KEY || ''
 const HS_WELCOME_LIST  = process.env.HS_WELCOME_LIST_ID || ''
 // Ventana temporal: ligeramente superior al intervalo del cron (1h) para no perder usuarios
-const WINDOW_MIN       = parseInt(process.env.WELCOME_WINDOW_MIN || '70')
+const DEFAULT_WINDOW_MIN = parseInt(process.env.WELCOME_WINDOW_MIN || '70')
 
 // ─── Artiverse helpers ────────────────────────────────────────────────────────
 
@@ -84,6 +85,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'ARTIVERSE_API_KEY no configurado' }, { status: 500 })
   }
 
+  // Permite override de ventana por query: ?window=1440 (24h)
+  const windowOverride = parseInt(searchParams.get('window') || '')
+  const WINDOW_MIN = (windowOverride > 0 && windowOverride <= 10080) ? windowOverride : DEFAULT_WINDOW_MIN
+
   // ── Proceso ───────────────────────────────────────────────────────────────
   const results = {
     window:   `${WINDOW_MIN}min`,
@@ -137,8 +142,15 @@ export async function GET(req: NextRequest) {
 
       // 2. Envío de email de bienvenida
       try {
-        await sendWelcomeEmail({ email, name: raw.name, planType })
+        const sent = await sendWelcomeEmail({ email, name: raw.name, planType })
         results.emailed++
+        // Log en newsletter:bienvenida:sent (con tracking pixel para opens)
+        try {
+          await logNewsletterSent('bienvenida', {
+            email, name: raw.name, sentAt: new Date().toISOString(),
+            messageId: sent.messageId,
+          })
+        } catch {}
       } catch (err: any) {
         results.errors.push(`[Email] ${email}: ${err.message}`)
       }

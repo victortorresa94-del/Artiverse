@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { loadTemplate } from '@/lib/templateStorage'
 import { loadMailForNewsletter } from '@/lib/mailStorage'
+import { logNewsletterSent } from '@/lib/newsletterSent'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,10 +34,18 @@ export async function POST(req: NextRequest) {
     // Prioridad: mail vinculado a newsletter "bienvenida" → fallback al template welcome
     const linkedHtml = await loadMailForNewsletter('bienvenida')
     const raw = linkedHtml || await loadTemplate('welcome')
+
+    // Inyectar tracking pixel (solo si NO es test)
+    const trackingPixel = test
+      ? ''
+      : `<img src="https://artiverse-sigma.vercel.app/api/track/open?nl=bienvenida&email=${encodeURIComponent(to)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`
+
     html = raw
       .replace(/\{\{firstName\}\}/g, firstName || to.split('@')[0])
       .replace(/\{\{email\}\}/g, to)
       .replace(/\{\{unsubscribe_url\}\}/g, `https://artiverse.es/unsubscribe?email=${encodeURIComponent(to)}`)
+      // Antes de </body> meter pixel
+      .replace(/<\/body>/i, `${trackingPixel}</body>`)
   } catch (e: any) {
     return NextResponse.json({ error: `No pude leer el HTML: ${e.message}` }, { status: 500 })
   }
@@ -80,6 +89,18 @@ artiverse.es`
       text,
       html,
     })
+
+    // Loguear envío en newsletter:bienvenida:sent (solo si NO es test)
+    if (!test) {
+      try {
+        await logNewsletterSent('bienvenida', {
+          email:     to,
+          name:      firstName,
+          sentAt:    new Date().toISOString(),
+          messageId: info.messageId,
+        })
+      } catch {}
+    }
 
     return NextResponse.json({
       ok:        true,
