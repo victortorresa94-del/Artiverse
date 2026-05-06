@@ -145,29 +145,37 @@ export default function CampanasPage() {
             <div key={c.id}
                  className="rounded-lg overflow-hidden"
                  style={{ background:'var(--bg-surface)', border:'1px solid var(--border)' }}>
-              <button onClick={() => toggle(c.id)}
-                      className="w-full flex items-center gap-3 px-4 py-3 transition-all"
-                      style={{ background: isOpen ? 'var(--bg-elevated)' : 'transparent' }}
-                      onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = 'var(--bg-hover)' }}
-                      onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = 'transparent' }}>
-                {isOpen ? <ChevronDown size={14} style={{ color:'var(--text-2)' }} /> : <ChevronRight size={14} style={{ color:'var(--text-2)' }} />}
-                <Megaphone size={14} style={{ color:'#F59E0B', flexShrink: 0 }} />
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-semibold truncate" style={{ color:'var(--text-1)' }}>{c.name}</p>
-                  <p className="text-[10px]" style={{ color:'var(--text-3)' }}>
-                    {c.stats.total} contactos · {fmtRel(c.stats.lastActivity)}
-                  </p>
-                </div>
-                <div className="hidden sm:flex items-center gap-2.5 shrink-0 text-[11px]">
-                  <Stat color="#60A5FA" label="abiertos"   value={c.stats.opened}  icon={Eye} />
-                  <Stat color="#22C55E" label="respondió"  value={c.stats.replied} icon={MessageCircle} highlight />
-                  <Stat color="#EF4444" label="bounce"     value={c.stats.bounced} icon={MailX} />
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
-                        style={{ background:'var(--bg-base)', color: c.stats.replied > 0 ? '#22C55E' : 'var(--text-3)' }}>
-                    {replyRate}% reply
-                  </span>
-                </div>
-              </button>
+              <div className="flex">
+                <button onClick={() => toggle(c.id)}
+                        className="flex-1 flex items-center gap-3 px-4 py-3 transition-all min-w-0"
+                        style={{ background: isOpen ? 'var(--bg-elevated)' : 'transparent' }}
+                        onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = 'var(--bg-hover)' }}
+                        onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = 'transparent' }}>
+                  {isOpen ? <ChevronDown size={14} style={{ color:'var(--text-2)' }} /> : <ChevronRight size={14} style={{ color:'var(--text-2)' }} />}
+                  <Megaphone size={14} style={{ color:'#F59E0B', flexShrink: 0 }} />
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-semibold truncate" style={{ color:'var(--text-1)' }}>{c.name}</p>
+                    <p className="text-[10px]" style={{ color:'var(--text-3)' }}>
+                      {c.stats.total} contactos · {fmtRel(c.stats.lastActivity)}
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2.5 shrink-0 text-[11px]">
+                    <Stat color="#60A5FA" label="abiertos"   value={c.stats.opened}  icon={Eye} />
+                    <Stat color="#22C55E" label="respondió"  value={c.stats.replied} icon={MessageCircle} highlight />
+                    <Stat color="#EF4444" label="bounce"     value={c.stats.bounced} icon={MailX} />
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                          style={{ background:'var(--bg-base)', color: c.stats.replied > 0 ? '#22C55E' : 'var(--text-3)' }}>
+                      {replyRate}% reply
+                    </span>
+                  </div>
+                </button>
+                <Link href={`/campanas/${c.id}`}
+                      className="flex items-center gap-1 px-3 py-3 text-[11px] font-medium border-l shrink-0"
+                      style={{ borderColor:'var(--border)', color:'var(--blue)' }}
+                      title="Ver todos los contactos">
+                  Ver todos →
+                </Link>
+              </div>
 
               {isOpen && (
                 <div style={{ borderTop:'1px solid var(--border)' }}>
