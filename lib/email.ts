@@ -43,7 +43,7 @@ export async function sendWelcomeEmail(user: {
   // v3 (mobile-first con hero generado vía fal.ai)
   const templatePath = join(process.cwd(), 'MAILS', 'email-bienvenida-v2.html')
   // Tracking pixel para detectar aperturas
-  const trackingPixel = `<img src="https://artiverse-sigma.vercel.app/api/track/open?nl=bienvenida&email=${encodeURIComponent(user.email)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`
+  const trackingPixel = `<img src="https://artiverse-sigma.vercel.app/api/pixel/o?nl=bienvenida&email=${encodeURIComponent(user.email)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`
   let html = readFileSync(templatePath, 'utf-8')
     .replace(/\{\{firstName\}\}/g, firstName)
     .replace(/\{\{email\}\}/g,     user.email)

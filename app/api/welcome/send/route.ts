@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     // Inyectar tracking pixel (solo si NO es test)
     const trackingPixel = test
       ? ''
-      : `<img src="https://artiverse-sigma.vercel.app/api/track/open?nl=bienvenida&email=${encodeURIComponent(to)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`
+      : `<img src="https://artiverse-sigma.vercel.app/api/pixel/o?nl=bienvenida&email=${encodeURIComponent(to)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`
 
     html = raw
       .replace(/\{\{firstName\}\}/g, firstName || to.split('@')[0])
