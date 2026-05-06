@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import {
-  LayoutDashboard, Zap, Map, Users, Megaphone, Settings, Sun, Moon, Mail, Inbox, GitBranch, Send, Gauge,
+  LayoutDashboard, Zap, Map, Users, Megaphone, Settings, Sun, Moon, Mail, Inbox, GitBranch, Send, Gauge, Newspaper, MailOpen,
 } from 'lucide-react'
 import { useTheme } from './ThemeProvider'
 
@@ -11,8 +11,10 @@ import { useTheme } from './ThemeProvider'
 const newNav = [
   { href: '/panel',          label: 'Panel',          icon: Gauge },
   { href: '/conversaciones', label: 'Conversaciones', icon: Inbox },
+  { href: '/bandeja',        label: 'Bandeja',        icon: MailOpen },
   { href: '/enviados',       label: 'Enviados',       icon: Send },
   { href: '/funnel',         label: 'Funnel',         icon: GitBranch },
+  { href: '/newsletters',    label: 'Newsletters',    icon: Newspaper },
 ]
 
 // Vistas legacy — pendientes de revisar/migrar

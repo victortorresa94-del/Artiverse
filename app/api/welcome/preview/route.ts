@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const html = readFileSync(
-      join(process.cwd(), 'MAILS', 'email-bienvenida-v3.html'),
+      join(process.cwd(), 'MAILS', 'email-bienvenida-v2.html'),
       'utf-8'
     )
       .replace(/\{\{firstName\}\}/g, firstName)

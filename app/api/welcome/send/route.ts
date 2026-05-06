@@ -31,11 +31,12 @@ export async function POST(req: NextRequest) {
   let html: string
   try {
     html = readFileSync(
-      join(process.cwd(), 'MAILS', 'email-bienvenida-v3.html'),
+      join(process.cwd(), 'MAILS', 'email-bienvenida-v2.html'),
       'utf-8'
     )
       .replace(/\{\{firstName\}\}/g, firstName || to.split('@')[0])
       .replace(/\{\{email\}\}/g, to)
+      .replace(/\{\{unsubscribe_url\}\}/g, `https://artiverse.es/unsubscribe?email=${encodeURIComponent(to)}`)
   } catch (e: any) {
     return NextResponse.json({ error: `No pude leer el HTML: ${e.message}` }, { status: 500 })
   }
