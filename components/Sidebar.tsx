@@ -14,6 +14,7 @@ const newNav = [
   { href: '/bandeja',        label: 'Bandeja',        icon: MailOpen },
   { href: '/enviados',       label: 'Enviados',       icon: Send },
   { href: '/funnel',         label: 'Funnel',         icon: GitBranch },
+  { href: '/campanas',       label: 'Campañas',       icon: Megaphone },
   { href: '/newsletters',    label: 'Newsletters',    icon: Newspaper },
   { href: '/maquetador',     label: 'Maquetador',     icon: Wand2 },
 ]
