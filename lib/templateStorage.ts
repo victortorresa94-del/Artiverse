@@ -10,8 +10,14 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-const KV_URL = process.env.KV_REST_API_URL || process.env.KV_URL
-const KV_TOKEN = process.env.KV_REST_API_TOKEN
+// Soporta ambos: Vercel KV legacy y Upstash Redis (vía Marketplace)
+const KV_URL =
+  process.env.KV_REST_API_URL ||
+  process.env.UPSTASH_REDIS_REST_URL ||
+  process.env.KV_URL
+const KV_TOKEN =
+  process.env.KV_REST_API_TOKEN ||
+  process.env.UPSTASH_REDIS_REST_TOKEN
 
 // Templates predefinidos en el repo
 export const TEMPLATES: Record<string, string> = {
@@ -41,6 +47,15 @@ const BUILTIN_META: TemplateMeta[] = [
 async function getKv() {
   if (!KV_URL || !KV_TOKEN) return null
   try {
+    // Si las vars son UPSTASH_*, instanciamos un cliente Redis directo desde Upstash
+    // Si son KV_*, usamos @vercel/kv (que usa REST tras bambalinas)
+    if (process.env.UPSTASH_REDIS_REST_URL && !process.env.KV_REST_API_URL) {
+      const { Redis } = await import('@upstash/redis')
+      return new Redis({
+        url:   process.env.UPSTASH_REDIS_REST_URL!,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      }) as any
+    }
     const { kv } = await import('@vercel/kv')
     return kv
   } catch {
