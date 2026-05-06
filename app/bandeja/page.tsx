@@ -20,11 +20,15 @@ interface InboxEmail {
   subject:    string
   date:       string
   preview:    string
+  body_text?: string
+  body_html?: string
   flags:      string[]
   unread:     boolean
   is_bounce:  boolean
   is_auto:    boolean
   size:       number
+  source:     'imap' | 'instantly'
+  instantly_id?: string
 }
 
 interface FullEmail {
@@ -38,7 +42,7 @@ interface FullEmail {
   attachments: Array<{ filename?: string; contentType?: string; size?: number }>
 }
 
-type Filter = 'all' | 'unread' | 'bounces'
+type Filter = 'all' | 'unread' | 'bounces' | 'imap' | 'instantly'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,7 +68,7 @@ function fmtAbs(iso: string): string {
 
 export default function BandejaPage() {
   const [emails, setEmails]   = useState<InboxEmail[]>([])
-  const [counts, setCounts]   = useState({ total: 0, unread: 0, bounces: 0 })
+  const [counts, setCounts]   = useState({ total: 0, unread: 0, bounces: 0, imap: 0, instantly: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string | null>(null)
   const [filter, setFilter]   = useState<Filter>('all')
@@ -83,7 +87,7 @@ export default function BandejaPage() {
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || `Error ${res.status}`)
       setEmails(d.emails || [])
-      setCounts(d.counts || { total: 0, unread: 0, bounces: 0 })
+      setCounts(d.counts || { total: 0, unread: 0, bounces: 0, imap: 0, instantly: 0 })
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -92,16 +96,31 @@ export default function BandejaPage() {
   }
   useEffect(() => { load() }, [])
 
-  async function openEmail(uid: number) {
-    setSelectedUid(uid); setFullEmail(null); setLoadingFull(true)
+  async function openEmail(email: InboxEmail) {
+    setSelectedUid(email.source === 'imap' ? email.uid : -1)
+    setFullEmail(null); setLoadingFull(true)
     try {
-      const res = await fetch(`/api/bandeja/${uid}`, { cache: 'no-store' })
-      const d = await res.json()
-      if (!res.ok) throw new Error(d.error)
-      setFullEmail(d)
+      if (email.source === 'instantly') {
+        // No llamamos a IMAP — el body ya viene en el email
+        setFullEmail({
+          uid:     0,
+          subject: email.subject,
+          from:    { address: email.from_email, name: email.from_name },
+          to:      email.to_emails.map(a => ({ address: a })),
+          date:    email.date,
+          text:    email.body_text || email.preview,
+          html:    email.body_html || `<pre style="white-space:pre-wrap">${email.body_text || email.preview}</pre>`,
+          attachments: [],
+        })
+      } else {
+        const res = await fetch(`/api/bandeja/${email.uid}`, { cache: 'no-store' })
+        const d = await res.json()
+        if (!res.ok) throw new Error(d.error)
+        setFullEmail(d)
+      }
       // Marcar como leído en local
-      setEmails(prev => prev.map(e => e.uid === uid ? { ...e, unread: false, flags: [...e.flags, '\\Seen'] } : e))
-      setCounts(c => ({ ...c, unread: Math.max(0, c.unread - 1) }))
+      setEmails(prev => prev.map(e => e === email ? { ...e, unread: false, flags: [...e.flags, '\\Seen'] } : e))
+      if (email.unread) setCounts(c => ({ ...c, unread: Math.max(0, c.unread - 1) }))
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -122,8 +141,10 @@ export default function BandejaPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return emails.filter(e => {
-      if (filter === 'unread'  && !e.unread)    return false
-      if (filter === 'bounces' && !e.is_bounce) return false
+      if (filter === 'unread'    && !e.unread)             return false
+      if (filter === 'bounces'   && !e.is_bounce)          return false
+      if (filter === 'imap'      && e.source !== 'imap')   return false
+      if (filter === 'instantly' && e.source !== 'instantly') return false
       if (q && !(
         e.subject.toLowerCase().includes(q) ||
         e.from_email.toLowerCase().includes(q) ||
@@ -176,10 +197,12 @@ export default function BandejaPage() {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-1">
-            <FilterPill active={filter === 'all'}     label="Todos"     count={counts.total}   color="var(--text-2)" onClick={() => setFilter('all')} />
-            <FilterPill active={filter === 'unread'}  label="No leídos" count={counts.unread}  color="#60A5FA"       onClick={() => setFilter('unread')} />
-            <FilterPill active={filter === 'bounces'} label="Bounces"   count={counts.bounces} color="#EF4444"       onClick={() => setFilter('bounces')} />
+          <div className="flex gap-1 flex-wrap">
+            <FilterPill active={filter === 'all'}       label="Todos"     count={counts.total}     color="var(--text-2)" onClick={() => setFilter('all')} />
+            <FilterPill active={filter === 'unread'}    label="No leídos" count={counts.unread}    color="#60A5FA"       onClick={() => setFilter('unread')} />
+            <FilterPill active={filter === 'instantly'} label="Instantly" count={counts.instantly} color="#F59E0B"       onClick={() => setFilter('instantly')} />
+            <FilterPill active={filter === 'imap'}      label="IMAP"      count={counts.imap}      color="#22C55E"       onClick={() => setFilter('imap')} />
+            <FilterPill active={filter === 'bounces'}   label="Bounces"   count={counts.bounces}   color="#EF4444"       onClick={() => setFilter('bounces')} />
           </div>
         </div>
 
@@ -205,12 +228,12 @@ export default function BandejaPage() {
               <p className="text-xs">Sin emails en este filtro</p>
             </div>
           )}
-          {filtered.map(e => (
+          {filtered.map((e, idx) => (
             <EmailRow
-              key={e.uid}
+              key={e.source === 'imap' ? `imap-${e.uid}` : `inst-${e.instantly_id}-${idx}`}
               email={e}
-              active={selectedUid === e.uid}
-              onClick={() => openEmail(e.uid)}
+              active={selectedUid === (e.source === 'imap' ? e.uid : -1) && fullEmail?.subject === e.subject}
+              onClick={() => openEmail(e)}
             />
           ))}
         </div>
@@ -375,7 +398,14 @@ function EmailRow({
         <p className={`text-xs truncate ${email.unread ? 'font-medium' : ''}`} style={{ color: 'var(--text-1)' }}>
           {email.subject || '(sin asunto)'}
         </p>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-1 mt-1">
+          <span className="text-[9px] px-1 py-0.5 rounded font-semibold uppercase tracking-wider"
+                style={{
+                  background: email.source === 'instantly' ? '#F59E0B25' : '#22C55E25',
+                  color:      email.source === 'instantly' ? '#F59E0B' : '#22C55E',
+                }}>
+            {email.source}
+          </span>
           {email.is_bounce && (
             <span className="flex items-center gap-1 text-[9px] px-1 py-0.5 rounded font-semibold"
                   style={{ background: '#EF444425', color: '#EF4444' }}>

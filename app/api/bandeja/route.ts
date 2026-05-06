@@ -15,6 +15,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { ImapFlow } from 'imapflow'
+import { INSTANTLY_API_KEY } from '@/lib/instantly'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -23,6 +24,12 @@ const HOST = process.env.IMAP_HOST || 'mail.nominalia.com'
 const PORT = parseInt(process.env.IMAP_PORT || '993')
 const USER = process.env.IMAP_USER || process.env.SMTP_REPLY_USER || ''
 const PASS = process.env.IMAP_PASS || process.env.SMTP_REPLY_PASS || ''
+
+const OWN_EMAILS = [
+  'victor@artiversemail.es',
+  'victor@artiverse.es',
+  'victor@artiverse.online',
+]
 
 // Patterns para detectar bounces
 const BOUNCE_FROMS = ['mailer-daemon', 'postmaster', 'no-reply', 'noreply', 'mail-delivery']
@@ -33,7 +40,7 @@ const BOUNCE_SUBJECTS = [
 ]
 
 interface InboxEmail {
-  uid:        number
+  uid:        number     // 0 si es de Instantly
   seq:        number
   messageId:  string
   threadId?:  string
@@ -50,6 +57,60 @@ interface InboxEmail {
   is_bounce:  boolean
   is_auto:    boolean
   size:       number
+  source:     'imap' | 'instantly'
+  instantly_id?: string  // si source=instantly
+}
+
+async function fetchInstantlyInbound(limit: number): Promise<InboxEmail[]> {
+  const out: InboxEmail[] = []
+  let cursor: string | null = null
+  for (let page = 0; page < 5 && out.length < limit; page++) {
+    const url = new URL('https://api.instantly.ai/api/v2/emails')
+    url.searchParams.set('limit', '100')
+    if (cursor) url.searchParams.set('starting_after', cursor)
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${INSTANTLY_API_KEY}` },
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) break
+    const data = await res.json()
+    const items: any[] = data.items || []
+    for (const e of items) {
+      const fromEmail = (e.from_address_email || '').toLowerCase()
+      const isOwn = OWN_EMAILS.includes(fromEmail)
+      if (isOwn) continue
+      const subject = e.subject || '(sin asunto)'
+      const text = typeof e.body === 'string'
+        ? e.body
+        : (e.body?.text || e.body?.html?.replace(/<[^>]+>/g, ' ').trim() || '')
+      out.push({
+        uid:        0,
+        seq:        0,
+        messageId:  e.message_id || e.id || '',
+        threadId:   e.thread_id,
+        from_email: fromEmail,
+        from_name:  e.from_address_json?.name || e.lead?.firstName || fromEmail.split('@')[0],
+        to_emails:  Array.isArray(e.to_address_email_list)
+          ? e.to_address_email_list.map((t: any) => t.address).filter(Boolean)
+          : [],
+        subject,
+        date:       e.timestamp_email || e.timestamp_created || '',
+        preview:    text.slice(0, 140),
+        body_text:  text,
+        body_html:  typeof e.body === 'string' ? `<p>${e.body}</p>` : (e.body?.html || `<p style="white-space:pre-wrap">${text}</p>`),
+        flags:      e.is_unread === false ? ['\\Seen'] : [],
+        unread:     e.is_unread !== false,
+        is_bounce:  false,
+        is_auto:    false,
+        size:       text.length,
+        source:     'instantly',
+        instantly_id: e.id,
+      })
+    }
+    cursor = data.next_cursor || null
+    if (!cursor || items.length < 100) break
+  }
+  return out
 }
 
 function isBounce(fromEmail: string, subject: string): boolean {
@@ -156,18 +217,32 @@ export async function GET(req: NextRequest) {
           is_bounce: bounce,
           is_auto:   auto,
           size:      m.size as number,
+          source:    'imap',
         })
       }
 
-      // Ordenar por fecha desc
-      emails.sort((a, b) => b.date.localeCompare(a.date))
+      // Combinar con Instantly inbound
+      let instantlyEmails: InboxEmail[] = []
+      try { instantlyEmails = await fetchInstantlyInbound(200) } catch {}
+
+      // De-dup por messageId si coinciden (mismo mail llegó por ambas vías)
+      const seenMessageIds = new Set(emails.map(e => e.messageId).filter(Boolean))
+      const newInstantly = instantlyEmails.filter(e => !e.messageId || !seenMessageIds.has(e.messageId))
+
+      const all = [...emails, ...newInstantly]
+      all.sort((a, b) => b.date.localeCompare(a.date))
+
+      const totalUnread  = all.filter(e => e.unread).length
+      const totalBounces = all.filter(e => e.is_bounce).length
 
       return NextResponse.json({
-        emails,
+        emails: all,
         counts: {
-          total:   emails.length,
-          unread:  unreadCount,
-          bounces: bounceCount,
+          total:     all.length,
+          unread:    totalUnread,
+          bounces:   totalBounces,
+          imap:      emails.length,
+          instantly: newInstantly.length,
         },
         folder,
       })

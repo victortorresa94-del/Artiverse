@@ -47,11 +47,11 @@ interface ApiResponse {
 // ─── Status meta ──────────────────────────────────────────────────────────────
 
 const STATUS_META: Record<ConvStatus, { label: string; color: string; icon: React.ElementType }> = {
-  pendiente:     { label: 'Pendiente',         color: '#F59E0B', icon: InboxIcon },
-  esperando:     { label: 'Esperando respuesta', color: '#60A5FA', icon: Clock },
-  cerrada:       { label: 'Cerrada',           color: '#22C55E', icon: CheckCircle2 },
-  no_interesado: { label: 'No interesado',     color: '#94A3B8', icon: ThumbsDown },
-  mail_obsoleto: { label: 'Mail obsoleto',     color: '#EF4444', icon: MailX },
+  pendiente:     { label: 'Pendientes',              color: '#F59E0B', icon: InboxIcon },
+  esperando:     { label: 'Conversaciones abiertas', color: '#60A5FA', icon: Clock },
+  cerrada:       { label: 'Cerradas',                color: '#22C55E', icon: CheckCircle2 },
+  no_interesado: { label: 'No interesado',           color: '#94A3B8', icon: ThumbsDown },
+  mail_obsoleto: { label: 'Mail obsoleto',           color: '#EF4444', icon: MailX },
 }
 
 const FUNNEL_PHASES = [
@@ -88,7 +88,7 @@ export default function ConversacionesPage() {
   const [data, setData]         = useState<ApiResponse | null>(null)
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState<string | null>(null)
-  const [filter, setFilter]     = useState<ConvStatus | 'all'>('pendiente')
+  const [filter, setFilter]     = useState<ConvStatus | 'all'>('esperando')
   const [search, setSearch]     = useState('')
   const [selected, setSelected] = useState<string | null>(null)
 

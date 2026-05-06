@@ -321,6 +321,9 @@ export async function GET() {
     }
 
     // 5. Construir array de conversaciones
+    // FILTRO PRINCIPAL: solo incluir hilos donde el contacto al menos ha respondido
+    // una vez. Los contactos a los que solo enviamos outreach (sin respuesta de
+    // ellos) NO son "conversaciones" — viven en el Funnel como contactado/abierto.
     const conversations: Conversation[] = []
     for (const [tid, msgs] of threads.entries()) {
       const info = threadContacts.get(tid)
@@ -328,21 +331,27 @@ export async function GET() {
 
       msgs.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
       const inbound = msgs.filter(m => m.direction === 'in')
+
+      // Filtro: si el contacto NO ha respondido nunca, no es una conversación
+      if (inbound.length === 0) continue
+
       const outbound = msgs.filter(m => m.direction === 'out')
       const last_in_at  = inbound.at(-1)?.timestamp  || ''
       const last_out_at = outbound.at(-1)?.timestamp || ''
       const last_activity_at = msgs.at(-1)!.timestamp
 
-      // Resolver estado
+      // Resolver estado:
+      //   pendiente = me han escrito y no he contestado todavía
+      //   esperando = ya respondí, espero su réplica (= "Conversación abierta" en UI)
+      //   override manual: cerrada / no_interesado / mail_obsoleto
       let status: ConvStatus = 'pendiente'
       const e = info.email
       if (mailObsoletoEmails.has(e))     status = 'mail_obsoleto'
       else if (noIntEmails.has(e))       status = 'no_interesado'
       else if (cerradaEmails.has(e))     status = 'cerrada'
-      else if (esperandoEmails.has(e))   status = 'esperando'
-      else if (inbound.length === 0)     status = 'esperando'   // solo enviamos, no han contestado
-      else if (last_out_at > last_in_at) status = 'esperando'   // ya respondimos
-      else                               status = 'pendiente'   // tienen el último mensaje, hay que responder
+      else if (esperandoEmails.has(e))   status = 'esperando'   // override manual
+      else if (last_out_at > last_in_at) status = 'esperando'   // ya respondimos, conversación abierta
+      else                               status = 'pendiente'   // me toca responder
 
       const aiScores = msgs
         .map(() => 0)
