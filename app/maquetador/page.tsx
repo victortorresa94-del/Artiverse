@@ -242,7 +242,10 @@ export default function MaquetadorPage() {
       }
       if (!r.ok) throw new Error(d.error)
       setHtml(d.html)
-      setMessages(m => [...m, { role:'assistant', text:'✓ Cambio aplicado. Revisa el preview. Si te gusta, guarda.', ts: Date.now() }])
+      const summary = d.summary || 'Cambio aplicado'
+      const failed = (d.patches || []).filter((p: any) => !p.ok).length
+      const note   = failed > 0 ? ` (${failed} cambio${failed===1?'':'s'} no aplicado${failed===1?'':'s'} por ambigüedad)` : ''
+      setMessages(m => [...m, { role:'assistant', text:`✓ ${summary}${note}. Revisa el preview.`, ts: Date.now() }])
     } catch (e: any) {
       setMessages(m => [...m, { role:'assistant', text:`❌ ${e.message}`, ts: Date.now() }])
     } finally { setAiLoading(false) }
