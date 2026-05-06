@@ -42,6 +42,12 @@ function startOfMonth(d: Date): Date {
 
 // ─── Fetchers ─────────────────────────────────────────────────────────────────
 
+interface InstantlyLead {
+  id: string; email: string; status: number; verification_status?: number
+  email_open_count?: number; email_click_count?: number; email_reply_count?: number
+  timestamp_updated?: string
+}
+
 interface InstantlyEmail {
   id:                 string
   timestamp_created:  string
@@ -52,7 +58,7 @@ interface InstantlyEmail {
 async function fetchInstantlyEmails(): Promise<InstantlyEmail[]> {
   const all: InstantlyEmail[] = []
   let cursor: string | null = null
-  for (let page = 0; page < 30; page++) {
+  for (let page = 0; page < 5; page++) {
     const url = new URL('https://api.instantly.ai/api/v2/emails')
     url.searchParams.set('limit', '100')
     if (cursor) url.searchParams.set('starting_after', cursor)
@@ -65,6 +71,27 @@ async function fetchInstantlyEmails(): Promise<InstantlyEmail[]> {
     const items: InstantlyEmail[] = d.items || []
     all.push(...items)
     cursor = d.next_cursor || null
+    if (!cursor || items.length < 100) break
+  }
+  return all
+}
+
+async function fetchInstantlyLeads(): Promise<InstantlyLead[]> {
+  const all: InstantlyLead[] = []
+  let cursor: string | null = null
+  for (let page = 0; page < 30; page++) {
+    const body: any = { limit: 100 }
+    if (cursor) body.starting_after = cursor
+    const res = await fetch('https://api.instantly.ai/api/v2/leads/list', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${INSTANTLY_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) break
+    const d = await res.json()
+    const items: InstantlyLead[] = d.items || []
+    all.push(...items)
+    cursor = d.next_starting_after
     if (!cursor || items.length < 100) break
   }
   return all

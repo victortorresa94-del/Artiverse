@@ -76,7 +76,8 @@ async function fetchAllLeads(): Promise<InstantlyLead[]> {
 async function fetchInboundEmails(): Promise<InstantlyEmail[]> {
   const all: InstantlyEmail[] = []
   let cursor: string | null = null
-  for (let p = 0; p < 5; p++) {
+  // 30 páginas = hasta 3000 emails (cubre meses de respuestas)
+  for (let p = 0; p < 30; p++) {
     const url = new URL('https://api.instantly.ai/api/v2/emails')
     url.searchParams.set('limit', '100')
     if (cursor) url.searchParams.set('starting_after', cursor)
