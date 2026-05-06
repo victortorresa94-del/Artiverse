@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Save, RotateCcw, Send, Sparkles, Loader2, Code2, Eye,
   Download, Smartphone, Monitor, Image as ImageIcon, Wand2, Trash2, Copy, X,
-  ChevronDown, FolderOpen, Upload, Tag, Link2, Paperclip,
+  ChevronDown, FolderOpen, Upload, Tag, Link2, Paperclip, Mail,
 } from 'lucide-react'
 
 interface ChatMsg {
