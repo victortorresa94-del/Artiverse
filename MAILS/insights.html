@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{subject}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    img { border:0; outline:none; text-decoration:none; display:block; }
+    body { margin:0; padding:0; background-color:#EBEBEB; }
+    @media only screen and (max-width:480px) {
+      .ew { width:100% !important; }
+      .ep { padding:32px 24px !important; }
+      .stat-num { font-size:48px !important; }
+      .col-stat { display:block !important; width:100% !important; margin-bottom:14px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#EBEBEB;font-family:'Outfit',-apple-system,sans-serif;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center" style="padding:40px 16px;">
+      <table class="ew" role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+             style="max-width:600px;width:100%;background:#FFFFFF;border-radius:20px;overflow:hidden;box-shadow:0 16px 64px rgba(0,0,0,0.12);">
+
+        <!-- HEADER -->
+        <tr>
+          <td style="background-color:#0A0A0A;padding:32px 40px 28px 40px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+              <tr>
+                <td valign="middle" align="left">
+                  <img src="https://artiverse-sigma.vercel.app/artiverse-logo.jpg" alt="Artiverse" width="40" style="display:block;width:40px;height:auto;border-radius:6px;" />
+                </td>
+                <td valign="middle" align="right">
+                  <span style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:2px;text-transform:uppercase;">{{period}}</span>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0 0 8px 0;font-size:11px;color:#CCFF00;letter-spacing:2.5px;text-transform:uppercase;font-weight:500;">
+              Insights del sector
+            </p>
+            <h1 style="margin:0 0 12px 0;font-size:32px;font-weight:400;color:#FFFFFF;letter-spacing:-0.02em;line-height:1.15;">
+              {{title}}
+            </h1>
+            <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.6);line-height:1.6;">
+              {{subtitle}}
+            </p>
+          </td>
+        </tr>
+
+        <!-- 3 STATS -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:40px 48px 24px 48px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td class="col-stat" valign="top" style="width:33%;text-align:center;padding:0 8px;">
+                  <p class="stat-num" style="margin:0 0 4px 0;font-size:42px;font-weight:500;color:#0A0A0A;letter-spacing:-0.02em;line-height:1;">{{stat_1_value}}</p>
+                  <div style="width:24px;height:2px;background:#CCFF00;margin:8px auto;"></div>
+                  <p style="margin:0;font-size:11px;color:#777777;letter-spacing:1px;text-transform:uppercase;line-height:1.4;">{{stat_1_label}}</p>
+                </td>
+                <td class="col-stat" valign="top" style="width:33%;text-align:center;padding:0 8px;border-left:1px solid #EEEEEE;">
+                  <p class="stat-num" style="margin:0 0 4px 0;font-size:42px;font-weight:500;color:#0A0A0A;letter-spacing:-0.02em;line-height:1;">{{stat_2_value}}</p>
+                  <div style="width:24px;height:2px;background:#CCFF00;margin:8px auto;"></div>
+                  <p style="margin:0;font-size:11px;color:#777777;letter-spacing:1px;text-transform:uppercase;line-height:1.4;">{{stat_2_label}}</p>
+                </td>
+                <td class="col-stat" valign="top" style="width:33%;text-align:center;padding:0 8px;border-left:1px solid #EEEEEE;">
+                  <p class="stat-num" style="margin:0 0 4px 0;font-size:42px;font-weight:500;color:#0A0A0A;letter-spacing:-0.02em;line-height:1;">{{stat_3_value}}</p>
+                  <div style="width:24px;height:2px;background:#CCFF00;margin:8px auto;"></div>
+                  <p style="margin:0;font-size:11px;color:#777777;letter-spacing:1px;text-transform:uppercase;line-height:1.4;">{{stat_3_label}}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ANÁLISIS -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:32px 48px 16px 48px;">
+            <h3 style="margin:0 0 14px 0;font-size:20px;font-weight:500;color:#0A0A0A;letter-spacing:-0.01em;">
+              {{analysis_title}}
+            </h3>
+            <p style="margin:0 0 18px 0;font-size:15px;color:#555555;line-height:1.75;">
+              {{analysis_paragraph_1}}
+            </p>
+            <p style="margin:0;font-size:15px;color:#555555;line-height:1.75;">
+              {{analysis_paragraph_2}}
+            </p>
+          </td>
+        </tr>
+
+        <!-- TAKEAWAY -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:24px 48px 0 48px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FAFAFA;border:1.5px solid #EBEBEB;border-left:4px solid #CCFF00;border-radius:12px;padding:22px 26px;">
+              <tr>
+                <td>
+                  <p style="margin:0 0 6px 0;font-size:11px;font-weight:600;color:#0A0A0A;letter-spacing:1.5px;text-transform:uppercase;">Conclusión</p>
+                  <p style="margin:0;font-size:15px;color:#0A0A0A;line-height:1.6;">{{takeaway}}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:32px 48px 40px 48px;" align="center">
+            <a href="{{cta_url}}"
+               style="background:#0A0A0A;color:#CCFF00;font-weight:500;font-size:14px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block;">
+              {{cta_text}} →
+            </a>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td align="center" style="background:#F5F5F5;padding:20px 40px;border-top:1px solid #E8E8E8;">
+            <p style="margin:0 0 4px 0;font-size:11px;color:#AAAAAA;">© 2026 Artiverse · Insights {{period}}</p>
+            <p style="margin:0;font-size:11px;color:#AAAAAA;">
+              <a href="{{unsubscribe_url}}" style="color:#AAAAAA;text-decoration:underline;">Darse de baja</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

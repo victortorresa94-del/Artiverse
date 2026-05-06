@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{subject}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    img { border:0; outline:none; text-decoration:none; display:block; }
+    body { margin:0; padding:0; background-color:#EBEBEB; }
+    .item-card:hover { border-color:#CCFF00 !important; }
+    @media only screen and (max-width:480px) {
+      .ew { width:100% !important; }
+      .ep { padding:32px 22px !important; }
+      .item-card { padding:18px 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#EBEBEB;font-family:'Outfit',-apple-system,sans-serif;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center" style="padding:40px 16px;">
+      <table class="ew" role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+             style="max-width:600px;width:100%;background:#FFFFFF;border-radius:20px;overflow:hidden;box-shadow:0 16px 64px rgba(0,0,0,0.12);">
+
+        <!-- HEADER -->
+        <tr>
+          <td style="background-color:#0A0A0A;padding:32px 40px 28px 40px;">
+            <div style="height:3px;background-color:#CCFF00;width:60px;margin-bottom:24px;"></div>
+            <p style="margin:0 0 8px 0;font-size:11px;font-weight:400;color:rgba(255,255,255,0.45);letter-spacing:2px;text-transform:uppercase;">
+              {{newsletter_name}}  ·  Edición {{edition_number}}
+            </p>
+            <h1 style="margin:0;font-size:32px;font-weight:400;color:#FFFFFF;letter-spacing:-0.02em;line-height:1.15;">
+              {{title}}
+            </h1>
+          </td>
+        </tr>
+
+        <!-- INTRO -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:36px 48px 12px 48px;">
+            <p style="margin:0;font-size:15px;color:#555555;line-height:1.7;">
+              {{intro}}
+            </p>
+          </td>
+        </tr>
+
+        <!-- ITEM 1 -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:24px 48px 0 48px;">
+            <table class="item-card" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:#FAFAFA;border:1.5px solid #EBEBEB;border-radius:14px;padding:22px 26px;margin-bottom:14px;">
+              <tr>
+                <td>
+                  <p style="margin:0 0 4px 0;font-size:11px;font-weight:500;color:#0A0A0A;background:#CCFF00;display:inline-block;padding:3px 10px;border-radius:100px;letter-spacing:0.5px;">01</p>
+                  <h3 style="margin:8px 0 6px 0;font-size:18px;font-weight:500;color:#0A0A0A;letter-spacing:-0.01em;">{{item_1_title}}</h3>
+                  <p style="margin:0 0 12px 0;font-size:13px;color:#777777;line-height:1.6;">{{item_1_description}}</p>
+                  <a href="{{item_1_url}}" style="font-size:13px;font-weight:500;color:#0A0A0A;text-decoration:none;border-bottom:2px solid #CCFF00;padding-bottom:1px;">Ver más →</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ITEM 2 -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:0 48px 0 48px;">
+            <table class="item-card" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:#FAFAFA;border:1.5px solid #EBEBEB;border-radius:14px;padding:22px 26px;margin-bottom:14px;">
+              <tr>
+                <td>
+                  <p style="margin:0 0 4px 0;font-size:11px;font-weight:500;color:#0A0A0A;background:#CCFF00;display:inline-block;padding:3px 10px;border-radius:100px;letter-spacing:0.5px;">02</p>
+                  <h3 style="margin:8px 0 6px 0;font-size:18px;font-weight:500;color:#0A0A0A;letter-spacing:-0.01em;">{{item_2_title}}</h3>
+                  <p style="margin:0 0 12px 0;font-size:13px;color:#777777;line-height:1.6;">{{item_2_description}}</p>
+                  <a href="{{item_2_url}}" style="font-size:13px;font-weight:500;color:#0A0A0A;text-decoration:none;border-bottom:2px solid #CCFF00;padding-bottom:1px;">Ver más →</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ITEM 3 -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:0 48px 0 48px;">
+            <table class="item-card" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:#FAFAFA;border:1.5px solid #EBEBEB;border-radius:14px;padding:22px 26px;margin-bottom:14px;">
+              <tr>
+                <td>
+                  <p style="margin:0 0 4px 0;font-size:11px;font-weight:500;color:#0A0A0A;background:#CCFF00;display:inline-block;padding:3px 10px;border-radius:100px;letter-spacing:0.5px;">03</p>
+                  <h3 style="margin:8px 0 6px 0;font-size:18px;font-weight:500;color:#0A0A0A;letter-spacing:-0.01em;">{{item_3_title}}</h3>
+                  <p style="margin:0 0 12px 0;font-size:13px;color:#777777;line-height:1.6;">{{item_3_description}}</p>
+                  <a href="{{item_3_url}}" style="font-size:13px;font-weight:500;color:#0A0A0A;text-decoration:none;border-bottom:2px solid #CCFF00;padding-bottom:1px;">Ver más →</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA principal -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:24px 48px 36px 48px;" align="center">
+            <a href="{{cta_url}}"
+               style="background:#0A0A0A;color:#FFFFFF;font-weight:500;font-size:14px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block;">
+              {{cta_text}} →
+            </a>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td align="center" style="background:#F5F5F5;padding:20px 40px;border-top:1px solid #E8E8E8;">
+            <p style="margin:0 0 4px 0;font-size:11px;color:#AAAAAA;">© 2026 Artiverse · Newsletter {{edition_number}}</p>
+            <p style="margin:0;font-size:11px;color:#AAAAAA;">
+              <a href="{{unsubscribe_url}}" style="color:#AAAAAA;text-decoration:underline;">Darse de baja</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

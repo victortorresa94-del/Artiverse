@@ -22,7 +22,12 @@ const HAS_STORAGE = !!(KV_REST_URL && KV_REST_TOKEN) || !!REDIS_TCP_URL
 
 // Templates predefinidos en el repo
 export const TEMPLATES: Record<string, string> = {
-  welcome: 'email-bienvenida-v2.html',
+  welcome:             'email-bienvenida-v2.html',
+  'newsletter-classic':'newsletter-classic.html',
+  digest:              'digest.html',
+  showcase:            'showcase.html',
+  announcement:        'announcement.html',
+  insights:            'insights.html',
 }
 
 export interface TemplateMeta {
@@ -38,8 +43,48 @@ const BUILTIN_META: TemplateMeta[] = [
   {
     id: 'welcome',
     name: 'Bienvenida Artiverse',
-    description: 'Email automático para nuevos usuarios registrados',
+    description: 'Automático cuando se registra un nuevo usuario. Hero negro/lima + mockup + CTA.',
     createdAt: '2026-05-01T00:00:00Z',
+    updatedAt: '2026-05-06T00:00:00Z',
+    builtin: true,
+  },
+  {
+    id: 'newsletter-classic',
+    name: 'Newsletter clásico',
+    description: 'Plantilla simple: hero negro + cuerpo blanco + 1 CTA. Para mensajes generales.',
+    createdAt: '2026-05-06T00:00:00Z',
+    updatedAt: '2026-05-06T00:00:00Z',
+    builtin: true,
+  },
+  {
+    id: 'digest',
+    name: 'Digest semanal',
+    description: 'Lista numerada de items con cards. Para licitaciones, convocatorias, novedades.',
+    createdAt: '2026-05-06T00:00:00Z',
+    updatedAt: '2026-05-06T00:00:00Z',
+    builtin: true,
+  },
+  {
+    id: 'showcase',
+    name: 'Showcase / Talento del mes',
+    description: 'Email totalmente oscuro con imagen hero grande + cita destacada. Para perfiles destacados.',
+    createdAt: '2026-05-06T00:00:00Z',
+    updatedAt: '2026-05-06T00:00:00Z',
+    builtin: true,
+  },
+  {
+    id: 'announcement',
+    name: 'Anuncio / Lanzamiento',
+    description: 'Hero lima con mega-título + subhead + 3 highlights. Para lanzamientos y anuncios grandes.',
+    createdAt: '2026-05-06T00:00:00Z',
+    updatedAt: '2026-05-06T00:00:00Z',
+    builtin: true,
+  },
+  {
+    id: 'insights',
+    name: 'Insights del sector',
+    description: '3 stats grandes + análisis + takeaway destacado. Para reportes de datos del mercado.',
+    createdAt: '2026-05-06T00:00:00Z',
     updatedAt: '2026-05-06T00:00:00Z',
     builtin: true,
   },
