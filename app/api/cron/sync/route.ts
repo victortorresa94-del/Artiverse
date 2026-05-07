@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { fetchInstantly } from '@/lib/instantly';
 import { syncContactToHubspot } from '@/lib/hubspot';
 
+export const dynamic = 'force-dynamic'
+
 // Important: Note that Vercel cron secrets are usually passed as HTTP headers, 
 // but we'll accept our shared token for testing manually over the browser
 export async function GET(request: Request) {

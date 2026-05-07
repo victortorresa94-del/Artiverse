@@ -1,308 +1,379 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
-  leads as initialLeads,
-  platformUsers as initialUsers,
-  FUNNEL_STAGES,
-  INBOUND_STAGES,
-  type Lead,
-  type FunnelStage,
-  type PlatformUser,
-  type InboundStage,
-  type Segment,
-} from '@/data/mock'
+  RefreshCw, Mail, Eye, MousePointer, MessageCircle, ThumbsUp, ThumbsDown,
+  CheckCheck, MailX, Loader2, Send, ArrowRight, UserPlus, Crown, Sparkles,
+  Building2, ImageIcon, FileText, Activity, Clock, AlertCircle,
+} from 'lucide-react'
+import ContactSheet from '@/components/ContactSheet'
 
-type FunnelView = 'outreach' | 'inbound'
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const SEGMENTS: { id: string; label: string }[] = [
-  { id: 'all', label: 'Todos los segmentos' },
-  { id: 'Teatro-Danza',     label: 'Teatro-Danza' },
-  { id: 'Salas Conciertos', label: 'Salas Conciertos' },
-  { id: 'Dance from Spain', label: 'Dance from Spain' },
-  { id: 'Festivales',       label: 'Festivales' },
-  { id: 'Socios ARTE',      label: 'Socios ARTE' },
-  { id: 'Distribuidoras',   label: 'Distribuidoras' },
-]
+type ConvStatus = 'pendiente' | 'esperando' | 'cerrada' | 'no_interesado' | 'mail_obsoleto'
 
-const channelEmoji: Record<string, string> = {
-  email: '✉️', whatsapp: '💬', instagram: '📸', telefono: '📞'
+type OutPhase = 'contactado' | 'abierto' | 'respondio' | 'interesado' | 'registrado' | 'no_interesado' | 'mail_erroneo'
+type InPhase  = 'registrado' | 'perfil_basico' | 'perfil_completo' | 'pro' | 'agencia'
+
+interface FunnelContact {
+  email:    string
+  name:     string
+  company:  string
+  job:      string
+  city:     string
+  opens:    number
+  clicks:   number
+  replies:  number
+  updated:  string
+  phase:    string
+  source:   'auto' | 'manual' | 'platform'
+  conv_status?: ConvStatus
 }
 
-const sourceEmoji: Record<string, string> = {
-  outreach: '✉️', organic: '🌱', referral: '🔗', unknown: '❓'
+interface FunnelGroup {
+  phases: Record<string, FunnelContact[]>
+  counts: Record<string, number>
+  total:  number
 }
 
-function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, stage: FunnelStage) => void }) {
-  const [showMenu, setShowMenu] = useState(false)
+interface FunnelData {
+  outbound: FunnelGroup
+  inbound:  FunnelGroup
+}
+
+// ─── Phase metadata ───────────────────────────────────────────────────────────
+
+const OUT_ORDER: OutPhase[] = ['contactado', 'abierto', 'respondio', 'interesado', 'registrado', 'no_interesado', 'mail_erroneo']
+const IN_ORDER:  InPhase[]  = ['registrado', 'perfil_basico', 'perfil_completo', 'pro', 'agencia']
+
+const PHASE_META: Record<string, { label: string; icon: React.ElementType; color: string; manual?: boolean }> = {
+  // Outbound
+  contactado:      { label: 'Contactado',     icon: Mail,          color: '#60A5FA' },
+  abierto:         { label: 'Abierto',        icon: Eye,           color: '#A78BFA' },
+  respondio:       { label: 'Respondió',      icon: MessageCircle, color: '#FBBF24' },
+  interesado:      { label: 'Interesado',     icon: ThumbsUp,      color: '#22C55E', manual: true },
+  no_interesado:   { label: 'No interesado',  icon: ThumbsDown,    color: '#94A3B8', manual: true },
+  mail_erroneo:    { label: 'Mail erróneo',   icon: MailX,         color: '#EF4444' },
+  // Inbound
+  registrado:      { label: 'Registrado',     icon: UserPlus,      color: '#10B981' },
+  perfil_basico:   { label: 'Perfil básico',  icon: FileText,      color: '#60A5FA' },
+  perfil_completo: { label: 'Perfil completo',icon: ImageIcon,     color: '#A78BFA' },
+  pro:             { label: 'Pro',            icon: Crown,         color: '#FFD700' },
+  agencia:         { label: 'Agencia',        icon: Sparkles,      color: '#F472B6' },
+}
+
+const CONV_META: Record<ConvStatus, { label: string; color: string; icon: React.ElementType }> = {
+  pendiente:     { label: 'Pendiente',     color: '#F59E0B', icon: AlertCircle },
+  esperando:     { label: 'Esperando',     color: '#60A5FA', icon: Clock },
+  cerrada:       { label: 'Cerrada',       color: '#22C55E', icon: CheckCheck },
+  no_interesado: { label: 'No interesado', color: '#94A3B8', icon: ThumbsDown },
+  mail_obsoleto: { label: 'Obsoleto',      color: '#EF4444', icon: MailX },
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtRel(iso: string): string {
+  if (!iso) return ''
+  const diff = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1) return 'ahora'
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h`
+  const days = Math.floor(h / 24)
+  if (days < 30) return `${days}d`
+  return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+}
+
+// ─── Contact card ─────────────────────────────────────────────────────────────
+
+function ContactCard({ c, onClick }: { c: FunnelContact; onClick: () => void }) {
+  const initial = (c.name || c.email).charAt(0).toUpperCase()
+  const conv = c.conv_status ? CONV_META[c.conv_status] : null
+
   return (
-    <div className={`bg-white border rounded-xl p-3 text-xs cursor-pointer relative shadow-sm ${
-      lead.priority === 'alta' ? 'border-amber-300' : 'border-gray-200'
-    }`}>
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <p className={`font-semibold leading-tight ${lead.priority === 'alta' ? 'text-amber-800' : 'text-gray-900'}`}>{lead.company}</p>
-        {lead.priority === 'alta' && <span className="text-amber-400 text-[10px] shrink-0">★</span>}
-      </div>
-      {lead.city && <p className="text-gray-400 mb-1.5 text-[10px]">{lead.city}</p>}
-      <div className="flex items-center justify-between">
-        <span className="text-gray-400">{channelEmoji[lead.channel]}</span>
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="text-blue-500 hover:text-blue-700 transition-colors text-[10px] px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 font-medium"
+    <button
+      onClick={onClick}
+      className="w-full text-left p-2.5 rounded-lg transition-all"
+      style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.background  = 'var(--bg-hover)'
+        ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)'
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.background  = 'var(--bg-base)'
+        ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+      }}
+    >
+      <div className="flex items-start gap-2">
+        <div
+          className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-semibold"
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)' }}
         >
-          Mover →
-        </button>
-      </div>
-      {showMenu && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl py-1.5 w-48 shadow-xl">
-          {FUNNEL_STAGES.filter(s => s.id !== lead.stage).map(s => (
-            <button
-              key={s.id}
-              onClick={() => { onMove(lead.id, s.id); setShowMenu(false) }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 text-gray-600 hover:text-blue-700 transition-colors"
-            >
-              {s.label}
-            </button>
-          ))}
+          {initial}
         </div>
-      )}
-    </div>
-  )
-}
-
-function UserCard({ user, onMove }: { user: PlatformUser; onMove: (id: string, stage: InboundStage) => void }) {
-  const [showMenu, setShowMenu] = useState(false)
-  return (
-    <div className={`bg-white border rounded-xl p-3 text-xs cursor-pointer relative shadow-sm ${
-      !user.emailVerified ? 'border-red-300' : user.hasAgency ? 'border-indigo-200' : 'border-gray-200'
-    }`}>
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <p className="font-semibold leading-tight text-gray-900 truncate">
-          {user.company || user.name || user.email.split('@')[0]}
-        </p>
-        {!user.emailVerified && <span className="text-red-400 text-[10px] shrink-0">!</span>}
-      </div>
-      <p className="text-gray-400 mb-1 text-[10px] truncate">{user.email}</p>
-      {user.hasAgency && (
-        <p className="text-indigo-500 mb-1 text-[10px]">{user.agencyName || 'Agencia'}</p>
-      )}
-      <div className="flex items-center justify-between mt-1.5">
-        <span className="text-gray-400 text-[10px]">{sourceEmoji[user.source]} {user.source}</span>
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="text-indigo-500 hover:text-indigo-700 transition-colors text-[10px] px-2 py-0.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 font-medium"
-        >
-          Mover →
-        </button>
-      </div>
-      {showMenu && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl py-1.5 w-48 shadow-xl">
-          {INBOUND_STAGES.filter(s => s.id !== user.inboundStage).map(s => (
-            <button
-              key={s.id}
-              onClick={() => { onMove(user.id, s.id); setShowMenu(false) }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 text-gray-600 hover:text-indigo-700 transition-colors"
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default function FunnelPage() {
-  const [funnelView, setFunnelView] = useState<FunnelView>('outreach')
-  const [leads, setLeads] = useState(initialLeads)
-  const [users, setUsers] = useState(initialUsers)
-  const [segment, setSegment] = useState<string>('all')
-
-  const moveCard = (id: string, newStage: FunnelStage) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, stage: newStage } : l))
-  }
-
-  const moveUser = (id: string, newStage: InboundStage) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, inboundStage: newStage } : u))
-  }
-
-  const filteredLeads = useMemo(() =>
-    segment === 'all' ? leads : leads.filter(l => l.segment === segment),
-    [leads, segment]
-  )
-
-  const filteredUsers = useMemo(() => {
-    if (segment === 'all') return users
-    return users.filter(u => u.sourceSegment === segment)
-  }, [users, segment])
-
-  const segCounts = useMemo(() =>
-    SEGMENTS.slice(1).reduce<Record<string, number>>((acc, s) => {
-      acc[s.id] = funnelView === 'outreach'
-        ? leads.filter(l => l.segment === s.id).length
-        : users.filter(u => u.sourceSegment === s.id).length
-      return acc
-    }, {}),
-    [leads, users, funnelView]
-  )
-
-  const totalItems = funnelView === 'outreach' ? filteredLeads.length : filteredUsers.length
-
-  return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
-      {/* Header */}
-      <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Funnel</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {totalItems} {funnelView === 'outreach' ? 'leads' : 'usuarios'}{segment !== 'all' ? ` en ${segment}` : ' en total'}
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-medium leading-tight truncate" style={{ color: 'var(--text-1)' }}>
+            {c.name || c.email.split('@')[0]}
           </p>
-        </div>
-
-        {/* Funnel view toggle */}
-        <div className="flex bg-gray-100 rounded-lg p-0.5">
-          <button
-            onClick={() => setFunnelView('outreach')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              funnelView === 'outreach'
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Outreach
-          </button>
-          <button
-            onClick={() => setFunnelView('inbound')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              funnelView === 'inbound'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Inbound
-          </button>
+          {c.company && (
+            <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--text-2)' }}>
+              {c.company}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Segment filter pills */}
-      <div className="mb-5 flex gap-2 flex-wrap">
-        {SEGMENTS.map(s => {
-          const count = s.id === 'all'
-            ? (funnelView === 'outreach' ? leads.length : users.length)
-            : (segCounts[s.id] ?? 0)
-          const active = segment === s.id
-          const accent = funnelView === 'outreach' ? 'blue' : 'indigo'
-          return (
-            <button
-              key={s.id}
-              onClick={() => setSegment(s.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
-                active
-                  ? `bg-${accent}-600 text-white border-${accent}-600 shadow-sm`
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'
-              }`}
-              style={active ? { backgroundColor: funnelView === 'outreach' ? '#2563EB' : '#4F46E5', borderColor: funnelView === 'outreach' ? '#2563EB' : '#4F46E5', color: 'white' } : {}}
+      {/* Conv status badge */}
+      {conv && (
+        <div className="mt-2">
+          <span
+            className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-semibold"
+            style={{ background: conv.color + '25', color: conv.color }}
+          >
+            <conv.icon size={8} /> {conv.label}
+          </span>
+        </div>
+      )}
+
+      {(c.opens > 0 || c.replies > 0) && (
+        <div className="flex items-center gap-2 mt-1.5 text-[10px]" style={{ color: 'var(--text-3)' }}>
+          {c.opens   > 0 && <span className="flex items-center gap-1"><Eye size={9} />{c.opens}</span>}
+          {c.replies > 0 && <span className="flex items-center gap-1"><MessageCircle size={9} />{c.replies}</span>}
+          <span className="ml-auto">{fmtRel(c.updated)}</span>
+        </div>
+      )}
+    </button>
+  )
+}
+
+// ─── Phase column ─────────────────────────────────────────────────────────────
+
+function PhaseColumn({
+  phase, contacts, onSelect,
+}: {
+  phase: string; contacts: FunnelContact[]; onSelect: (email: string, name: string, company: string) => void
+}) {
+  const meta = PHASE_META[phase]
+  if (!meta) return null
+  const Icon = meta.icon
+
+  return (
+    <div className="shrink-0 w-[260px] flex flex-col">
+      <div
+        className="rounded-t-lg px-3 py-2.5 flex items-center justify-between"
+        style={{
+          background:  'var(--bg-surface)',
+          borderTop:   `2px solid ${meta.color}`,
+          borderLeft:  '1px solid var(--border)',
+          borderRight: '1px solid var(--border)',
+        }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon size={13} style={{ color: meta.color, flexShrink: 0 }} />
+          <span className="text-[11px] font-semibold uppercase tracking-wider truncate" style={{ color: 'var(--text-1)' }}>
+            {meta.label}
+          </span>
+          {meta.manual && (
+            <span
+              className="text-[8px] px-1 py-0.5 rounded uppercase tracking-wider"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}
             >
-              {s.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                active ? 'text-white' : 'bg-gray-100 text-gray-500'
-              }`} style={active ? { backgroundColor: funnelView === 'outreach' ? '#1D4ED8' : '#4338CA' } : {}}>{count}</span>
-            </button>
-          )
-        })}
+              M
+            </span>
+          )}
+        </div>
+        <span
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ml-2"
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-1)' }}
+        >
+          {contacts.length}
+        </span>
       </div>
 
-      {/* Kanban — Outreach funnel */}
-      {funnelView === 'outreach' && (
-        <div className="flex gap-3 overflow-x-auto pb-4">
-          {FUNNEL_STAGES.map(stage => {
-            const stageLeads = filteredLeads.filter(l => l.stage === stage.id)
-            const isEmpty = stageLeads.length === 0
-            return (
-              <div key={stage.id} className={`shrink-0 ${isEmpty ? 'w-32 opacity-40' : 'w-44 sm:w-48'}`}>
-                <div className="flex items-center justify-between mb-2.5 px-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                    <span className="text-xs font-semibold text-gray-700 truncate">{stage.label}</span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-semibold bg-gray-100 rounded-full px-1.5 py-0.5 min-w-[20px] text-center ml-1 shrink-0">
-                    {stageLeads.length}
-                  </span>
-                </div>
-                <div
-                  className="min-h-[80px] rounded-xl p-2 space-y-2 border"
-                  style={{ backgroundColor: stage.color + '0D', borderColor: stage.color + '20' }}
-                >
-                  {stageLeads.map(lead => (
-                    <LeadCard key={lead.id} lead={lead} onMove={moveCard} />
-                  ))}
-                  {isEmpty && (
-                    <div className="h-12 flex items-center justify-center text-[10px] text-gray-300 italic">
-                      vacío
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Kanban — Inbound funnel */}
-      {funnelView === 'inbound' && (
-        <div className="flex gap-3 overflow-x-auto pb-4">
-          {INBOUND_STAGES.map(stage => {
-            const stageUsers = filteredUsers.filter(u => u.inboundStage === stage.id)
-            const isEmpty = stageUsers.length === 0
-            return (
-              <div key={stage.id} className={`shrink-0 ${isEmpty ? 'w-32 opacity-40' : 'w-44 sm:w-52'}`}>
-                <div className="flex items-center justify-between mb-2.5 px-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                    <span className="text-xs font-semibold text-gray-700 truncate">{stage.label}</span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-semibold bg-gray-100 rounded-full px-1.5 py-0.5 min-w-[20px] text-center ml-1 shrink-0">
-                    {stageUsers.length}
-                  </span>
-                </div>
-                <div
-                  className="min-h-[80px] rounded-xl p-2 space-y-2 border"
-                  style={{ backgroundColor: stage.color + '0D', borderColor: stage.color + '20' }}
-                >
-                  {stageUsers.map(user => (
-                    <UserCard key={user.id} user={user} onMove={moveUser} />
-                  ))}
-                  {isEmpty && (
-                    <div className="h-12 flex items-center justify-center text-[10px] text-gray-300 italic">
-                      vacío
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Legend */}
-      <div className="mt-4 flex items-center gap-4 text-xs text-gray-400 flex-wrap">
-        {funnelView === 'outreach' ? (
-          <>
-            <span className="font-medium">Prioridad:</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" />Alta</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-300" />Media / Baja</span>
-          </>
+      <div
+        className="flex-1 rounded-b-lg p-2 space-y-1.5 overflow-y-auto"
+        style={{
+          background:    'var(--bg-surface)',
+          borderLeft:    '1px solid var(--border)',
+          borderRight:   '1px solid var(--border)',
+          borderBottom:  '1px solid var(--border)',
+          minHeight:     '300px',
+          maxHeight:     'calc(100vh - 280px)',
+        }}
+      >
+        {contacts.length === 0 ? (
+          <div className="h-full flex items-center justify-center" style={{ color: 'var(--text-3)' }}>
+            <p className="text-[10px] italic">Vacío</p>
+          </div>
         ) : (
-          <>
-            <span className="font-medium">Fuente:</span>
-            <span className="flex items-center gap-1.5">✉️ Outreach</span>
-            <span className="flex items-center gap-1.5">🌱 Orgánico</span>
-            <span className="flex items-center gap-1.5">🔗 Referido</span>
-            <span className="ml-4 font-medium">Estado:</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" />Email no verificado</span>
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-400" />Tiene agencia</span>
-          </>
+          contacts.map(c => (
+            <ContactCard key={c.email} c={c} onClick={() => onSelect(c.email, c.name, c.company)} />
+          ))
         )}
       </div>
     </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+type ViewMode = 'outbound' | 'inbound'
+
+export default function FunnelPage() {
+  const [data, setData]       = useState<FunnelData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState<string | null>(null)
+  const [view, setView]       = useState<ViewMode>('outbound')
+  const [selectedContact, setSelectedContact] = useState<{ email: string; name: string; company: string } | null>(null)
+
+  async function load() {
+    setLoading(true); setError(null)
+    try {
+      const res = await fetch('/api/funnel', { cache: 'no-store' })
+      if (!res.ok) throw new Error(`Error ${res.status}`)
+      setData(await res.json())
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { load() }, [])
+
+  const current = data ? (view === 'outbound' ? data.outbound : data.inbound) : null
+  const order   = view === 'outbound' ? OUT_ORDER : IN_ORDER
+
+  const totals = useMemo(() => {
+    if (!current) return { total: 0, pct: {} as Record<string, number> }
+    const total = current.total || 1
+    const pct: Record<string, number> = {}
+    order.forEach(p => {
+      pct[p] = Math.round((current.counts[p] || 0) / total * 1000) / 10
+    })
+    return { total: current.total, pct }
+  }, [current, order])
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'var(--bg-base)' }}>
+      {/* Header */}
+      <div className="mb-4 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-1)' }}>Funnel</h1>
+          <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>
+            {data
+              ? `${current?.total ?? 0} contactos en ${order.length} fases · ${view === 'outbound' ? 'outreach' : 'inbound'}`
+              : 'Cargando…'}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Toggle Outbound/Inbound */}
+          <div
+            className="flex p-1 rounded-lg gap-1"
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+          >
+            <ToggleBtn active={view === 'outbound'} label="Outbound" sub={data ? `${data.outbound.total}` : ''} onClick={() => setView('outbound')} />
+            <ToggleBtn active={view === 'inbound'}  label="Inbound"  sub={data ? `${data.inbound.total}`  : ''} onClick={() => setView('inbound')} />
+          </div>
+
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
+            style={{ background: 'var(--bg-surface)', color: 'var(--text-1)', border: '1px solid var(--border)' }}
+          >
+            {loading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Funnel summary bar */}
+      {current && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {order.map(p => {
+            const meta  = PHASE_META[p]
+            const count = current.counts[p] || 0
+            const Icon  = meta.icon
+            return (
+              <div
+                key={p}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs"
+                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+              >
+                <Icon size={11} style={{ color: meta.color }} />
+                <span className="font-medium" style={{ color: 'var(--text-1)' }}>{meta.label}</span>
+                <span className="font-bold" style={{ color: meta.color }}>{count}</span>
+                <span style={{ color: 'var(--text-3)' }}>· {totals.pct[p]}%</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {error && (
+        <div
+          className="p-4 rounded-lg mb-4 text-sm"
+          style={{ background: '#EF444415', border: '1px solid #EF444430', color: '#FCA5A5' }}
+        >
+          {error}
+        </div>
+      )}
+
+      {loading && !data && (
+        <div className="flex items-center justify-center py-20" style={{ color: 'var(--text-2)' }}>
+          <Loader2 size={20} className="animate-spin mr-2" />
+          <span className="text-sm">Cargando funnel…</span>
+        </div>
+      )}
+
+      {/* Kanban */}
+      {current && (
+        <div className="flex gap-3 overflow-x-auto pb-4">
+          {order.map(p => (
+            <PhaseColumn
+              key={p}
+              phase={p}
+              contacts={current.phases[p] || []}
+              onSelect={(email, name, company) => setSelectedContact({ email, name, company })}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Ficha de contacto */}
+      <ContactSheet
+        email={selectedContact?.email || null}
+        initialName={selectedContact?.name}
+        initialCompany={selectedContact?.company}
+        onClose={() => { setSelectedContact(null); load() }}
+      />
+    </div>
+  )
+}
+
+// ─── Toggle button ────────────────────────────────────────────────────────────
+
+function ToggleBtn({
+  active, label, sub, onClick,
+}: { active: boolean; label: string; sub: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+      style={{
+        background: active ? 'var(--bg-active)' : 'transparent',
+        color:      active ? 'var(--text-1)'    : 'var(--text-2)',
+      }}
+    >
+      {label}
+      {sub && (
+        <span
+          className="text-[10px] px-1 py-0.5 rounded font-bold"
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
+        >
+          {sub}
+        </span>
+      )}
+    </button>
   )
 }

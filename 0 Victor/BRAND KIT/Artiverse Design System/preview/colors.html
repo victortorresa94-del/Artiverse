@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fff; padding: 32px; font-family: var(--av-font-body); }
+
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--av-gray-400); margin-bottom: 16px; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+
+  .swatch {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .swatch-color {
+    width: 80px; height: 64px; border-radius: 10px;
+    border: 1px solid rgba(0,0,0,.07);
+  }
+  .swatch-name { font-size: 11px; font-weight: 600; color: var(--av-gray-700); }
+  .swatch-hex  { font-size: 10px; color: var(--av-gray-400); font-family: var(--av-font-mono); }
+
+  .wide .swatch-color { width: 120px; }
+
+  hr { border: none; border-top: 1px solid var(--av-border); margin: 4px 0 20px; }
+</style>
+</head>
+<body>
+
+<div class="label">Primarios — Landing (fuente de verdad)</div>
+<div class="row wide">
+  <div class="swatch">
+    <div class="swatch-color" style="background:#0248f7;"></div>
+    <div class="swatch-name">Blue</div>
+    <div class="swatch-hex">#0248f7</div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#e1eaf8;"></div>
+    <div class="swatch-name">Blue Tint</div>
+    <div class="swatch-hex">#e1eaf8</div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#000000;"></div>
+    <div class="swatch-name">Black</div>
+    <div class="swatch-hex">#000000</div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#0c0c0c;"></div>
+    <div class="swatch-name">Near-Black</div>
+    <div class="swatch-hex">#0c0c0c</div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#f8f8f8; border: 1px solid #ebebeb;"></div>
+    <div class="swatch-name">BG Page</div>
+    <div class="swatch-hex">#f8f8f8</div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#ffffff; border: 1px solid #ebebeb;"></div>
+    <div class="swatch-name">White</div>
+    <div class="swatch-hex">#ffffff</div>
+  </div>
+</div>
+<hr>
+
+<div class="label">Acento de marca — uso gráfico solamente</div>
+<div class="row">
+  <div class="swatch">
+    <div class="swatch-color" style="background:#ccff00; border-color: rgba(0,0,0,.1);"></div>
+    <div class="swatch-name">Lima</div>
+    <div class="swatch-hex">#ccff00</div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#b5e000; border-color: rgba(0,0,0,.1);"></div>
+    <div class="swatch-name">Lima Dark</div>
+    <div class="swatch-hex">#b5e000</div>
+  </div>
+</div>
+<hr>
+
+<div class="label">Neutros de apoyo (app / dashboard)</div>
+<div class="row">
+  <div class="swatch"><div class="swatch-color" style="background:#f9fafb;border-color:#e5e7eb"></div><div class="swatch-name">50</div><div class="swatch-hex">#f9fafb</div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#f3f4f6;border-color:#e5e7eb"></div><div class="swatch-name">100</div><div class="swatch-hex">#f3f4f6</div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#ebebeb;"></div><div class="swatch-name">Border</div><div class="swatch-hex">#ebebeb</div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#d1d5db;"></div><div class="swatch-name">300</div><div class="swatch-hex">#d1d5db</div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#9ca3af;"></div><div class="swatch-name">400</div><div class="swatch-hex">#9ca3af</div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#575757;"></div><div class="swatch-name">Body</div><div class="swatch-hex">#575757</div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#374151;"></div><div class="swatch-name">700</div><div class="swatch-hex">#374151</div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#111827;"></div><div class="swatch-name">900</div><div class="swatch-hex">#111827</div></div>
+</div>
+<hr>
+
+<div class="label">Semánticos</div>
+<div class="row">
+  <div class="swatch"><div class="swatch-color" style="background:#ff4726;"></div><div class="swatch-name">Danger</div><div class="swatch-hex">#ff4726</div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#ffe7e3;border-color:rgba(0,0,0,.08)"></div><div class="swatch-name">Danger Light</div><div class="swatch-hex">#ffe7e3</div></div>
+</div>
+
+</body>
+</html>

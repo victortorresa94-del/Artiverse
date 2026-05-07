@@ -28,7 +28,7 @@ export async function POST(request: Request) {
             try {
                 const synced = await syncContactToHubspot(lead);
                 results.success++;
-                results.details.push({ email: lead.email, status: 'success', hubspot_id: synced.id || synced.vid });
+                results.details.push({ email: lead.email, status: 'success', hubspot_id: synced.vid });
             } catch (error: any) {
                 results.errors++;
                 results.details.push({ email: lead.email, status: 'error', message: error.message });

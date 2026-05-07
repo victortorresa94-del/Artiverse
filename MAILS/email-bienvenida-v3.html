@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bienvenido a Artiverse</title>
+<style>
+  /* Reset */
+  body, table, td, p, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table { border-collapse: collapse !important; }
+  body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+  a { text-decoration: none; }
+
+  /* Mobile */
+  @media screen and (max-width: 600px) {
+    .container { width: 100% !important; max-width: 100% !important; }
+    .px-mobile { padding-left: 24px !important; padding-right: 24px !important; }
+    .py-mobile { padding-top: 24px !important; padding-bottom: 24px !important; }
+    .hero-h1 { font-size: 30px !important; line-height: 1.15 !important; }
+    .hero-sub { font-size: 16px !important; }
+    .section-h { font-size: 22px !important; }
+    .feature-text { font-size: 15px !important; }
+    .cta-btn { display: block !important; width: 100% !important; box-sizing: border-box !important; }
+    .stack-mobile { display: block !important; width: 100% !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+<!-- Preheader oculto -->
+<div style="display:none;font-size:1px;color:#f5f5f7;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+  Bienvenido {{firstName}}. Aquí y ahora empieza tu camino en Artiverse.
+</div>
+
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#f5f5f7;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+
+      <table role="presentation" class="container" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+
+        <!-- ─── HEADER LOGO ─── -->
+        <tr>
+          <td align="left" style="padding:28px 36px 0 36px;" class="px-mobile">
+            <table border="0" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:middle;padding-right:10px;">
+                  <img src="https://artiverse-sigma.vercel.app/artiverse-logo.jpg" alt="Artiverse" width="36" height="36" style="display:block;border-radius:8px;">
+                </td>
+                <td style="vertical-align:middle;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+                  <span style="font-size:16px;font-weight:700;color:#0a0a0a;letter-spacing:-0.3px;">Artiverse</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ─── HERO ─── -->
+        <tr>
+          <td align="left" style="padding:36px 36px 0 36px;" class="px-mobile">
+            <p style="margin:0;font-size:13px;font-weight:600;color:#2563EB;letter-spacing:1.5px;text-transform:uppercase;">¡Bienvenido!</p>
+            <h1 class="hero-h1" style="margin:10px 0 16px 0;font-size:36px;font-weight:800;color:#0a0a0a;line-height:1.1;letter-spacing:-1px;">
+              Hola {{firstName}},<br/>
+              tu lugar es <span style="color:#2563EB;">aquí y ahora</span>.
+            </h1>
+            <p class="hero-sub" style="margin:0;font-size:17px;color:#4a4a55;line-height:1.55;">
+              Te has unido a la plataforma que está conectando a las compañías de danza, teatro y música con los programadores de toda España.
+            </p>
+          </td>
+        </tr>
+
+        <!-- ─── HERO IMAGE ─── -->
+        <tr>
+          <td align="center" style="padding:28px 36px 0 36px;" class="px-mobile">
+            <img src="https://v3b.fal.media/files/b/0a9918e3/ZM3c_cgOF_8Lp3S3jI7JR.jpg" alt="Artistas en escena" width="528" style="display:block;width:100%;max-width:528px;height:auto;border-radius:12px;">
+          </td>
+        </tr>
+
+        <!-- ─── BENEFITS BLOCK ─── -->
+        <tr>
+          <td align="left" style="padding:36px 36px 8px 36px;" class="px-mobile">
+            <h2 class="section-h" style="margin:0 0 8px 0;font-size:24px;font-weight:700;color:#0a0a0a;letter-spacing:-0.5px;">
+              ¿Y ahora qué?
+            </h2>
+            <p style="margin:0 0 24px 0;font-size:15px;color:#6b6b78;line-height:1.5;">
+              En 3 pasos tu perfil estará listo para que los programadores te encuentren.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Step 1 -->
+        <tr>
+          <td style="padding:0 36px;" class="px-mobile">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#fafafc;border-radius:12px;border:1px solid #ececf0;margin-bottom:12px;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <table border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="vertical-align:middle;padding-right:14px;">
+                        <div style="width:32px;height:32px;background:#2563EB;border-radius:50%;color:#fff;font-size:14px;font-weight:700;text-align:center;line-height:32px;">1</div>
+                      </td>
+                      <td style="vertical-align:middle;">
+                        <div class="feature-text" style="font-size:15px;font-weight:600;color:#0a0a0a;margin-bottom:2px;">Completa tu perfil</div>
+                        <div style="font-size:13px;color:#6b6b78;line-height:1.45;">Foto, bio, vídeo, ficha técnica. Cuanto más completo, más visibilidad.</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Step 2 -->
+        <tr>
+          <td style="padding:0 36px;" class="px-mobile">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#fafafc;border-radius:12px;border:1px solid #ececf0;margin-bottom:12px;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <table border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="vertical-align:middle;padding-right:14px;">
+                        <div style="width:32px;height:32px;background:#2563EB;border-radius:50%;color:#fff;font-size:14px;font-weight:700;text-align:center;line-height:32px;">2</div>
+                      </td>
+                      <td style="vertical-align:middle;">
+                        <div class="feature-text" style="font-size:15px;font-weight:600;color:#0a0a0a;margin-bottom:2px;">Explora oportunidades</div>
+                        <div style="font-size:13px;color:#6b6b78;line-height:1.45;">Licitaciones, convocatorias y festivales centralizados en un solo lugar.</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Step 3 -->
+        <tr>
+          <td style="padding:0 36px;" class="px-mobile">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#fafafc;border-radius:12px;border:1px solid #ececf0;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <table border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="vertical-align:middle;padding-right:14px;">
+                        <div style="width:32px;height:32px;background:#2563EB;border-radius:50%;color:#fff;font-size:14px;font-weight:700;text-align:center;line-height:32px;">3</div>
+                      </td>
+                      <td style="vertical-align:middle;">
+                        <div class="feature-text" style="font-size:15px;font-weight:600;color:#0a0a0a;margin-bottom:2px;">Conecta directamente</div>
+                        <div style="font-size:13px;color:#6b6b78;line-height:1.45;">Mensajería interna sin intermediarios — los programadores te escriben dentro.</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ─── CTA ─── -->
+        <tr>
+          <td align="center" style="padding:36px 36px 12px 36px;" class="px-mobile">
+            <table border="0" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" style="background:#2563EB;border-radius:10px;">
+                  <a href="https://artiverse.es" class="cta-btn" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.2px;">
+                    Completar mi perfil →
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:14px 0 0 0;font-size:12px;color:#9ca3af;">
+              También puedes acceder en <a href="https://artiverse.es" style="color:#2563EB;text-decoration:none;font-weight:600;">artiverse.es</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- ─── DIVIDER ─── -->
+        <tr>
+          <td style="padding:24px 36px 0 36px;" class="px-mobile">
+            <div style="border-top:1px solid #ececf0;"></div>
+          </td>
+        </tr>
+
+        <!-- ─── PERSONAL NOTE ─── -->
+        <tr>
+          <td style="padding:24px 36px 32px 36px;" class="px-mobile">
+            <p style="margin:0 0 10px 0;font-size:14px;color:#0a0a0a;font-weight:600;">¿Tienes preguntas?</p>
+            <p style="margin:0;font-size:14px;color:#6b6b78;line-height:1.55;">
+              Escríbeme directamente a <a href="mailto:victor@artiverse.online" style="color:#2563EB;text-decoration:none;font-weight:600;">victor@artiverse.online</a> y te ayudo a configurarlo todo.
+            </p>
+            <p style="margin:14px 0 0 0;font-size:13px;color:#9ca3af;font-style:italic;">
+              Víctor — Marketing &amp; Growth, Artiverse
+            </p>
+          </td>
+        </tr>
+
+      </table>
+
+      <!-- ─── FOOTER ─── -->
+      <table role="presentation" class="container" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;width:100%;margin-top:16px;">
+        <tr>
+          <td align="center" style="padding:0 24px;">
+            <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.6;">
+              Recibes este email porque te has registrado en <a href="https://artiverse.es" style="color:#9ca3af;">artiverse.es</a><br/>
+              Artiverse · El futuro de las artes en vivo está aquí y ahora.
+            </p>
+          </td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

@@ -1,4 +1,13 @@
 {
+  "Teatros": {
+    "sent": 75,
+    "opened": 14,
+    "replied": 2,
+    "openRate": 18.7,
+    "replyRate": 2.7,
+    "campaignName": "Teatros",
+    "updatedAt": "2026-04-20T00:00:00.000Z"
+  },
   "Teatros - Artiverse": {
     "sent": 75,
     "opened": 14,
@@ -6,7 +15,7 @@
     "openRate": 18.7,
     "replyRate": 2.7,
     "campaignName": "Teatros - Artiverse",
-    "updatedAt": "2026-04-09T00:00:00.000Z"
+    "updatedAt": "2026-04-20T00:00:00.000Z"
   },
   "Calentamiento - Dance from Spain": {
     "sent": 6,

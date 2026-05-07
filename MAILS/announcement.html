@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{subject}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    img { border:0; outline:none; text-decoration:none; display:block; }
+    body { margin:0; padding:0; background-color:#EBEBEB; }
+    @media only screen and (max-width:480px) {
+      .ew { width:100% !important; }
+      .ep { padding:36px 24px !important; }
+      .mega-title { font-size:48px !important; line-height:1 !important; }
+      .btn-dark { width:100% !important; box-sizing:border-box !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#EBEBEB;font-family:'Outfit',-apple-system,sans-serif;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center" style="padding:40px 16px;">
+      <table class="ew" role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+             style="max-width:600px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.18);">
+
+        <!-- HERO LIMA -->
+        <tr>
+          <td style="background-color:#CCFF00;padding:0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding:28px 40px;" valign="middle" align="left">
+                  <img src="https://artiverse-sigma.vercel.app/artiverse-logo.jpg" alt="Artiverse" width="40" style="display:block;width:40px;height:auto;border-radius:6px;" />
+                </td>
+                <td style="padding:28px 40px;" valign="middle" align="right">
+                  <span style="display:inline-block;background:#0A0A0A;color:#CCFF00;border-radius:100px;padding:8px 16px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">
+                    {{eyebrow}}
+                  </span>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Mega título -->
+            <table class="ep" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:32px 48px 60px 48px;">
+              <tr>
+                <td>
+                  <h1 class="mega-title" style="margin:0;font-size:64px;font-weight:800;color:#0A0A0A;letter-spacing:-0.04em;line-height:0.95;">
+                    {{mega_title}}
+                  </h1>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CUERPO BLANCO -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:48px 48px 32px 48px;">
+            <p style="margin:0 0 12px 0;font-size:11px;font-weight:500;color:#999999;letter-spacing:2px;text-transform:uppercase;">
+              {{kicker}}
+            </p>
+            <h2 style="margin:0 0 20px 0;font-size:28px;font-weight:500;color:#0A0A0A;letter-spacing:-0.02em;line-height:1.2;">
+              {{subhead}}
+            </h2>
+            <p style="margin:0 0 18px 0;font-size:16px;color:#444444;line-height:1.7;">
+              {{paragraph_1}}
+            </p>
+            <p style="margin:0 0 18px 0;font-size:16px;color:#444444;line-height:1.7;">
+              {{paragraph_2}}
+            </p>
+          </td>
+        </tr>
+
+        <!-- HIGHLIGHTS -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:0 48px 32px 48px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0A0A0A;border-radius:14px;padding:28px 32px;">
+              <tr>
+                <td>
+                  <p style="margin:0 0 14px 0;font-size:11px;font-weight:500;color:#CCFF00;letter-spacing:2px;text-transform:uppercase;">
+                    Lo que viene
+                  </p>
+                  <p style="margin:0 0 8px 0;font-size:15px;color:#FFFFFF;line-height:1.6;">▸ {{highlight_1}}</p>
+                  <p style="margin:0 0 8px 0;font-size:15px;color:#FFFFFF;line-height:1.6;">▸ {{highlight_2}}</p>
+                  <p style="margin:0;font-size:15px;color:#FFFFFF;line-height:1.6;">▸ {{highlight_3}}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td class="ep" style="background:#FFFFFF;padding:8px 48px 48px 48px;" align="center">
+            <a class="btn-dark" href="{{cta_url}}"
+               style="background-color:#0A0A0A;color:#CCFF00;font-weight:500;font-size:15px;padding:18px 44px;border-radius:10px;text-decoration:none;display:inline-block;">
+              {{cta_text}} →
+            </a>
+            <p style="margin:14px 0 0 0;font-size:12px;color:#999999;font-style:italic;">
+              {{cta_note}}
+            </p>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td align="center" style="background:#F5F5F5;padding:20px 40px;border-top:1px solid #E8E8E8;">
+            <p style="margin:0 0 4px 0;font-size:11px;color:#AAAAAA;">© 2026 Artiverse · Spain</p>
+            <p style="margin:0;font-size:11px;color:#AAAAAA;">
+              <a href="{{unsubscribe_url}}" style="color:#AAAAAA;text-decoration:underline;">Darse de baja</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

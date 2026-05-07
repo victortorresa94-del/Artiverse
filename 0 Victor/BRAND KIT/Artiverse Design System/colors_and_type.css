@@ -1,0 +1,238 @@
+/* ============================================================
+   Artiverse — Foundation tokens
+   Source of truth: artiverse.es landing page HTML (Framer export)
+   Last synced: 2025 — extracted from CSS custom properties in
+   the live Framer build (token-* names preserved as comments).
+   ============================================================ */
+
+/* ── Typefaces ───────────────────────────────────────────────
+   Landing uses THREE families:
+   1. Geist       – display / headings (600, 900)
+   2. Outfit      – secondary headings / accents (400, 500, 600, 700, 900)
+   3. Inter       – body / UI labels (400, 600)
+
+   Source in landing: Framer CDN (woff2). We load from Google Fonts
+   + Fontshare for portability. Geist is Vercel's open-source font.
+   ────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;600;900&family=Inter:wght@400;500;600;700&display=swap');
+/* Outfit from Fontshare CDN */
+@import url('https://api.fontshare.com/v2/css?f[]=outfit@400,500,600,700,900&display=swap');
+
+:root {
+
+  /* ── Brand colors (from live landing CSS tokens) ─────────── */
+  --av-blue:         #0248f7;  /* --token-58f62a67 / --token-54ffe52e — PRIMARY */
+  --av-blue-tint:    #e1eaf8;  /* --token-563968fe — light blue tint */
+  --av-black:        #000000;  /* --token-e1ef367e — true black (headings, hero) */
+  --av-near-black:   #0c0c0c;  /* --token-55271d87 — body dark surfaces */
+  --av-white:        #ffffff;  /* --token-17335ab3 */
+  --av-bg:           #f8f8f8;  /* --token-469374a6 — page background */
+  --av-border:       #ebebeb;  /* --token-a0d7c77d — default border */
+  --av-gray-body:    #575757;  /* --token-cb2243e7 — body/secondary text */
+
+  /* ── Semantic colors (derived, consistent with landing) ──── */
+  --av-danger:       #ff4726;  /* --token-c43afcfb */
+  --av-danger-light: #ffe7e3;  /* --token-d68380fa */
+
+  /* ── Brand accent (from brand book / graphics — not in CSS tokens)
+     Lima is used in decorative graphics, stamps, and brand moments
+     but NOT as a CSS token in the live landing. Use only for
+     high-impact brand graphics, social assets, and stickers.
+     ─────────────────────────────────────────────────────────── */
+  --av-lime:         #ccff00;  /* brand accent — graphic use only */
+  --av-lime-dark:    #b5e000;
+
+  /* ── Surface/background aliases ─────────────────────────── */
+  --av-bg-page:      var(--av-bg);          /* #f8f8f8 */
+  --av-bg-surface:   var(--av-white);       /* cards, sections */
+  --av-bg-tint:      var(--av-blue-tint);   /* hover/selected bg */
+  --av-bg-inverse:   var(--av-black);
+
+  /* ── Text aliases ────────────────────────────────────────── */
+  --av-fg:           var(--av-black);       /* headings, display */
+  --av-fg-body:      var(--av-gray-body);   /* #575757 — running text */
+  --av-fg-inverse:   var(--av-white);
+
+  /* ── Neutral scale (supplementary, for app / dashboard) ──── */
+  --av-gray-50:      #f9fafb;
+  --av-gray-100:     #f3f4f6;
+  --av-gray-200:     #e5e7eb;
+  --av-gray-300:     #d1d5db;
+  --av-gray-400:     #9ca3af;
+  --av-gray-500:     #6b7280;
+  --av-gray-600:     #4b5563;
+  --av-gray-700:     #374151;
+  --av-gray-900:     #111827;
+
+  /* ── Typography ─────────────────────────────────────────── */
+
+  /* Font families */
+  --av-font-display: 'Geist', 'Geist Placeholder', -apple-system, system-ui, sans-serif;
+  --av-font-accent:  'Outfit', 'Outfit Placeholder', -apple-system, system-ui, sans-serif;
+  --av-font-body:    'Inter', 'Inter Placeholder', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --av-font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Font size scale (px) */
+  --av-text-hero:    64px;   /* Geist 900 — landing hero headline */
+  --av-text-display: 52px;   /* Geist 900 — display headlines */
+  --av-text-h1:      36px;   /* Geist 900 — section heroes */
+  --av-text-h2:      24px;   /* Geist 600 or Outfit 700 — sub-heads */
+  --av-text-h3:      18px;   /* Geist 600 — card titles */
+  --av-text-body:    15px;   /* Inter 400 — running text */
+  --av-text-small:   13px;   /* Inter 400/500 — secondary text */
+  --av-text-caption: 12px;   /* Inter 500 — labels, timestamps */
+  --av-text-micro:   10px;   /* Inter 700 — eyebrows, tags */
+
+  /* Line heights */
+  --av-lh-tight:     1.0;
+  --av-lh-snug:      1.15;
+  --av-lh-normal:    1.4;
+  --av-lh-relaxed:   1.6;
+
+  /* Letter spacing */
+  --av-tr-display:   -0.03em;  /* Geist display/hero */
+  --av-tr-heading:   -0.02em;  /* Geist headings */
+  --av-tr-subhead:   -0.01em;
+  --av-tr-normal:    0;
+  --av-tr-label:     0.05em;
+  --av-tr-eyebrow:   0.15em;   /* uppercase small labels */
+
+  /* Font weights */
+  --av-fw-regular:   400;
+  --av-fw-medium:    500;
+  --av-fw-semibold:  600;
+  --av-fw-bold:      700;
+  --av-fw-black:     900;
+
+  /* ── Spacing (4px base) ──────────────────────────────────── */
+  --av-space-1:      4px;
+  --av-space-2:      8px;
+  --av-space-3:      12px;
+  --av-space-4:      16px;
+  --av-space-5:      20px;
+  --av-space-6:      24px;
+  --av-space-8:      32px;
+  --av-space-10:     40px;
+  --av-space-12:     48px;
+  --av-space-16:     64px;
+  --av-space-20:     80px;
+
+  /* ── Radii ────────────────────────────────────────────────── */
+  --av-radius-xs:    4px;    /* tiny chips */
+  --av-radius-sm:    6px;    /* landing nav hamburger uses 6px */
+  --av-radius-md:    10px;   /* cards (artist cards use ~10px) */
+  --av-radius-lg:    16px;   /* sections, feature blocks */
+  --av-radius-xl:    20px;   /* hero decorative blocks */
+  --av-radius-2xl:   28px;   /* large brand shapes */
+  --av-radius-pill:  999px;  /* pills, CTAs */
+
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --av-shadow-nav:    rgba(0,0,0,0.03) 0px 1px 20px 0px;  /* nav header (exact from landing) */
+  --av-shadow-sm:     0 1px 2px rgba(0,0,0,.04), 0 1px 4px rgba(0,0,0,.06);
+  --av-shadow-md:     0 4px 12px rgba(0,0,0,.08);
+  --av-shadow-lg:     0 12px 32px rgba(0,0,0,.10);
+  --av-shadow-focus:  0 0 0 3px rgba(2,72,247,.25);  /* blue focus ring */
+
+  /* ── Motion — exact values from Framer appear animations ─── */
+  /* Small entrance  */ --av-spring-sm:    damping 60, mass 1, stiffness 500;  /* delay 0.1 */
+  /* Medium entrance */ --av-spring-md:    damping 60, mass 1, stiffness 500;  /* delay 0.2–0.3 */
+  /* Hero entrance   */ --av-spring-hero:  damping 80, mass 2, stiffness 500;  /* delay 0.6, y:150 */
+
+  /* CSS timing equivalents (for non-Framer usage) */
+  --av-ease-out:      cubic-bezier(0.22, 1, 0.36, 1);
+  --av-ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --av-dur-fast:      120ms;
+  --av-dur-base:      200ms;
+  --av-dur-slow:      360ms;
+}
+
+/* ============================================================
+   Semantic element defaults
+   ============================================================ */
+html {
+  font-family: var(--av-font-body);
+  background: var(--av-bg-page);
+  color: var(--av-fg-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-size: var(--av-text-body);
+  line-height: var(--av-lh-relaxed);
+}
+
+/* Headings default to Geist (display family) */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--av-font-display);
+  color: var(--av-fg);
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--av-text-h1);
+  font-weight: var(--av-fw-black);
+  letter-spacing: var(--av-tr-heading);
+  line-height: var(--av-lh-snug);
+}
+
+h2 {
+  font-size: var(--av-text-h2);
+  font-weight: var(--av-fw-semibold);
+  letter-spacing: var(--av-tr-subhead);
+  line-height: var(--av-lh-snug);
+}
+
+h3 {
+  font-size: var(--av-text-h3);
+  font-weight: var(--av-fw-semibold);
+  line-height: var(--av-lh-normal);
+}
+
+p { margin: 0; }
+
+a {
+  color: var(--av-blue);
+  text-decoration: none;
+}
+
+/* ── Utility classes ───────────────────────────────────────── */
+
+/* Hero / display — Geist 900, tight */
+.av-hero {
+  font-family: var(--av-font-display);
+  font-size: var(--av-text-hero);
+  font-weight: var(--av-fw-black);
+  letter-spacing: var(--av-tr-display);
+  line-height: var(--av-lh-tight);
+  color: var(--av-fg);
+}
+
+.av-display {
+  font-family: var(--av-font-display);
+  font-size: var(--av-text-display);
+  font-weight: var(--av-fw-black);
+  letter-spacing: var(--av-tr-display);
+  line-height: var(--av-lh-tight);
+}
+
+/* Eyebrow — small uppercase tracked label */
+.av-eyebrow {
+  font-family: var(--av-font-body);
+  font-size: var(--av-text-micro);
+  font-weight: var(--av-fw-bold);
+  letter-spacing: var(--av-tr-eyebrow);
+  text-transform: uppercase;
+  color: var(--av-gray-400);
+}
+
+/* Outfit accent text (used for certain subtitles/descriptors) */
+.av-accent-text {
+  font-family: var(--av-font-accent);
+}
+
+/* Monospace — numeric dashboards */
+code, kbd, .av-mono {
+  font-family: var(--av-font-mono);
+  font-size: 0.92em;
+}

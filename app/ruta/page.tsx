@@ -1,0 +1,922 @@
+'use client'
+
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import {
+  X, RefreshCw, ExternalLink, Mail, Building2, MapPin,
+  Calendar, ChevronRight, Zap, Globe, Users, Clock, Map,
+} from 'lucide-react'
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface RutaContact {
+  email: string; company: string; contact: string; phone: string
+  website: string; city: string; segment: string
+  campaignName?: string; lastContact?: string; opens?: number; replies?: number
+  artName?: string; subscription?: string; hasAgency?: boolean
+  agencyName?: string; registeredAt?: string
+  source: 'excel' | 'instantly' | 'artiverse'
+}
+
+interface NodeData {
+  count: number
+  breakdown: Record<string, number>
+  contacts: RutaContact[]
+  hasMore: boolean
+}
+
+interface RutaData {
+  last_updated: string; total_base: number
+  nodes: Record<string, NodeData>
+  conversion_rates: Record<string, number | null>
+  campaigns: { id: string; name: string; sent: number; opened: number; replied: number; bounced: number }[]
+  cached?: boolean; stale?: boolean
+}
+
+// ── Node definitions ───────────────────────────────────────────────────────────
+
+interface NodeDef {
+  key: string; label: string; sub: string
+  color: string; glow: string
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  isMeta?: boolean
+}
+
+const OUTBOUND_NODES: NodeDef[] = [
+  { key: 'base_contactos', label: 'Universo', sub: 'base total',   color: '#6B7280', glow: '#6B728066', size: 'lg' },
+  { key: 'enviado',        label: 'Enviado',  sub: 'email sent',   color: '#1E40AF', glow: '#2563EB55', size: 'md' },
+  { key: 'abierto',        label: 'Abierto',  sub: 'email opened', color: '#2563EB', glow: '#3B82F655', size: 'md' },
+  { key: 'respondido',     label: 'Reply',    sub: 'replied',      color: '#0284C7', glow: '#0EA5E955', size: 'md' },
+]
+
+const INBOUND_NODES: NodeDef[] = [
+  { key: 'registrado',         label: 'Registrado', sub: 'plataforma',   color: '#0E7490', glow: '#06B6D455', size: 'md' },
+  { key: 'verificado',         label: 'Verificado', sub: 'email ok',     color: '#047857', glow: '#10B98155', size: 'md' },
+  { key: 'perfil_completo',    label: 'Perfil',     sub: 'completo',     color: '#15803D', glow: '#22C55E55', size: 'md' },
+  { key: 'agencia_registrada', label: 'Agencia',    sub: 'registrada',   color: '#4D7C0F', glow: '#84CC1655', size: 'md' },
+  { key: 'total_pro',          label: 'PRO',        sub: 'suscriptores', color: '#CCFF00', glow: '#CCFF0066', size: 'xl', isMeta: true },
+]
+
+const ALL_NODES = [...OUTBOUND_NODES, ...INBOUND_NODES]
+const OUTBOUND_RATES = ['base_to_enviado', 'enviado_to_abierto', 'abierto_to_respondido']
+const INBOUND_RATES  = ['registrado_to_verificado', 'verificado_to_perfil', 'perfil_to_agencia', 'agencia_to_pro']
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmt(n: number) { return n >= 1000 ? n.toLocaleString('es-ES') : String(n) }
+function pct(r: number | null | undefined) {
+  if (r == null) return null
+  return `${(r * 100).toFixed(1)}%`
+}
+function timeAgo(iso: string) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return 'hace un momento'
+  if (s < 3600) return `hace ${Math.floor(s / 60)} min`
+  return `hace ${Math.floor(s / 3600)} h`
+}
+
+// ── Counter-up hook ───────────────────────────────────────────────────────────
+
+function useCountUp(target: number, delay = 0, run = false) {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    if (!run || !target) return
+    const tid = setTimeout(() => {
+      const start = Date.now()
+      const dur   = Math.min(800 + target / 5, 1400)
+      const tick  = () => {
+        const p = Math.min((Date.now() - start) / dur, 1)
+        setVal(Math.round((1 - Math.pow(1 - p, 3)) * target))
+        if (p < 1) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    }, delay)
+    return () => clearTimeout(tid)
+  }, [target, delay, run])
+  return val
+}
+
+// ── NODE CARD (desktop visualization) ────────────────────────────────────────
+
+function RutaNodeCircle({
+  def, count, onClick, onHover, onLeave, animated, delay, isSelected,
+}: {
+  def: NodeDef; count: number; onClick: () => void
+  onHover: () => void; onLeave: () => void
+  animated: boolean; delay: number; isSelected: boolean
+}) {
+  const displayed = useCountUp(count, delay, animated)
+
+  return (
+    <div
+      className="relative cursor-pointer shrink-0 node-pop group"
+      style={{ animationDelay: `${delay}ms`, width: 118 }}
+      onClick={onClick}
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+    >
+      <div
+        className="rounded-xl p-3.5 border transition-all duration-200"
+        style={{
+          background:  isSelected ? `${def.color}10` : 'var(--bg-base)',
+          border:      `1px solid ${isSelected ? def.color : 'var(--border)'}`,
+          boxShadow:   isSelected ? `0 0 0 3px ${def.color}22` : 'none',
+        }}
+      >
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center mb-3"
+          style={{ background: `${def.color}15`, border: `1px solid ${def.color}30` }}
+        >
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: def.color }} />
+        </div>
+        <p
+          className="text-xl font-bold font-mono leading-none tabular-nums"
+          style={{ color: 'var(--text-1)' }}
+        >
+          {fmt(animated ? displayed : count)}
+        </p>
+        <p className="text-[11px] font-semibold mt-1.5 leading-tight" style={{ color: 'var(--text-1)' }}>
+          {def.label}
+        </p>
+        <p className="text-[9px] mt-0.5 uppercase tracking-wider font-medium" style={{ color: 'var(--text-3)' }}>
+          {def.sub}
+        </p>
+      </div>
+      {isSelected && (
+        <div
+          className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
+          style={{ background: def.color }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── CONNECTOR ─────────────────────────────────────────────────────────────────
+
+function Connector({ rate, fromColor, toColor, animated }: {
+  rate: number | null | undefined; fromColor: string; toColor: string; animated: boolean
+}) {
+  const label = pct(rate)
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center relative px-2 min-w-[36px] mt-4">
+      {label && (
+        <div
+          className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-mono whitespace-nowrap px-1.5 py-0.5 rounded font-semibold"
+          style={{ color: 'var(--text-2)', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+        >
+          {label}
+        </div>
+      )}
+      <div
+        className="w-full h-px rounded-full"
+        style={{
+          background: `linear-gradient(90deg, ${fromColor}44, ${toColor}44)`,
+          opacity: animated ? 1 : 0.3,
+          transition: 'opacity 0.6s ease',
+        }}
+      />
+      <ChevronRight
+        size={12}
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0.5"
+        style={{ color: 'var(--text-3)' }}
+      />
+    </div>
+  )
+}
+
+// ── BOUNCE NODE ───────────────────────────────────────────────────────────────
+
+function BounceNode({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <div className="absolute" style={{ left: '10%', top: 'calc(100% + 12px)' }}>
+      <div className="absolute -top-6 left-1/2 w-[2px] h-6 -translate-x-1/2"
+        style={{ background: 'linear-gradient(to bottom, #EF444433, #EF444499)' }} />
+      <button
+        onClick={onClick}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:scale-105"
+        style={{ background: 'var(--bg-surface)', border: '1px solid #EF444433', color: '#EF4444', boxShadow: '0 0 12px #EF444422' }}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+        BOUNCED · {count}
+        <span className="text-red-800 text-[9px]">↓ fuera de ruta</span>
+      </button>
+    </div>
+  )
+}
+
+// ── TOOLTIP ───────────────────────────────────────────────────────────────────
+
+function NodeTooltip({ def, node }: { def: NodeDef; node: NodeData }) {
+  const entries = Object.entries(node.breakdown).sort((a, b) => b[1] - a[1]).slice(0, 6)
+  if (!entries.length) return null
+  return (
+    <div
+      className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 z-50 min-w-[200px] rounded-xl p-3 text-xs pointer-events-none"
+      style={{ background: 'var(--bg-elevated)', border: `1px solid ${def.color}33`, boxShadow: `0 8px 32px ${def.glow}` }}
+    >
+      <div className="font-semibold mb-2" style={{ color: def.color }}>{def.label}</div>
+      <div className="space-y-1">
+        {entries.map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-4" style={{ color: 'var(--text-2)' }}>
+            <span className="truncate">{k}</span>
+            <span className="font-mono font-bold" style={{ color: def.color }}>{v}</span>
+          </div>
+        ))}
+        {node.hasMore && (
+          <div className="pt-1 text-center" style={{ color: 'var(--text-3)' }}>
+            + más… click para ver todos
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── LANE (desktop) ────────────────────────────────────────────────────────────
+
+function Lane({
+  label, icon, nodes, rateKeys, data, animated, selectedNode, onSelect, baseDelay,
+}: {
+  label: string; icon: React.ReactNode; nodes: NodeDef[]; rateKeys: string[]
+  data: RutaData; animated: boolean; selectedNode: string | null
+  onSelect: (k: string) => void; baseDelay: number
+}) {
+  const [hovered, setHovered] = useState<string | null>(null)
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2 px-2">
+        <div className="text-[10px] uppercase tracking-[0.25em] flex items-center gap-1.5" style={{ color: 'var(--text-3)' }}>
+          {icon} {label}
+        </div>
+        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, var(--border), transparent)' }} />
+      </div>
+      <div className="flex items-start relative">
+        {nodes.map((def, i) => {
+          const nodeData = data.nodes[def.key]
+          if (!nodeData) return null
+          const isLast  = i === nodes.length - 1
+          const rateKey = rateKeys[i]
+          const rate    = data.conversion_rates[rateKey]
+          const nextNode = nodes[i + 1]
+          const delay   = baseDelay + i * 120
+          return (
+            <div key={def.key} className={`flex items-start ${isLast ? '' : 'flex-1'} relative`}>
+              <div className="relative">
+                <RutaNodeCircle
+                  def={def} count={nodeData.count}
+                  onClick={() => onSelect(def.key === selectedNode ? '' : def.key)}
+                  onHover={() => setHovered(def.key)}
+                  onLeave={() => setHovered(null)}
+                  animated={animated} delay={delay}
+                  isSelected={selectedNode === def.key}
+                />
+                {hovered === def.key && <NodeTooltip def={def} node={nodeData} />}
+                {def.key === 'enviado' && (data.nodes.bounced?.count ?? 0) > 0 && (
+                  <BounceNode count={data.nodes.bounced.count} onClick={() => onSelect('bounced')} />
+                )}
+              </div>
+              {!isLast && nextNode && (
+                <Connector rate={rate} fromColor={def.color} toColor={nextNode.color} animated={animated} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── LANE SKELETON ─────────────────────────────────────────────────────────────
+
+function LaneSkeleton({ count }: { count: number }) {
+  return (
+    <div className="flex items-start gap-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className={`flex items-start ${i < count - 1 ? 'flex-1' : ''}`}>
+          <div
+            className="rounded-xl p-3.5 border shrink-0 animate-pulse"
+            style={{ width: 118, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+          >
+            <div className="w-7 h-7 rounded-lg mb-3" style={{ background: 'var(--bg-hover)' }} />
+            <div className="h-5 w-10 rounded mb-2" style={{ background: 'var(--bg-hover)' }} />
+            <div className="h-2.5 w-14 rounded mb-1" style={{ background: 'var(--bg-hover)' }} />
+            <div className="h-2 w-10 rounded" style={{ background: 'var(--bg-hover)' }} />
+          </div>
+          {i < count - 1 && (
+            <div className="flex-1 h-px mt-8 mx-1 rounded-full animate-pulse" style={{ background: 'var(--bg-elevated)' }} />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── CONTACT CARD (slide-over) ─────────────────────────────────────────────────
+
+function ContactCard({ c, onHubspot }: { c: RutaContact; onHubspot: (c: RutaContact) => void }) {
+  const sourceBadge = {
+    excel:     { label: 'Excel',     bg: 'var(--bg-elevated)', color: 'var(--text-2)' },
+    instantly: { label: 'Instantly', bg: 'rgba(37,99,235,0.15)',   color: '#60A5FA' },
+    artiverse: { label: 'Artiverse', bg: 'rgba(34,197,94,0.12)',   color: '#34D399' },
+  }[c.source]
+
+  return (
+    <div
+      className="p-3 rounded-xl border transition-all duration-200"
+      style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border-strong)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>
+            {c.company || c.contact || c.email.split('@')[0]}
+          </div>
+          <div className="text-xs truncate font-mono" style={{ color: 'var(--text-3)' }}>{c.email}</div>
+        </div>
+        <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0"
+          style={{ background: sourceBadge.bg, color: sourceBadge.color }}>
+          {sourceBadge.label}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {c.city && (
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
+            <MapPin size={10} /> {c.city}
+          </span>
+        )}
+        {c.segment && (
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
+            <Users size={10} /> {c.segment}
+          </span>
+        )}
+        {c.campaignName && (
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
+            <Mail size={10} /> {c.campaignName}
+          </span>
+        )}
+        {(c.opens ?? 0) > 0 && (
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: '#2563EB' }}>
+            👁 {c.opens} aperturas
+          </span>
+        )}
+        {c.subscription && c.subscription !== 'free' && (
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: '#CCFF00' }}>
+            ✦ {c.subscription}
+          </span>
+        )}
+        {c.registeredAt && (
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
+            <Calendar size={10} /> {c.registeredAt.slice(0, 10)}
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={() => onHubspot(c)}
+          className="hs-btn flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-1.5 rounded-lg transition-all hover:opacity-90"
+          style={{ background: 'rgba(255,122,89,0.1)', color: '#FF7A59', border: '1px solid rgba(255,122,89,0.2)' }}
+        >
+          <Zap size={11} /> Contactar en HubSpot
+        </button>
+        {c.website && (
+          <a
+            href={c.website.startsWith('http') ? c.website : `https://${c.website}`}
+            target="_blank" rel="noopener noreferrer"
+            className="px-2 py-1.5 rounded-lg text-xs flex items-center gap-1 transition-opacity hover:opacity-80"
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
+          >
+            <Globe size={11} />
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── HUBSPOT MODAL ─────────────────────────────────────────────────────────────
+
+function HubSpotModal({ contact, onClose }: { contact: RutaContact; onClose: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const subject = 'Artiverse — Te quiero presentar algo'
+  const body    = `Hola ${contact.contact || (contact.company ? `equipo de ${contact.company}` : 'equipo')},\n\n`
+
+  const copyEmail = () => {
+    navigator.clipboard.writeText(contact.email)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(255,122,89,0.2)' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ background: '#FF7A59' }} />
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Contactar en HubSpot</span>
+            </div>
+            <div className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{contact.company || contact.email}</div>
+          </div>
+          <button onClick={onClose} style={{ color: 'var(--text-2)' }}><X size={16} /></button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div className="flex flex-col gap-2 text-sm">
+            <div className="flex items-center gap-3">
+              <Mail size={14} style={{ color: 'var(--text-3)' }} />
+              <span className="font-mono text-xs" style={{ color: 'var(--text-1)' }}>{contact.email}</span>
+              <button
+                onClick={copyEmail}
+                className="ml-auto text-xs px-2 py-0.5 rounded transition-colors"
+                style={{ color: copied ? '#34D399' : 'var(--text-2)', background: 'var(--bg-elevated)' }}
+              >
+                {copied ? '✓ Copiado' : 'Copiar'}
+              </button>
+            </div>
+            {contact.company && (
+              <div className="flex items-center gap-3">
+                <Building2 size={14} style={{ color: 'var(--text-3)' }} />
+                <span className="text-xs" style={{ color: 'var(--text-2)' }}>{contact.company}</span>
+              </div>
+            )}
+            {contact.city && (
+              <div className="flex items-center gap-3">
+                <MapPin size={14} style={{ color: 'var(--text-3)' }} />
+                <span className="text-xs" style={{ color: 'var(--text-2)' }}>{contact.city}</span>
+              </div>
+            )}
+          </div>
+          <div className="rounded-lg p-3 text-xs" style={{ background: 'rgba(255,122,89,0.05)', border: '1px solid rgba(255,122,89,0.15)', color: '#FF7A59' }}>
+            <div className="font-semibold mb-1">Integración HubSpot — próximamente</div>
+            <div className="leading-relaxed" style={{ color: 'var(--text-2)' }}>
+              El botón creará automáticamente el contacto en HubSpot y abrirá un deal vacío listo para editar.
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <a
+              href={`mailto:${contact.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}
+              className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ background: '#2563EB', color: '#fff' }}
+            >
+              <Mail size={14} /> Abrir en cliente de email
+            </a>
+            <button
+              className="flex items-center justify-center gap-2 py-2 rounded-xl text-xs transition-colors"
+              style={{ border: '1px solid var(--border)', color: 'var(--text-2)' }}
+              onClick={onClose}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── SLIDE-OVER ────────────────────────────────────────────────────────────────
+
+const NODE_LABELS: Record<string, string> = {
+  base_contactos: 'Base de contactos', sin_contactar: 'Sin contactar',
+  enviado: 'Email enviado', abierto: 'Ha abierto', respondido: 'Ha respondido',
+  bounced: 'Bounced / Fuera de ruta', registrado: 'Registrado en plataforma',
+  verificado: 'Email verificado', perfil_completo: 'Perfil completo',
+  agencia_registrada: 'Agencia registrada', total_pro: 'Suscriptores Pro',
+}
+
+function SlideOver({
+  nodeKey, data, onClose, onHubspot,
+}: {
+  nodeKey: string; data: RutaData; onClose: () => void; onHubspot: (c: RutaContact) => void
+}) {
+  const node = data.nodes[nodeKey]
+  if (!node) return null
+
+  const def   = ALL_NODES.find(n => n.key === nodeKey)
+  const color = def?.color ?? '#2563EB'
+  const label = NODE_LABELS[nodeKey] ?? nodeKey
+  const [search, setSearch] = useState('')
+
+  const filtered = search
+    ? node.contacts.filter(c =>
+        [c.email, c.company, c.city, c.segment, c.campaignName].join(' ')
+          .toLowerCase().includes(search.toLowerCase())
+      )
+    : node.contacts
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="fixed top-0 right-0 h-full z-50 flex flex-col overflow-hidden"
+        style={{ width: 'min(480px, 100vw)', background: 'var(--bg-surface)', borderLeft: `1px solid ${color}44` }}
+      >
+        <div className="px-6 py-5 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: color }} />
+                <span className="text-base font-bold" style={{ color: 'var(--text-1)' }}>{label}</span>
+              </div>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="text-3xl font-mono font-bold" style={{ color }}>{fmt(node.count)}</span>
+                <span className="text-xs" style={{ color: 'var(--text-3)' }}>contactos en esta fase</span>
+              </div>
+            </div>
+            <button onClick={onClose} className="mt-1 transition-opacity hover:opacity-70" style={{ color: 'var(--text-2)' }}>
+              <X size={18} />
+            </button>
+          </div>
+          {Object.keys(node.breakdown).length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {Object.entries(node.breakdown).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (
+                <span key={k} className="text-[10px] px-2 py-0.5 rounded-full font-mono"
+                  style={{ background: `${color}15`, color: `${color}CC` }}>
+                  {k} · {v}
+                </span>
+              ))}
+            </div>
+          )}
+          <input
+            type="text"
+            placeholder="Buscar empresa, email, ciudad…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="mt-3 w-full text-sm bg-transparent outline-none pb-1"
+            style={{ color: 'var(--text-1)', borderBottom: '1px solid var(--border)', caretColor: color }}
+            onFocus={e => (e.currentTarget.style.borderBottomColor = `${color}66`)}
+            onBlur={e => (e.currentTarget.style.borderBottomColor = 'var(--border)')}
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto ruta-scroll px-6 py-4 space-y-2">
+          {filtered.length === 0 && (
+            <div className="text-center py-12 text-sm" style={{ color: 'var(--text-3)' }}>
+              {search ? 'Sin resultados para tu búsqueda' : 'No hay contactos en esta fase'}
+            </div>
+          )}
+          {filtered.map((c, i) => (
+            <ContactCard key={`${c.email}-${i}`} c={c} onHubspot={onHubspot} />
+          ))}
+          {node.hasMore && !search && (
+            <div className="text-center text-xs py-3 rounded-xl" style={{ color, background: `${color}08`, border: `1px dashed ${color}33` }}>
+              Mostrando los primeros 80 contactos.{' '}
+              <a href="/pipeline" className="underline hover:opacity-80">Ver todos en Pipeline →</a>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── MOBILE — simplified node list ────────────────────────────────────────────
+
+function MobileNodeRow({ def, node, onClick }: {
+  def: NodeDef; node: NodeData; onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="surface-card w-full flex items-center gap-4 px-4 py-4 text-left transition-all"
+      style={{ borderLeftWidth: 3, borderLeftColor: def.color }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
+    >
+      <div className="flex-1 min-w-0">
+        <div
+          className="text-2xl font-bold font-mono leading-none"
+          style={{ color: def.color }}
+        >
+          {fmt(node.count)}
+        </div>
+        <div className="text-xs font-semibold mt-1" style={{ color: 'var(--text-1)' }}>{def.label}</div>
+        <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>{def.sub}</div>
+      </div>
+      <div
+        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+        style={{ background: `${def.color}15`, border: `1px solid ${def.color}33` }}
+      >
+        <ChevronRight size={14} style={{ color: def.color }} />
+      </div>
+    </button>
+  )
+}
+
+// ── MAIN PAGE ─────────────────────────────────────────────────────────────────
+
+function RutaContent() {
+  const [data,            setData]           = useState<RutaData | null>(null)
+  const [loading,         setLoading]        = useState(true)
+  const [error,           setError]          = useState<string | null>(null)
+  const [animated,        setAnimated]       = useState(false)
+  const [selectedNode,    setSelectedNode]   = useState<string | null>(null)
+  const [hubspotContact,  setHubspotContact] = useState<RutaContact | null>(null)
+  const [mobileTab,       setMobileTab]      = useState<'outbound' | 'inbound'>('outbound')
+  const searchParams = useSearchParams()
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(null); setAnimated(false)
+    try {
+      const res = await fetch('/api/ruta?token=AETHER2026')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const d: RutaData = await res.json()
+      setData(d)
+      setTimeout(() => setAnimated(true), 100)
+    } catch (e: any) { setError(e.message) }
+    finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (!data) return
+    const node = searchParams.get('node')
+    if (node) {
+      setSelectedNode(node)
+      if (INBOUND_NODES.some(n => n.key === node)) setMobileTab('inbound')
+    }
+  }, [data, searchParams])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setSelectedNode(null); setHubspotContact(null) }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  const mobileNodes = mobileTab === 'outbound' ? OUTBOUND_NODES : INBOUND_NODES
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)' }}>
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <header
+        className="shrink-0 px-4 sm:px-8 py-4 flex items-center justify-between"
+        style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)' }}
+      >
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-1)' }}>
+            Ruta
+          </h1>
+          {data && (
+            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+                <span className="font-mono font-semibold" style={{ color: 'var(--text-2)' }}>{fmt(data.total_base)}</span> contactos
+              </span>
+              <span style={{ color: 'var(--border)' }}>·</span>
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+                {timeAgo(data.last_updated)}
+              </span>
+              {data.cached && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>CACHÉ</span>
+              )}
+              {data.stale && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#EF4444' }}>CACHÉ ANTIGUA</span>
+              )}
+            </div>
+          )}
+          {!data && !loading && (
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Embudo de crecimiento · Outbound + Plataforma</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Conversion summary — desktop only */}
+          {data && !loading && (
+            <div className="hidden lg:flex items-center gap-4 text-xs mr-4" style={{ color: 'var(--text-3)' }}>
+              <div className="text-center">
+                <div className="font-mono font-bold text-sm" style={{ color: 'var(--lime)' }}>
+                  {pct(data.conversion_rates.registrado_to_pro) ?? '—'}
+                </div>
+                <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>registrado → Pro</div>
+              </div>
+              <div className="w-px h-6" style={{ background: 'var(--border)' }} />
+              <div className="text-center">
+                <div className="font-mono font-bold text-sm" style={{ color: '#2563EB' }}>
+                  {pct(data.conversion_rates.enviado_to_abierto) ?? '—'}
+                </div>
+                <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>open rate</div>
+              </div>
+              <div className="w-px h-6" style={{ background: 'var(--border)' }} />
+              <div className="text-center">
+                <div className="font-mono font-bold text-sm" style={{ color: 'var(--text-2)' }}>
+                  {pct(data.conversion_rates.base_to_pro) ?? '—'}
+                </div>
+                <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>base → Pro</div>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={load} disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-40"
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)', border: '1px solid var(--border)' }}
+          >
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">{loading ? 'Cargando…' : 'Actualizar'}</span>
+          </button>
+        </div>
+      </header>
+
+      {error && (
+        <div className="text-center py-12 text-sm" style={{ color: '#EF4444' }}>
+          Error: {error} <button onClick={load} className="ml-3 underline">Reintentar</button>
+        </div>
+      )}
+
+      {/* ── MOBILE layout (< md) ─────────────────────────────────────────── */}
+      <div className="md:hidden flex-1 px-4 py-5">
+        {/* Mobile stats chips */}
+        {data && !loading && (
+          <div className="grid grid-cols-3 gap-2 mb-5">
+            {[
+              { label: 'Open rate',    value: pct(data.conversion_rates.enviado_to_abierto), color: '#2563EB' },
+              { label: 'Reg → Pro',   value: pct(data.conversion_rates.registrado_to_pro),  color: '#CCFF00' },
+              { label: 'Reply rate',  value: pct(data.conversion_rates.abierto_to_respondido), color: '#0EA5E9' },
+            ].map(s => (
+              <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <div className="text-base font-bold font-mono" style={{ color: s.color }}>{s.value ?? '—'}</div>
+                <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Lane tabs on mobile */}
+        <div className="flex gap-2 mb-4">
+          {([['outbound', 'Outbound · Email'], ['inbound', 'Inbound · Plataforma']] as const).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setMobileTab(id)}
+              className="flex-1 py-2 rounded-lg text-xs font-medium transition-all"
+              style={{
+                background: mobileTab === id ? 'var(--blue)' : 'var(--bg-elevated)',
+                color:      mobileTab === id ? '#fff'        : 'var(--text-2)',
+                border:     `1px solid ${mobileTab === id ? 'var(--blue)' : 'var(--border)'}`,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Node list */}
+        <div className="space-y-2.5">
+          {loading || !data ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'var(--bg-elevated)' }} />
+            ))
+          ) : (
+            mobileNodes.map(def => {
+              const node = data.nodes[def.key]
+              if (!node) return null
+              return (
+                <MobileNodeRow
+                  key={def.key}
+                  def={def}
+                  node={node}
+                  onClick={() => setSelectedNode(def.key)}
+                />
+              )
+            })
+          )}
+        </div>
+
+        {/* Mobile campaign table */}
+        {data && !loading && data.campaigns.filter(c => c.sent > 0).length > 0 && (
+          <div className="mt-6 surface-card overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+              <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--text-3)' }}>Campañas Instantly</span>
+            </div>
+            {data.campaigns.filter(c => c.sent > 0).map(c => {
+              const openRate = c.sent > 0 ? c.opened / c.sent : 0
+              return (
+                <div key={c.id} className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-1)' }}>{c.name}</div>
+                  <div className="flex gap-3 text-[10px] font-mono" style={{ color: 'var(--text-2)' }}>
+                    <span>{c.sent} env.</span>
+                    <span style={{ color: openRate > 0.5 ? '#22C55E' : '#2563EB' }}>
+                      {c.opened} abiertos ({(openRate * 100).toFixed(0)}%)
+                    </span>
+                    {c.replied > 0 && <span style={{ color: '#0EA5E9' }}>{c.replied} replied</span>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── DESKTOP layout (md+) ─────────────────────────────────────────── */}
+      <main
+        className="hidden md:flex flex-1 flex-col justify-center gap-0 px-8 overflow-hidden"
+        style={{ paddingTop: '5vh', paddingBottom: '5vh' }}
+      >
+        {/* OUTBOUND LANE */}
+        <div
+          className="surface-card p-6 mb-6"
+          style={{ border: '1px solid rgba(37,99,235,0.2)' }}
+        >
+          {loading || !data ? (
+            <><div className="w-40 h-3 rounded animate-pulse mb-6" style={{ background: 'var(--bg-elevated)' }} />
+              <LaneSkeleton count={4} /></>
+          ) : (
+            <Lane
+              label="OUTBOUND — EMAIL FRÍO" icon={<Mail size={10} />}
+              nodes={OUTBOUND_NODES} rateKeys={OUTBOUND_RATES}
+              data={data} animated={animated} selectedNode={selectedNode}
+              onSelect={k => setSelectedNode(k === selectedNode ? null : k)} baseDelay={200}
+            />
+          )}
+        </div>
+
+        {/* Divider */}
+        {data && !loading && (
+          <div className="flex items-center gap-6 px-4 mb-6">
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, var(--border-strong), transparent)' }} />
+            <div className="flex items-center gap-6 text-xs" style={{ color: 'var(--text-3)' }}>
+              <span><span className="font-mono font-semibold" style={{ color: 'var(--text-2)' }}>{pct(data.conversion_rates.abierto_to_respondido)}</span>{' '}reply rate</span>
+              <span style={{ color: 'var(--text-3)' }}>→ respondidos entran a Artiverse</span>
+              <span><span className="font-mono font-semibold" style={{ color: 'var(--text-2)' }}>{pct(data.conversion_rates.registrado_to_pro)}</span>{' '}conversion to Pro</span>
+            </div>
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, var(--border-strong), transparent)' }} />
+          </div>
+        )}
+
+        {/* INBOUND LANE */}
+        <div
+          className="surface-card p-6"
+          style={{ border: '1px solid rgba(34,197,94,0.2)' }}
+        >
+          {loading || !data ? (
+            <><div className="w-48 h-3 rounded animate-pulse mb-6" style={{ background: 'var(--bg-elevated)' }} />
+              <LaneSkeleton count={5} /></>
+          ) : (
+            <Lane
+              label="INBOUND — PLATAFORMA ARTIVERSE" icon={<Zap size={10} />}
+              nodes={INBOUND_NODES} rateKeys={INBOUND_RATES}
+              data={data} animated={animated} selectedNode={selectedNode}
+              onSelect={k => setSelectedNode(k === selectedNode ? null : k)} baseDelay={600}
+            />
+          )}
+        </div>
+
+        {/* Campaign table */}
+        {data && !loading && data.campaigns.filter(c => c.sent > 0).length > 0 && (
+          <div className="mt-6 surface-card overflow-hidden">
+            <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+              <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: 'var(--text-3)' }}>Campañas Instantly</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{data.campaigns.filter(c => c.sent > 0).length} activas</span>
+            </div>
+            <div>
+              {data.campaigns.filter(c => c.sent > 0).map(c => {
+                const openRate = c.sent > 0 ? c.opened / c.sent : 0
+                return (
+                  <div
+                    key={c.id}
+                    className="px-5 py-2.5 flex items-center gap-4 border-b text-xs transition-colors"
+                    style={{ borderColor: 'var(--border)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span className="flex-1 truncate" style={{ color: 'var(--text-1)' }}>{c.name}</span>
+                    <div className="flex items-center gap-3 font-mono" style={{ color: 'var(--text-2)' }}>
+                      <span><span style={{ color: 'var(--text-2)' }}>{c.sent}</span> enviados</span>
+                      <span style={{ color: openRate > 0.5 ? '#22C55E' : '#2563EB' }}>
+                        {c.opened} abiertos ({(openRate * 100).toFixed(0)}%)
+                      </span>
+                      {c.replied > 0 && <span style={{ color: '#0EA5E9' }}>{c.replied} replied</span>}
+                      {c.bounced > 0 && <span style={{ color: '#EF4444' }}>{c.bounced} bounced</span>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* ── Slide-over ───────────────────────────────────────────────────── */}
+      {selectedNode && data && (
+        <SlideOver nodeKey={selectedNode} data={data} onClose={() => setSelectedNode(null)} onHubspot={setHubspotContact} />
+      )}
+
+      {/* ── HubSpot modal ─────────────────────────────────────────────────── */}
+      {hubspotContact && (
+        <HubSpotModal contact={hubspotContact} onClose={() => setHubspotContact(null)} />
+      )}
+    </div>
+  )
+}
+
+export default function RutaPage() {
+  return (
+    <Suspense fallback={<div style={{ background: 'var(--bg-base)', minHeight: '100vh' }} />}>
+      <RutaContent />
+    </Suspense>
+  )
+}

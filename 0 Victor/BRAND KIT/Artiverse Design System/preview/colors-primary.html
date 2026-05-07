@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Artiverse · Primary palette</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .sw {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--av-border);
+    display: flex; flex-direction: column;
+    background: #fff;
+  }
+  .sw-fill { height: 160px; display: flex; align-items: flex-end; padding: 16px; }
+  .sw-fill .chip {
+    font-family: var(--av-font-mono);
+    font-size: 11px;
+    background: rgba(255,255,255,.85);
+    backdrop-filter: blur(4px);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #111;
+  }
+  .sw-fill.dark .chip { background: rgba(0,0,0,.4); color: #fff; }
+  .sw-body { padding: 14px 16px 18px; }
+  .sw-name { font-weight: 700; font-size: 14px; color: var(--av-fg); margin: 0 0 2px; }
+  .sw-role { font-size: 12px; color: var(--av-fg-muted); margin: 0; }
+
+  .neutrals { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; margin-top: 28px; }
+  .n { border-radius: 6px; aspect-ratio: 1; display:flex; align-items:flex-end; justify-content:flex-start; padding: 8px; font-size: 10px; font-family: var(--av-font-mono); color: #111; border: 1px solid var(--av-border); }
+  .n.dark { color: #fff; border-color: transparent; }
+  .n-label { font-size: 10px; color: var(--av-fg-muted); text-align:center; margin-top: 4px; font-weight: 500; }
+  .n-col { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+  <div class="card-eyebrow">Colors / Primary</div>
+  <h1 class="card-title">Paleta de marca</h1>
+  <p class="card-subtitle">Dos colores de marca sobre escenarios blancos o negros. La lima es siempre acento — nunca color de texto, nunca fondo grande fuera de momentos de marca.</p>
+
+  <div class="swatches">
+    <div class="sw">
+      <div class="sw-fill" style="background: #2563EB;"><span class="chip">#2563EB</span></div>
+      <div class="sw-body"><p class="sw-name">Artiverse Blue</p><p class="sw-role">Primary — CTAs, links, active states</p></div>
+    </div>
+    <div class="sw">
+      <div class="sw-fill" style="background: #CCFF00;"><span class="chip">#CCFF00</span></div>
+      <div class="sw-body"><p class="sw-name">Artiverse Lime</p><p class="sw-role">Accent — stamps, highlights, ~5% area</p></div>
+    </div>
+    <div class="sw">
+      <div class="sw-fill dark" style="background: #0A0A0A;"><span class="chip">#0A0A0A</span></div>
+      <div class="sw-body"><p class="sw-name">Artiverse Black</p><p class="sw-role">Impact surfaces, hero type</p></div>
+    </div>
+  </div>
+
+  <div style="margin-top: 48px;">
+    <div class="card-eyebrow" style="margin-bottom: 8px;">Neutrals</div>
+    <div class="neutrals">
+      <div class="n-col"><div class="n" style="background:#FFFFFF;">FFF</div><div class="n-label">white</div></div>
+      <div class="n-col"><div class="n" style="background:#F9FAFB;">F9FAFB</div><div class="n-label">gray-50</div></div>
+      <div class="n-col"><div class="n" style="background:#F3F4F6;">F3F4F6</div><div class="n-label">gray-100</div></div>
+      <div class="n-col"><div class="n" style="background:#E5E7EB;">E5E7EB</div><div class="n-label">gray-200</div></div>
+      <div class="n-col"><div class="n" style="background:#D1D5DB;">D1D5DB</div><div class="n-label">gray-300</div></div>
+      <div class="n-col"><div class="n dark" style="background:#9CA3AF;">9CA3AF</div><div class="n-label">gray-400</div></div>
+      <div class="n-col"><div class="n dark" style="background:#4B5563;">4B5563</div><div class="n-label">gray-600</div></div>
+      <div class="n-col"><div class="n dark" style="background:#374151;">374151</div><div class="n-label">gray-700</div></div>
+      <div class="n-col"><div class="n dark" style="background:#111827;">111827</div><div class="n-label">gray-900</div></div>
+    </div>
+  </div>
+</body>
+</html>

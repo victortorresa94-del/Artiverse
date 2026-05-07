@@ -1,0 +1,37 @@
+/* Shared styles for Artiverse preview cards.
+   Each preview is a fixed-size panel, 1200×800 by default,
+   white background with generous padding. */
+@import url('../colors_and_type.css');
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: var(--av-font-sans); }
+body {
+  background: #FFFFFF;
+  color: var(--av-fg);
+  padding: 56px 64px;
+  min-height: 100vh;
+}
+
+.card-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--av-fg);
+  margin: 0 0 4px;
+}
+.card-subtitle {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--av-fg-muted);
+  margin: 0 0 32px;
+  max-width: 680px;
+  line-height: 1.55;
+}
+.card-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--av-fg-subtle);
+  margin-bottom: 12px;
+}

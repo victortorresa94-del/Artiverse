@@ -1,249 +1,668 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { campaigns as mockCampaigns, summary as mockSummary, leads, FUNNEL_STAGES } from '@/data/mock'
-import { Mail, TrendingUp, MessageSquare, Users, Zap, Clock, RefreshCw, CheckCircle2, AlertCircle, MessageCircle, XCircle, PlayCircle, ChevronRight, Building2, CreditCard, UserCheck, TrendingDown, Award, UserPlus, ArrowUpRight } from 'lucide-react'
+import {
+  RefreshCw, Database, Send, UserCheck, Building2, Code,
+  MailOpen, MessageSquare, AlertCircle, CheckCircle2,
+  MessageCircle, XCircle, PlayCircle, Mail, ChevronRight,
+  TrendingUp, Zap, ArrowRightLeft, X, ExternalLink,
+} from 'lucide-react'
+import KpiCard from '@/components/ui/KpiCard'
+import Collapsible from '@/components/ui/Collapsible'
+import PillBadge from '@/components/ui/PillBadge'
+import EmptyState from '@/components/ui/EmptyState'
+import { SkeletonRows } from '@/components/ui/SkeletonRow'
 
-const TOTAL_CONTACTS = 2597 // Total real del Excel unificado (todas las hojas)
+// ── Types ──────────────────────────────────────────────────────────────────────
 
-const platformStats = {
-  totalUsers: 116,
-  totalArtists: 200,
-  totalAgencies: 63,
-  promoters: 37,
-  monthlyRevenue: 120,
-  paidSubscribers: 192,
-  churnRate: 0.52,
-  emailVerification: 98,
-  completeProfiles: 59,
-  usersInAgencies: 59,
+interface ArtStats {
+  total: number; today: number; thisWeek: number
+  verified: number; profileComplete: number; withAgency: number
+  free: number; pro: number; agencyCount: number; artistCount: number
 }
 
-function StatCard({ label, value, sub, accent, icon: Icon }: {
-  label: string; value: string | number; sub?: string; accent?: string; icon: React.ElementType
-}) {
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function pct(a: number, b: number) { return b > 0 ? Math.round((a / b) * 100) : 0 }
+
+function timeAgo(iso: string) {
+  if (!iso) return '—'
+  const d = (Date.now() - new Date(iso).getTime()) / 1000
+  if (d < 60)    return 'ahora'
+  if (d < 3600)  return `${Math.floor(d / 60)}m`
+  if (d < 86400) return `${Math.floor(d / 3600)}h`
+  return `${Math.floor(d / 86400)}d`
+}
+
+// ── Mini Funnel ────────────────────────────────────────────────────────────────
+
+function MiniFunnel({ ruta, usersFromCampaigns }: { ruta: any; usersFromCampaigns: number }) {
+  if (!ruta) {
+    return (
+      <div className="surface-card p-5 mb-5">
+        <div className="skeleton h-4 w-40 mb-4 rounded" />
+        <div className="skeleton h-6 w-full rounded-full" />
+      </div>
+    )
+  }
+
+  const nodes = ruta.nodes
+  const TOTAL_BASE = nodes.base_contactos?.count || 1
+
+  const stages = [
+    { label: 'Universo',   count: nodes.base_contactos?.count  || 0, color: '#44445A' },
+    { label: 'Enviado',    count: nodes.enviado?.count          || 0, color: 'var(--blue)' },
+    { label: 'Abierto',    count: nodes.abierto?.count          || 0, color: '#60A5FA' },
+    { label: 'Respondido', count: nodes.respondido?.count       || 0, color: '#F59E0B' },
+    { label: 'Registrado', count: nodes.registrado?.count       || 0, color: 'var(--success)' },
+  ]
+
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div className="min-w-0">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">{label}</p>
-          <p className="text-2xl sm:text-3xl font-bold truncate" style={{ color: accent || '#111827' }}>{value}</p>
-          {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    <div className="surface-card p-5 mb-5">
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp size={14} style={{ color: 'var(--blue)' }} />
+        <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-2)' }}>
+          Funnel de conversión
+        </h2>
+        <Link
+          href="/ruta"
+          className="ml-auto text-[10px] font-medium flex items-center gap-0.5 transition-colors"
+          style={{ color: 'var(--text-3)' }}
+        >
+          Ver mapa completo <ChevronRight size={10} />
+        </Link>
+      </div>
+
+      {/* Bar */}
+      <div className="flex h-5 rounded-full overflow-hidden gap-px mb-3">
+        {stages.map((s, i) => {
+          const width = (s.count / TOTAL_BASE) * 100
+          return (
+            <div
+              key={i}
+              className="transition-all duration-700 first:rounded-l-full last:rounded-r-full"
+              style={{ width: `${Math.max(width, 1)}%`, background: s.color }}
+              title={`${s.label}: ${s.count}`}
+            />
+          )
+        })}
+      </div>
+
+      {/* Labels */}
+      <div className="flex justify-between">
+        {stages.map((s, i) => (
+          <div key={i} className="text-center" style={{ width: `${100 / stages.length}%` }}>
+            <p className="text-xs font-bold" style={{ color: s.color }}>
+              {s.count.toLocaleString()}
+            </p>
+            <p className="text-[9px] mt-0.5 truncate px-1" style={{ color: 'var(--text-3)' }}>
+              {s.label}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Conversion rates */}
+      {ruta.conversion_rates && (
+        <div
+          className="mt-4 pt-3 flex flex-wrap gap-3"
+          style={{ borderTop: '1px solid var(--border)' }}
+        >
+          {[
+            { label: 'Base → Enviado',    rate: ruta.conversion_rates.base_to_enviado },
+            { label: 'Enviado → Abierto', rate: ruta.conversion_rates.enviado_to_abierto },
+            { label: 'Abierto → Reply',   rate: ruta.conversion_rates.abierto_to_respondido },
+            { label: 'Campaña → Plataforma', rate: ruta.nodes?.registrado?.count ? usersFromCampaigns / ruta.nodes.registrado.count : null },
+            { label: 'Base → Pro',        rate: ruta.conversion_rates.base_to_pro },
+          ].map(({ label, rate }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{label}</span>
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                style={{
+                  background: 'var(--bg-elevated)',
+                  color:      rate ? (rate > 0.1 ? 'var(--success)' : 'var(--text-2)') : 'var(--text-3)',
+                }}
+              >
+                {rate != null ? `${(rate * 100).toFixed(1)}%` : '—'}
+              </span>
+            </div>
+          ))}
         </div>
-        <div className="p-2.5 rounded-lg bg-gray-50 shrink-0 ml-2">
-          <Icon size={18} className="text-gray-400" />
-        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Health Bars ────────────────────────────────────────────────────────────────
+
+function HealthBar({ label, value, color }: { label: string; value: number | undefined; color: string }) {
+  const v = value ?? 0
+  const threshold = v >= 80 ? 'var(--success)' : v >= 50 ? 'var(--warning)' : 'var(--error)'
+  const finalColor = color || threshold
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs" style={{ color: 'var(--text-2)' }}>{label}</span>
+        <span className="text-xs font-bold" style={{ color: finalColor }}>
+          {value !== undefined ? `${v}%` : '—'}
+        </span>
+      </div>
+      <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${v}%`, background: finalColor }}
+        />
       </div>
     </div>
   )
 }
 
-const statusStyle: Record<string, { label: string; bg: string; text: string }> = {
-  '1': { label: 'Activa',     bg: 'bg-emerald-50',  text: 'text-emerald-700' },
-  '0': { label: 'Pendiente',  bg: 'bg-gray-100',    text: 'text-gray-500' },
-  '2': { label: 'Pausada',    bg: 'bg-amber-50',    text: 'text-amber-700' },
-  '3': { label: 'Completada', bg: 'bg-purple-50',   text: 'text-purple-700' },
+// ── Campaign status badge ──────────────────────────────────────────────────────
+
+const campaignStatus: Record<string, { label: string; variant: 'green' | 'gray' | 'amber' | 'purple' }> = {
+  '1': { label: 'Activa',     variant: 'green' },
+  '0': { label: 'Pendiente',  variant: 'gray' },
+  '2': { label: 'Pausada',    variant: 'amber' },
+  '3': { label: 'Completada', variant: 'purple' as any },
 }
 
-export default function DashboardPage() {
-  const [liveData, setLiveData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [lastUpdated, setLastUpdated] = useState<string>('')
-  const [tasks, setTasks] = useState<any[]>([])
-  const [tasksLoading, setTasksLoading] = useState(true)
-  const [registrados, setRegistrados] = useState<{
-    registeredCount: number
-    registeredLeads: any[]
-    totalReplies: number
-    updatedAt?: string
-  } | null>(null)
-  const [registradosLoading, setRegistradosLoading] = useState(true)
+// ── Main page ──────────────────────────────────────────────────────────────────
 
-  const fetchData = async () => {
+export default function DashboardPage() {
+  const [liveData,        setLiveData]        = useState<any>(null)
+  const [loading,         setLoading]         = useState(true)
+  const [lastUpdated,     setLastUpdated]     = useState('')
+  const [tasks,           setTasks]           = useState<any[]>([])
+  const [tasksLoading,    setTasksLoading]    = useState(true)
+  const [artStats,        setArtStats]        = useState<ArtStats | null>(null)
+  const [artUsers,        setArtUsers]        = useState<any[]>([])
+  const [artLoading,      setArtLoading]      = useState(true)
+  const [opens,           setOpens]           = useState<any | null>(null)
+  const [opensLoading,    setOpensLoading]    = useState(true)
+  const [ruta,            setRuta]            = useState<any>(null)
+  const [showFromCampaigns, setShowFromCampaigns] = useState(false)
+
+  // ── Fetchers ──────────────────────────────────────────────────────────────
+
+  const fetchInstantly = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/instantly')
-      if (res.ok) {
-        const data = await res.json()
-        setLiveData(data)
+      const r = await fetch('/api/instantly')
+      if (r.ok) {
+        setLiveData(await r.json())
         setLastUpdated(new Date().toLocaleTimeString('es-ES'))
       }
-    } catch { /* fallback to mock */ }
-    finally { setLoading(false) }
+    } finally { setLoading(false) }
+  }
+
+  const fetchArtiverse = async () => {
+    setArtLoading(true)
+    try {
+      const r = await fetch('/api/artiverse-users')
+      if (r.ok) {
+        const d = await r.json()
+        if (d.stats)        setArtStats(d.stats)
+        if (d.todayUsers)   setArtUsers(d.todayUsers.slice(0, 8))
+        else if (d.users)   setArtUsers(d.users.slice(0, 8))
+      }
+    } finally { setArtLoading(false) }
+  }
+
+  const fetchOpens = async () => {
+    setOpensLoading(true)
+    try {
+      const r = await fetch('/api/opens')
+      if (r.ok) setOpens(await r.json())
+    } finally { setOpensLoading(false) }
   }
 
   const fetchTasks = async () => {
     setTasksLoading(true)
     try {
-      const res = await fetch('/api/tasks')
-      if (res.ok) {
-        const data = await res.json()
-        setTasks(data.tasks || [])
+      const r = await fetch('/api/tasks')
+      if (r.ok) {
+        const d = await r.json()
+        setTasks(d.tasks || [])
       }
-    } catch { /* ignore */ }
-    finally { setTasksLoading(false) }
+    } finally { setTasksLoading(false) }
   }
 
-  const fetchRegistrados = async () => {
-    setRegistradosLoading(true)
+  const fetchRuta = async () => {
     try {
-      const res = await fetch('/api/registrados')
-      if (res.ok) {
-        const data = await res.json()
-        setRegistrados(data)
-      }
+      const r = await fetch('/api/ruta?token=AETHER2026')
+      if (r.ok) setRuta(await r.json())
     } catch { /* ignore */ }
-    finally { setRegistradosLoading(false) }
+  }
+
+  const refreshAll = () => {
+    fetchInstantly()
+    fetchArtiverse()
+    fetchOpens()
+    fetchTasks()
+    fetchRuta()
   }
 
   useEffect(() => {
-    fetchData()
-    fetchTasks()
-    fetchRegistrados()
-    const interval = setInterval(() => { fetchData(); fetchTasks(); fetchRegistrados() }, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    fetchInstantly()
+    fetchArtiverse()
+    fetchRuta()
+    setTimeout(() => { fetchTasks(); fetchOpens() }, 400)
+    const t = setInterval(refreshAll, 5 * 60 * 1000)
+    return () => clearInterval(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const campaigns = liveData?.campaigns || mockCampaigns.map(c => ({
-    ...c, status: c.status === 'active' ? 1 : c.status === 'paused' ? 2 : 0
-  }))
-  const summary = liveData?.summary || mockSummary
+  // ── Derived ───────────────────────────────────────────────────────────────
 
-  const funnelCounts = FUNNEL_STAGES.map(s => ({
-    ...s, count: leads.filter(l => l.stage === s.id).length,
-  }))
-  const hotLeads = leads.filter(l => l.stage === 'respondio_interesado' || l.stage === 'reunion_agendada')
+  const rawCampaigns  = liveData?.campaigns    ?? []
+  const summary       = liveData?.summary      ?? {}
+  const rutaNodes     = ruta?.nodes
+
+  // Enrich campaigns with real open/reply rates from ruta pipeline data
+  const campaigns = useMemo(() => {
+    if (!rawCampaigns.length) return rawCampaigns
+    const rutaCamps: any[] = ruta?.campaigns ?? []
+    return rawCampaigns.map((c: any) => {
+      const rc = rutaCamps.find((r: any) =>
+        r.name === c.name ||
+        c.name.toLowerCase().includes(r.name.toLowerCase()) ||
+        r.name.toLowerCase().includes(c.name.toLowerCase())
+      )
+      if (rc && rc.sent > 0) {
+        return {
+          ...c,
+          sent:      rc.sent,
+          openRate:  +((rc.opened  / rc.sent) * 100).toFixed(1),
+          replyRate: +((rc.replied / rc.sent) * 100).toFixed(1),
+        }
+      }
+      return c
+    })
+  }, [rawCampaigns, ruta])
+
+  const proAgencia         = rutaNodes?.pro_agencia?.count      ?? 0
+  const proProgramador     = rutaNodes?.pro_programador?.count  ?? 0
+  const totalBase          = rutaNodes?.base_contactos?.count   ?? 2536
+  const totalEnviado       = rutaNodes?.enviado?.count          ?? 0
+  const usersFromCampaigns  = ruta?.usersFromCampaigns            ?? 0
+  const fromCampaignsList   = (ruta?.fromCampaignsList ?? []) as any[]
+
+  const artPlatform = artStats ? {
+    emailVerification: pct(artStats.verified,        artStats.total),
+    completeProfiles:  pct(artStats.profileComplete, artStats.total),
+    usersInAgencies:   pct(artStats.withAgency,      artStats.total),
+  } : null
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px]">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Artiverse Outreach Control Center</p>
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-1)' }}>
+            Dashboard
+          </h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+            Artiverse Control Center
+            {lastUpdated && ` · actualizado ${lastUpdated}`}
+          </p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          {lastUpdated && <span className="text-xs text-gray-400">Actualizado: {lastUpdated}</span>}
+        <div className="flex items-center gap-3">
           <button
-            onClick={fetchData}
+            onClick={refreshAll}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-gray-900 text-xs transition-colors shadow-sm"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+            style={{
+              background: 'var(--bg-elevated)',
+              color:      'var(--text-2)',
+              border:     '1px solid var(--border)',
+            }}
           >
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
             {loading ? 'Cargando…' : 'Actualizar'}
           </button>
-          {liveData
-            ? <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Live</span>
-            : <span className="flex items-center gap-1.5 text-xs text-gray-400"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />Mock</span>
-          }
+          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: liveData ? 'var(--success)' : 'var(--text-3)' }}>
+            <span className={`w-1.5 h-1.5 rounded-full ${liveData ? 'status-pulse' : ''}`} style={{ background: liveData ? 'var(--success)' : 'var(--text-3)' }} />
+            {liveData ? 'Live' : 'Mock'}
+          </span>
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <StatCard label="Emails enviados" value={(summary.totalEmailsSent || 0).toLocaleString()} sub="todas las campañas" icon={Mail} />
-        <StatCard label="Open rate" value={`${summary.avgOpenRate || 0}%`} sub="promedio" accent="#D97706" icon={TrendingUp} />
-        <StatCard label="Reply rate" value={`${summary.avgReplyRate || 0}%`} sub="promedio" accent="#059669" icon={MessageSquare} />
-        <StatCard label="Total contactos" value={TOTAL_CONTACTS.toLocaleString()} sub="en base de datos" icon={Users} />
-        <StatCard label="En Artiverse" value={130} sub="usuarios activos" accent="#2563EB" icon={Zap} />
-        <StatCard label="Pendientes" value={(summary.emailsPending || 0).toLocaleString()} sub="por enviar" icon={Clock} />
+      {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+        <KpiCard
+          label="Base total"
+          value={totalBase.toLocaleString()}
+          sub="contactos en Excel"
+          icon={Database}
+          accentColor="var(--text-2)"
+          loading={false}
+        />
+        <KpiCard
+          label="Contactados"
+          value={loading ? '…' : totalEnviado.toLocaleString()}
+          sub={summary.totalEmailsSent ? `${summary.totalEmailsSent} emails enviados` : 'via Instantly'}
+          icon={Send}
+          accentColor="var(--blue)"
+          loading={loading && !totalEnviado}
+        />
+        <KpiCard
+          label="En plataforma"
+          value={artLoading ? '…' : artStats?.verified ?? '—'}
+          sub={artStats ? `+${artStats.today} hoy · ${artStats.thisWeek} semana` : 'verificados'}
+          icon={UserCheck}
+          accentColor="var(--success)"
+          loading={artLoading && !artStats}
+        />
+        <button
+          className="text-left w-full"
+          onClick={() => setShowFromCampaigns(true)}
+          disabled={!ruta || usersFromCampaigns === 0}
+          style={{ outline: 'none' }}
+        >
+          <KpiCard
+            label="De campañas"
+            value={!ruta ? '…' : usersFromCampaigns}
+            sub={usersFromCampaigns && artStats?.total ? `${Math.round((usersFromCampaigns / artStats.total) * 100)}% de la plataforma` : 'vienen de Instantly'}
+            icon={ArrowRightLeft}
+            accentColor="#F59E0B"
+            loading={!ruta && loading}
+          />
+        </button>
+        <KpiCard
+          label="Pro agencia"
+          value={artLoading ? '…' : proAgencia}
+          sub="suscriptores activos"
+          icon={Building2}
+          accentColor="#A78BFA"
+          loading={artLoading && !ruta}
+        />
+        <KpiCard
+          label="Pro programador"
+          value={artLoading ? '…' : proProgramador}
+          sub="suscriptores activos"
+          icon={Code}
+          accentColor="var(--lime)"
+          loading={artLoading && !ruta}
+        />
       </div>
 
-      {/* ── Usuarios Registrados desde campañas ────────────────────────────── */}
-      <div className="mb-6">
-        <Link href="/leads" className="block group">
-          <div className="relative overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            {/* Decorative blob */}
-            <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-emerald-100/60 blur-2xl pointer-events-none" />
-            <div className="relative px-5 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
-              {/* Icon */}
-              <div className="flex-shrink-0 p-3 bg-emerald-500 rounded-xl shadow-sm">
-                <UserPlus size={22} className="text-white" />
-              </div>
-              {/* Main content */}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">Usuarios registrados desde campaña</p>
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  {registradosLoading ? (
-                    <span className="text-3xl font-bold text-emerald-800 animate-pulse">…</span>
-                  ) : (
-                    <span className="text-3xl sm:text-4xl font-bold text-emerald-800">
-                      {registrados?.registeredCount ?? 0}
+      {/* ── Mini Funnel ───────────────────────────────────────────────────── */}
+      <MiniFunnel ruta={ruta} usersFromCampaigns={usersFromCampaigns} />
+
+      {/* ── Últimos registros ────────────────────────────────────────────── */}
+      <div className="surface-card overflow-hidden mb-4">
+        <div
+          className="flex items-center justify-between px-4 py-3.5"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <div className="flex items-center gap-2">
+            <UserCheck size={14} style={{ color: 'var(--success)' }} />
+            <h2 className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>
+              Últimos registros
+            </h2>
+            {artStats?.today ? (
+              <PillBadge label={`+${artStats.today} hoy`} variant="green" size="xs" />
+            ) : null}
+          </div>
+          <Link href="/registros" className="text-[10px] font-medium" style={{ color: 'var(--text-3)' }}>
+            Ver todos →
+          </Link>
+        </div>
+
+        {artLoading && artUsers.length === 0 ? (
+          <div className="overflow-hidden">
+            <table className="w-full">
+              <tbody><SkeletonRows count={5} cols={3} /></tbody>
+            </table>
+          </div>
+        ) : artUsers.length === 0 ? (
+          <EmptyState icon={UserCheck} title="Sin registros recientes" subtitle="Los nuevos usuarios aparecen aquí" />
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+            {artUsers.map((u: any, i: number) => {
+              const plan = u.subscription?.planType ?? u.subscription ?? 'free'
+              const isPro = plan !== 'free'
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 px-4 py-2.5 transition-colors"
+                  style={{ cursor: 'default' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}
+                  >
+                    {(u.name?.[0] || u.email?.[0] || '?').toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate" style={{ color: 'var(--text-1)' }}>
+                      {u.name || u.email?.split('@')[0] || '—'}
+                    </p>
+                    <p className="text-[10px] truncate font-mono" style={{ color: 'var(--text-3)' }}>
+                      {u.email}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <PillBadge
+                      label={isPro ? 'Pro' : 'Free'}
+                      variant={isPro ? 'lime' : 'gray'}
+                      size="xs"
+                    />
+                    <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+                      {timeAgo(u.createdAt)}
                     </span>
-                  )}
-                  {!registradosLoading && registrados && registrados.totalReplies > 0 && (
-                    <span className="text-sm text-emerald-600">
-                      de <span className="font-semibold">{registrados.totalReplies}</span> respuestas totales
-                    </span>
-                  )}
+                  </div>
                 </div>
-                <p className="text-xs text-emerald-600/80 mt-1">
-                  Leads que respondieron confirmando su registro en Artiverse
-                </p>
-              </div>
-              {/* Latest registered leads */}
-              {!registradosLoading && registrados && registrados.registeredLeads.length > 0 && (
-                <div className="hidden lg:flex flex-col gap-1 min-w-0 max-w-xs">
-                  {registrados.registeredLeads.slice(0, 3).map((l, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-emerald-700">
-                      <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                      <span className="font-medium truncate">{l.company || l.email}</span>
-                    </div>
-                  ))}
-                  {registrados.registeredLeads.length > 3 && (
-                    <span className="text-xs text-emerald-500 pl-4">+{registrados.registeredLeads.length - 3} más</span>
-                  )}
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Actividad email (collapsible) ────────────────────────────────── */}
+      <Collapsible
+        title="Actividad email"
+        badge={opens?.totalOpened || undefined}
+        badgeVariant="amber"
+        icon={MailOpen}
+        iconColor="#F59E0B"
+        defaultOpen={false}
+        onRefresh={fetchOpens}
+        refreshing={opensLoading}
+      >
+        {opensLoading ? (
+          <div className="overflow-hidden">
+            <table className="w-full">
+              <tbody><SkeletonRows count={5} cols={3} /></tbody>
+            </table>
+          </div>
+        ) : !opens || opens.leads?.length === 0 ? (
+          <EmptyState icon={MailOpen} title="Sin aperturas recientes" subtitle="Los datos aparecen cuando Instantly registra actividad" />
+        ) : (
+          <>
+            <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+              {opens.leads.slice(0, 8).map((lead: any, i: number) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 px-4 py-2.5 transition-colors"
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: lead.status === 'replied' ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)' }}
+                  >
+                    {lead.status === 'replied'
+                      ? <MessageSquare size={11} style={{ color: 'var(--success)' }} />
+                      : <MailOpen size={11} style={{ color: '#F59E0B' }} />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate" style={{ color: 'var(--text-1)' }}>
+                      {lead.company || lead.firstName || lead.email?.split('@')[0] || '—'}
+                    </p>
+                    <p className="text-[10px] truncate" style={{ color: 'var(--text-3)' }}>
+                      {lead.campaign || '—'}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <PillBadge
+                      label={lead.status === 'replied' ? 'Respondió' : 'Abrió'}
+                      variant={lead.status === 'replied' ? 'green' : 'amber'}
+                      size="xs"
+                    />
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-3)' }}>
+                      {lead.updatedAt ? timeAgo(lead.updatedAt) : '—'}
+                    </p>
+                  </div>
                 </div>
-              )}
-              {/* CTA */}
-              <div className="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-emerald-700 group-hover:text-emerald-900 transition-colors">
-                Ver leads
-                <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </div>
+              ))}
             </div>
+            <div
+              className="px-4 py-3 flex items-center justify-between"
+              style={{ borderTop: '1px solid var(--border)' }}
+            >
+              <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+                Mostrando 8 de {opens.leads.length} contactos con actividad
+              </span>
+              <Link
+                href="/ruta?node=abierto"
+                className="text-xs font-medium flex items-center gap-1"
+                style={{ color: 'var(--blue)' }}
+              >
+                Ver todos en Ruta <ChevronRight size={11} />
+              </Link>
+            </div>
+          </>
+        )}
+      </Collapsible>
+
+      {/* ── Health metrics ────────────────────────────────────────────────── */}
+      <div className="surface-card p-5 mb-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Zap size={14} style={{ color: 'var(--blue)' }} />
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-2)' }}>
+            Salud de la plataforma
+          </h2>
+          {!artLoading && artStats && (
+            <span className="text-[10px] font-medium" style={{ color: 'var(--success)' }}>● live</span>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <HealthBar label="Verificación email"   value={artPlatform?.emailVerification}  color="var(--success)" />
+          <HealthBar label="Perfiles completos"    value={artPlatform?.completeProfiles}   color="var(--blue)"    />
+          <HealthBar label="Usuarios en agencias"  value={artPlatform?.usersInAgencies}    color="#A78BFA"        />
+          <HealthBar
+            label="Conversión base → Pro"
+            value={ruta?.conversion_rates?.base_to_pro != null
+              ? Math.round(ruta.conversion_rates.base_to_pro * 100)
+              : undefined}
+            color="var(--lime)"
+          />
+        </div>
+        {artStats && (
+          <div
+            className="mt-4 pt-3 flex flex-wrap gap-x-6 gap-y-1.5"
+            style={{ borderTop: '1px solid var(--border)' }}
+          >
+            {[
+              { label: 'Total',       value: artStats.total },
+              { label: 'Free',        value: artStats.free },
+              { label: 'Pro',         value: artStats.pro },
+              { label: 'Agencias',    value: artStats.agencyCount },
+              { label: 'Artistas',    value: artStats.artistCount },
+            ].map(m => (
+              <div key={m.label} className="flex items-center gap-1.5">
+                <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{m.label}</span>
+                <span className="text-[10px] font-bold" style={{ color: 'var(--text-1)' }}>
+                  {artLoading ? '…' : m.value}
+                </span>
+              </div>
+            ))}
           </div>
-        </Link>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 mb-6">
-        {/* Campaigns table */}
-        <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900">Estado de campañas</h2>
-            {loading && <span className="text-xs text-gray-400 animate-pulse">Cargando datos…</span>}
-          </div>
+      {/* ── Collapsible: Estado campañas ──────────────────────────────────── */}
+      {(() => {
+        const totalSent   = campaigns.reduce((s: number, c: any) => s + (c.sent ?? 0), 0)
+        const rutaCamps: any[] = ruta?.campaigns ?? []
+        const totalOpened = rutaCamps.reduce((s: number, c: any) => s + (c.opened ?? 0), 0)
+        const totalOpenPct = totalSent > 0 ? `${((totalOpened / totalSent) * 100).toFixed(1)}% open total` : null
+        return (
+      <Collapsible
+        title={totalOpenPct ? `Estado de campañas · ${totalOpenPct}` : 'Estado de campañas'}
+        badge={campaigns.length || undefined}
+        badgeVariant="blue"
+        icon={Mail}
+        iconColor="var(--blue)"
+        defaultOpen={false}
+        onRefresh={fetchInstantly}
+        refreshing={loading}
+      >
+        {loading && campaigns.length === 0 ? (
+          <table className="w-full">
+            <tbody><SkeletonRows count={4} cols={5} /></tbody>
+          </table>
+        ) : campaigns.length === 0 ? (
+          <EmptyState icon={Mail} title="Sin campañas activas" subtitle="Los datos aparecen cuando Instantly está conectado" />
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/60">
-                  {['Campaña', 'Enviados', 'Open', 'Reply', 'Estado'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+                  {['Campaña', 'Enviados', 'Apertura', 'Reply', 'Estado'].map(h => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-2.5 text-[10px] uppercase tracking-wider font-semibold whitespace-nowrap"
+                      style={{ color: 'var(--text-3)' }}
+                    >
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody>
                 {campaigns.map((c: any) => {
-                  const st = statusStyle[String(c.status)] || statusStyle['0']
+                  const st = campaignStatus[String(c.status)] ?? campaignStatus['0']
                   return (
-                    <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">
+                    <tr
+                      key={c.id}
+                      style={{ borderBottom: '1px solid var(--border)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <td className="px-4 py-3 font-medium text-sm" style={{ color: 'var(--text-1)' }}>
+                        {c.name}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--text-2)' }}>
                         {c.sent ?? c.emailsSent ?? 0}/{c.total ?? c.totalContacts ?? 0}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={(c.openRate ?? 0) > 0 ? 'text-amber-600 font-semibold font-mono text-xs' : 'text-gray-300 text-xs'}>
+                        <span
+                          className="text-xs font-semibold font-mono"
+                          style={{ color: (c.openRate ?? 0) > 0 ? '#F59E0B' : 'var(--text-3)' }}
+                        >
                           {(c.openRate ?? 0) > 0 ? `${c.openRate}%` : '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={(c.replyRate ?? 0) > 0 ? 'text-emerald-600 font-semibold font-mono text-xs' : 'text-gray-300 text-xs'}>
+                        <span
+                          className="text-xs font-semibold font-mono"
+                          style={{ color: (c.replyRate ?? 0) > 0 ? 'var(--success)' : 'var(--text-3)' }}
+                        >
                           {(c.replyRate ?? 0) > 0 ? `${c.replyRate}%` : '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${st.bg} ${st.text}`}>
-                          {st.label}
-                        </span>
+                        <PillBadge label={st.label} variant={st.variant} size="xs" />
                       </td>
                     </tr>
                   )
@@ -251,205 +670,199 @@ export default function DashboardPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        )}
+      </Collapsible>
+        )
+      })()}
 
-        {/* Pipeline mini */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="px-4 sm:px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Pipeline</h2>
+      {/* ── Collapsible: Tareas pendientes ────────────────────────────────── */}
+      <Collapsible
+        title="Tareas pendientes"
+        badge={tasks.length > 0 ? tasks.length : undefined}
+        badgeVariant="red"
+        icon={AlertCircle}
+        iconColor="var(--error)"
+        defaultOpen={tasks.length > 0}
+        onRefresh={fetchTasks}
+        refreshing={tasksLoading}
+      >
+        {tasksLoading && tasks.length === 0 ? (
+          <div className="px-5 py-8 text-center text-xs animate-pulse" style={{ color: 'var(--text-3)' }}>
+            Cargando tareas…
           </div>
-          <div className="p-4 sm:p-5 space-y-2.5">
-            {funnelCounts.map(s => (
-              <div key={s.id} className="flex items-center gap-3">
-                <span className="text-xs text-gray-500 w-28 truncate shrink-0">{s.label}</span>
-                <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+        ) : tasks.length === 0 ? (
+          <EmptyState icon={CheckCircle2} title="Sin tareas pendientes" subtitle="Todo en orden" />
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+            {tasks.map(task => {
+              const iconMap: Record<string, any> = { reply: MessageCircle, bounce: XCircle, campaign: PlayCircle }
+              const colorMap: Record<string, string> = {
+                reply:    'rgba(96,165,250,0.15)',
+                bounce:   'rgba(239,68,68,0.15)',
+                campaign: 'rgba(245,158,11,0.15)',
+              }
+              const textColorMap: Record<string, string> = {
+                reply: '#60A5FA', bounce: 'var(--error)', campaign: '#F59E0B',
+              }
+              const priorityVariant: Record<string, 'red' | 'amber' | 'gray'> = {
+                alta: 'red', media: 'amber', baja: 'gray',
+              }
+              const TaskIcon = iconMap[task.type] || AlertCircle
+
+              return (
+                <div
+                  key={task.id}
+                  className="flex items-start gap-3 px-4 py-3.5 transition-colors"
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
                   <div
-                    className="h-full rounded-full"
-                    style={{ width: `${Math.min(100, (s.count / Math.max(...funnelCounts.map(x => x.count), 1)) * 100)}%`, backgroundColor: s.color }}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-gray-600 w-4 text-right shrink-0">{s.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Tareas Pendientes */}
-      <div className="mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-gray-900">Tareas pendientes</h2>
-              {tasks.length > 0 && (
-                <span className="text-xs font-bold text-white bg-red-500 rounded-full px-2 py-0.5">{tasks.length}</span>
-              )}
-            </div>
-            <button
-              onClick={fetchTasks}
-              disabled={tasksLoading}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600"
-            >
-              <RefreshCw size={11} className={tasksLoading ? 'animate-spin' : ''} />
-              {tasksLoading ? 'Actualizando…' : 'Actualizar'}
-            </button>
-          </div>
-
-          {tasksLoading && tasks.length === 0 ? (
-            <div className="px-5 py-8 text-center text-sm text-gray-400 animate-pulse">Cargando tareas desde Instantly…</div>
-          ) : tasks.length === 0 ? (
-            <div className="px-5 py-8 text-center">
-              <CheckCircle2 size={24} className="mx-auto text-emerald-400 mb-2" />
-              <p className="text-sm text-gray-500 font-medium">Sin tareas pendientes</p>
-              <p className="text-xs text-gray-400 mt-0.5">Todo en orden</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {tasks.map(task => {
-                const icons: Record<string, any> = {
-                  reply: MessageCircle,
-                  bounce: XCircle,
-                  campaign: PlayCircle,
-                }
-                const colors: Record<string, string> = {
-                  reply: 'text-blue-600 bg-blue-50',
-                  bounce: 'text-red-500 bg-red-50',
-                  campaign: 'text-amber-600 bg-amber-50',
-                }
-                const priorities: Record<string, string> = {
-                  alta: 'text-red-500 bg-red-50 border-red-100',
-                  media: 'text-amber-600 bg-amber-50 border-amber-100',
-                  baja: 'text-gray-500 bg-gray-100 border-gray-200',
-                }
-                const Icon = icons[task.type] || AlertCircle
-                return (
-                  <div key={task.id} className="px-4 sm:px-5 py-3.5 flex items-start gap-3 hover:bg-gray-50/60 transition-colors">
-                    <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${colors[task.type] || 'text-gray-500 bg-gray-100'}`}>
-                      <Icon size={14} />
+                    className="p-1.5 rounded-lg shrink-0 mt-0.5"
+                    style={{ background: colorMap[task.type] ?? 'var(--bg-elevated)' }}
+                  >
+                    <TaskIcon size={13} style={{ color: textColorMap[task.type] ?? 'var(--text-2)' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>
+                        {task.title}
+                      </p>
+                      <PillBadge
+                        label={task.priority}
+                        variant={priorityVariant[task.priority] ?? 'gray'}
+                        size="xs"
+                      />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{task.title}</p>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium shrink-0 ${priorities[task.priority]}`}>
-                          {task.priority}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{task.description}</p>
-                      {task.email && (
-                        <p className="text-[10px] text-gray-400 font-mono mt-1">{task.email}</p>
-                      )}
-                    </div>
-                    <div className="shrink-0">
-                      <span className="text-xs text-blue-600 font-medium flex items-center gap-0.5 hover:text-blue-800 cursor-pointer">
-                        {task.action} <ChevronRight size={12} />
-                      </span>
-                    </div>
+                    <p className="text-xs line-clamp-2" style={{ color: 'var(--text-2)' }}>
+                      {task.description}
+                    </p>
+                    {task.email && (
+                      <p className="text-[10px] font-mono mt-1" style={{ color: 'var(--text-3)' }}>
+                        {task.email}
+                      </p>
+                    )}
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Plataforma Artiverse */}
-      <div className="mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <Award size={16} className="text-indigo-500" />
-            <h2 className="text-sm font-semibold text-gray-900">Plataforma Artiverse</h2>
-          </div>
-          <div className="p-4 sm:p-5 space-y-4">
-            {/* Row 1 — core counts */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="Total Usuarios" value={platformStats.totalUsers} icon={Users} accent="#2563EB" />
-              <StatCard label="Total Artistas" value={platformStats.totalArtists} icon={UserCheck} accent="#7C3AED" />
-              <StatCard label="Total Agencias" value={platformStats.totalAgencies} icon={Building2} accent="#0891B2" />
-              <StatCard label="Promotores" value={platformStats.promoters} icon={Zap} accent="#D97706" />
-            </div>
-            {/* Row 2 — revenue & subscriptions */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <StatCard label="Ingresos Mensuales" value={`${platformStats.monthlyRevenue}€`} icon={CreditCard} accent="#059669" />
-              <StatCard label="Suscriptores Pagos" value={platformStats.paidSubscribers} icon={TrendingUp} accent="#2563EB" />
-              <StatCard label="Tasa Cancelación" value={`${platformStats.churnRate}%`} icon={TrendingDown} accent="#DC2626" />
-            </div>
-            {/* Row 3 — health metrics with progress bars */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                { label: 'Verificación Email', value: platformStats.emailVerification, color: '#059669' },
-                { label: 'Perfiles Completos', value: platformStats.completeProfiles, color: '#2563EB' },
-                { label: 'Usuarios en Agencias', value: platformStats.usersInAgencies, color: '#7C3AED' },
-              ].map(m => (
-                <div key={m.label} className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-gray-500 font-medium">{m.label}</span>
-                    <span className="text-sm font-bold" style={{ color: m.color }}>{m.value}%</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${m.value}%`, backgroundColor: m.color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Hot leads */}
-      {hotLeads.length > 0 && (
-        <div className="bg-white border border-amber-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="px-4 sm:px-5 py-4 border-b border-amber-100 flex items-center gap-2 bg-amber-50/40">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <h2 className="text-sm font-semibold text-amber-900">Leads calientes — sin registrar</h2>
-            <span className="ml-auto text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">{hotLeads.length}</span>
-          </div>
-          {/* Desktop */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-amber-100/60">
-                  {['Empresa', 'Contacto', 'Email', 'Fase', 'Próxima acción', 'Notas'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wider">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {hotLeads.map(l => (
-                  <tr key={l.id} className="hover:bg-amber-50/30 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-gray-900">{l.company}</td>
-                    <td className="px-4 py-3 text-gray-700">{l.contact}</td>
-                    <td className="px-4 py-3 text-gray-500 font-mono text-xs">{l.email}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${l.stage === 'reunion_agendada' ? 'bg-amber-50 text-amber-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                        {l.stage === 'reunion_agendada' ? 'Reunión agendada' : 'Interesado'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 text-xs">{l.nextAction}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs max-w-[200px] truncate">{l.notes}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {/* Mobile */}
-          <div className="sm:hidden divide-y divide-amber-100">
-            {hotLeads.map(l => (
-              <div key={l.id} className="px-4 py-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">{l.company}</p>
-                    <p className="text-xs text-gray-500">{l.contact}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${l.stage === 'reunion_agendada' ? 'bg-amber-50 text-amber-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                    {l.stage === 'reunion_agendada' ? 'Reunión' : 'Interesado'}
+                  <span
+                    className="text-xs font-medium flex items-center gap-0.5 shrink-0 cursor-pointer"
+                    style={{ color: 'var(--blue)' }}
+                  >
+                    {task.action} <ChevronRight size={11} />
                   </span>
                 </div>
-                {l.nextAction !== '-' && <p className="text-xs text-blue-600 mt-1">{l.nextAction}</p>}
-              </div>
-            ))}
+              )
+            })}
           </div>
-        </div>
+        )}
+      </Collapsible>
+
+      {/* ── Slide-over: De campañas ───────────────────────────────────────── */}
+      {showFromCampaigns && (
+        <>
+          {/* backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            style={{ background: 'rgba(0,0,0,0.45)' }}
+            onClick={() => setShowFromCampaigns(false)}
+          />
+          {/* panel */}
+          <div
+            className="fixed top-0 right-0 h-full w-full sm:w-[520px] z-50 flex flex-col overflow-hidden"
+            style={{
+              background: 'var(--bg-surface)',
+              borderLeft: '1px solid var(--border)',
+              boxShadow: '-8px 0 32px rgba(0,0,0,0.25)',
+            }}
+          >
+            {/* header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <div>
+                <h2 className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
+                  Usuarios de campañas
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+                  {fromCampaignsList.length} usuarios de Artiverse que fueron contactados vía Instantly
+                </p>
+              </div>
+              <button
+                onClick={() => setShowFromCampaigns(false)}
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: 'var(--text-3)', background: 'var(--bg-elevated)' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* list */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {fromCampaignsList.length === 0 ? (
+                <p className="text-sm text-center mt-10" style={{ color: 'var(--text-3)' }}>
+                  Sin datos todavía
+                </p>
+              ) : (
+                fromCampaignsList.map((c: any, i: number) => (
+                  <div
+                    key={c.email + i}
+                    className="rounded-xl p-3.5"
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>
+                          {c.contact || c.artName || c.email}
+                        </p>
+                        <p className="text-xs truncate font-mono mt-0.5" style={{ color: 'var(--text-3)' }}>
+                          {c.email}
+                        </p>
+                      </div>
+                      {c.subscription && c.subscription !== 'free' && (
+                        <span
+                          className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase"
+                          style={{
+                            background: c.subscription === 'pro_agencia' ? 'rgba(167,139,250,0.15)' : 'rgba(163,230,53,0.15)',
+                            color:      c.subscription === 'pro_agencia' ? '#A78BFA' : 'var(--lime)',
+                          }}
+                        >
+                          {c.subscription === 'pro_agencia' ? 'Pro Agencia' : 'Pro Dev'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {c.company && (
+                        <span className="text-[11px]" style={{ color: 'var(--text-2)' }}>{c.company}</span>
+                      )}
+                      {c.city && (
+                        <span className="text-[11px]" style={{ color: 'var(--text-3)' }}>{c.city}</span>
+                      )}
+                      {c.campaignName && (
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded"
+                          style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}
+                        >
+                          {c.campaignName}
+                        </span>
+                      )}
+                    </div>
+                    {c.registeredAt && (
+                      <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-3)' }}>
+                        Registrado {new Date(c.registeredAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {c.opens > 0 && ` · ${c.opens} aperturas`}
+                        {c.replies > 0 && ` · ${c.replies} respuestas`}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
       )}
+
     </div>
   )
 }
