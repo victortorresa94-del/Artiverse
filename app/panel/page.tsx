@@ -264,8 +264,9 @@ function KpiSentCard({
     <div
       className="p-3 sm:p-4 rounded-lg"
       style={{
-        background: accent ? 'var(--blue-dim)' : 'var(--bg-surface)',
-        border:     `1px solid ${accent ? 'var(--blue-glow)' : 'var(--border)'}`,
+        background: accent ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-surface)',
+        border:     `1px solid ${accent ? 'rgba(37, 99, 235, 0.55)' : 'var(--border)'}`,
+        boxShadow:  accent ? '0 0 0 3px rgba(37, 99, 235, 0.10)' : 'none',
       }}
     >
       <p
